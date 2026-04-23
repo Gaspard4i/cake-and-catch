@@ -28,13 +28,6 @@ type Seasoning = {
   baitEffects: BaitEffect[];
 };
 
-type HoldEffect = {
-  tag: string;
-  title: string;
-  description: string;
-  tone: BaitEffect["tone"];
-};
-
 const EFFECT_TONE_STYLES: Record<BaitEffect["tone"], string> = {
   healing: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300",
   friendship: "bg-pink-500/15 text-pink-700 dark:text-pink-300",
@@ -118,7 +111,6 @@ export function CampfirePot() {
   const [minY, setMinY] = useState<string>("");
   const [maxY, setMaxY] = useState<string>("");
   const [attracted, setAttracted] = useState<AttractedEntry[]>([]);
-  const [holdEffects, setHoldEffects] = useState<HoldEffect[]>([]);
   const [snackBaitEffects, setSnackBaitEffects] = useState<BaitEffect[]>([]);
   const [potColour, setPotColour] = useState<typeof POT_COLOURS[number]>(POT_COLOURS[0]);
   const [loading, setLoading] = useState(false);
@@ -221,16 +213,13 @@ export function CampfirePot() {
         });
         const data = (await res.json()) as {
           attracted: AttractedEntry[];
-          cake?: { effects?: HoldEffect[] };
           snack?: { baitEffects?: BaitEffect[] };
         };
         setAttracted(data.attracted ?? []);
-        setHoldEffects(data.cake?.effects ?? []);
         setSnackBaitEffects(data.snack?.baitEffects ?? []);
       } catch (err) {
         if ((err as Error).name !== "AbortError") {
           setAttracted([]);
-          setHoldEffects([]);
           setSnackBaitEffects([]);
         }
       } finally {
@@ -506,29 +495,6 @@ export function CampfirePot() {
           )}
         </div>
 
-        {holdEffects.length > 0 && (
-          <div>
-            <h3 className="text-sm font-medium uppercase tracking-wide text-muted">
-              Berry hold effects (battle)
-            </h3>
-            <p className="mt-1 text-xs text-muted">
-              What these berries do when held or eaten by a Pokémon (out of the
-              snack context).
-            </p>
-            <ul className="mt-3 flex flex-wrap gap-2">
-              {holdEffects.map((e) => (
-                <li
-                  key={e.tag}
-                  className={`rounded-lg px-3 py-2 text-xs ${EFFECT_TONE_STYLES[e.tone]}`}
-                  title={e.description}
-                >
-                  <div className="font-medium">{e.title}</div>
-                  <div className="opacity-80 mt-0.5 max-w-xs">{e.description}</div>
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
 
         <div>
           <h3 className="text-sm font-medium uppercase tracking-wide text-muted">Filters</h3>

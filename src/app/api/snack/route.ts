@@ -262,30 +262,53 @@ export async function POST(req: NextRequest) {
   const seasoningSlugs = (body.composition?.seasoningSlugs ?? []).slice(0, 3);
   const filter: SpawnFilter = normalizeFilter(body.filter);
 
-  const [berries, rawBaits] = await Promise.all([listBerries(), listBaitEffects()]);
+  const [berries, allSeasonings, rawBaits] = await Promise.all([
+    listBerries(),
+    listAllSeasonings(),
+    listBaitEffects(),
+  ]);
   const byslug = new Map<string, Berry>(berries.map((b) => [b.slug, b]));
+  // Map every seasoning slug (berry OR vanilla) to its upstream itemId,
+  // so vanilla bait items (apple, golden_apple, glow_berries…) resolve too.
+  const itemIdBySlug = new Map<string, string>();
+  for (const b of berries) itemIdBySlug.set(b.slug, b.itemId);
+  for (const s of allSeasonings) itemIdBySlug.set(s.slug, s.itemId);
   const baitByItem = new Map<string, RawBaitEffect[]>();
   for (const b of rawBaits as RawBaitEffectRow[]) {
     baitByItem.set(b.itemId, b.effects as RawBaitEffect[]);
   }
 
-  // Berries contribute to the cake-flavour lookup (UI convenience);
-  // silently drop unknown slugs.
-  const validSlugs = seasoningSlugs.filter((s) => byslug.has(s));
-  const dominant = cakeDominantFlavour({ seasoningSlugs: validSlugs }, byslug);
-  const effectTags = cakeEffectTags({ seasoningSlugs: validSlugs }, byslug);
+  // validSlugs = every slug we recognise (berry OR vanilla bait seasoning).
+  const validSlugs = seasoningSlugs.filter((s) => itemIdBySlug.has(s));
+
+  // The cake-flavour lookup only makes sense for berries (vanilla items have
+  // no flavour profile). Keep that narrow for dominant + hold effects.
+  const berrySlugsInCake = validSlugs.filter((s) => byslug.has(s));
+  const dominant = cakeDominantFlavour({ seasoningSlugs: berrySlugsInCake }, byslug);
+  const effectTags = cakeEffectTags({ seasoningSlugs: berrySlugsInCake }, byslug);
   const holdEffects = effectTags.map((t) => ({
     tag: t,
     ...(EFFECT_TAG_LABELS[t] ?? { title: t, description: "", tone: "utility" }),
   }));
 
-  // Aggregate bait-seasoning effects across placed seasonings.
+  // Aggregate bait-seasoning effects across every placed slot (berries + vanilla).
+  // Effects of the same (kind, title) are merged: their chances sum, capped at 100%.
   const baitEffects: FormattedBaitEffect[] = [];
   for (const slug of validSlugs) {
-    const berry = byslug.get(slug);
-    if (!berry) continue;
-    const raw = baitByItem.get(berry.itemId) ?? [];
+    const itemId = itemIdBySlug.get(slug);
+    if (!itemId) continue;
+    const raw = baitByItem.get(itemId) ?? [];
     baitEffects.push(...formatBaitEffects(raw));
+  }
+  const mergedBaitEffects: FormattedBaitEffect[] = [];
+  for (const eff of baitEffects) {
+    const key = `${eff.kind}:${eff.title}`;
+    const existing = mergedBaitEffects.find((e) => `${e.kind}:${e.title}` === key);
+    if (existing) {
+      existing.chance = Math.min(1, existing.chance + eff.chance);
+    } else {
+      mergedBaitEffects.push({ ...eff });
+    }
   }
 
   const spawns = await listSpawnsWithSpecies(10000);
@@ -336,13 +359,14 @@ export async function POST(req: NextRequest) {
   return ok({
     cake: {
       dominantFlavour: dominant,
-      seasoningSlugs: validSlugs,
-      colorHint: berries.find((b) => b.slug === validSlugs[0])?.colour ?? null,
+      seasoningSlugs: berrySlugsInCake,
+      colorHint:
+        berries.find((b) => b.slug === berrySlugsInCake[0])?.colour ?? null,
       effects: holdEffects,
     },
     snack: {
       seasoningSlugs: validSlugs,
-      baitEffects,
+      baitEffects: mergedBaitEffects,
     },
     filter,
     count: attracted.length,
