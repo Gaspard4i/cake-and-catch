@@ -30,23 +30,29 @@ const FLAVOUR_TINT: Record<string, string> = {
   SOUR: "#f4d35e",
 };
 
+/**
+ * Pale food colour palette used by Cobblemon's FoodColourComponent when
+ * rendering a cooked item's tint. Source: `FoodColourComponent.kt` in the mod.
+ * These are NOT the vibrant vanilla DyeColor values — they're pastel tints
+ * designed to look good as cake tints.
+ */
 const MC_COLOUR: Record<string, string> = {
-  white: "#f9fffe",
-  light_gray: "#9d9d97",
+  white: "#ffffff",
+  orange: "#ffc3af",
+  magenta: "#af8cff",
+  light_blue: "#78c3eb",
+  yellow: "#ffe1af",
+  pink: "#e1a0ff",
+  lime: "#cdffaf",
   gray: "#474f52",
-  black: "#1d1d21",
+  light_gray: "#9d9d97",
+  cyan: "#87ebd7",
+  purple: "#9191ff",
+  blue: "#78a5ff",
   brown: "#835432",
-  red: "#b02e26",
-  orange: "#f9801d",
-  yellow: "#fed83d",
-  lime: "#80c71f",
-  green: "#5e7c16",
-  cyan: "#169c9c",
-  light_blue: "#3ab3da",
-  blue: "#3c44aa",
-  purple: "#8932b8",
-  magenta: "#c74ebd",
-  pink: "#f38baa",
+  green: "#afffb4",
+  red: "#ffafd7",
+  black: "#000000",
 };
 
 export type BerryPlacement = {
@@ -174,7 +180,7 @@ function CakeMesh({
 }: {
   berries: BerryPlacement[];
   fallbackFlavour: string | null;
-  potColour: string;
+  potColour: string | null;
 }) {
   const group = useRef<THREE.Group>(null);
 
@@ -190,10 +196,15 @@ function CakeMesh({
     if (group.current) group.current.rotation.y += delta * 0.35;
   });
 
-  const tintHex = useMemo(
-    () => computeCakeTint(berries, fallbackFlavour),
-    [berries, fallbackFlavour],
-  );
+  // Pot colour acts as an OVERRIDE for the cake tint (UI convenience).
+  // In the mod itself, the cake tint is 100% derived from berry.colour via
+  // FoodColourSeasoningProcessor — the pot colour is purely cosmetic on the
+  // pot sprite. We surface it as a manual override so the user can preview
+  // any pale Cobblemon cake colour even without placing specific berries.
+  const tintHex = useMemo(() => {
+    if (potColour && potColour.toLowerCase() !== "#c9b89e") return potColour;
+    return computeCakeTint(berries, fallbackFlavour);
+  }, [berries, fallbackFlavour, potColour]);
   const tint = useMemo(() => new THREE.Color(tintHex), [tintHex]);
 
   // Match the JSON: 14×7×14 MC units → three.js units (/16).
@@ -271,12 +282,6 @@ function CakeMesh({
 
   return (
     <group ref={group}>
-      {/* Cooking Pot plate under the cake — colour picker */}
-      <mesh position={[0, -0.04, 0]}>
-        <cylinderGeometry args={[0.78, 0.82, 0.08, 24]} />
-        <meshStandardMaterial color={potColour} roughness={0.5} />
-      </mesh>
-
       <mesh position={[0, H / 2, 0]} geometry={innerGeo} material={innerMats} />
       <mesh position={[0, H / 2, 0]} geometry={overlayGeo} material={overlayMats} />
 
@@ -290,12 +295,16 @@ function CakeMesh({
 export function Cake3D({
   flavour,
   berries = [],
-  potColour = "#c9b89e",
+  potColour,
   size = 200,
 }: {
   flavour?: string | null;
   berries?: BerryPlacement[];
-  /** Hex colour for the Cooking Pot plate under the cake. Purely cosmetic (upstream pot colour does not affect cake tint). */
+  /**
+   * When set, forces this hex colour as the cake tint, overriding the
+   * flavour/berry-derived mix. Represents the "cooking pot colour" picker
+   * in the UI — in the actual mod the pot colour is cosmetic only.
+   */
   potColour?: string;
   size?: number;
 }) {
@@ -311,7 +320,7 @@ export function Cake3D({
           <CakeMesh
             berries={berries}
             fallbackFlavour={flavour ?? null}
-            potColour={potColour}
+            potColour={potColour ?? null}
           />
         </Suspense>
       </Canvas>

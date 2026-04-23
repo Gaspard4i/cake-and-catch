@@ -36,15 +36,21 @@ const EFFECT_TONE_STYLES: Record<CakeEffect["tone"], string> = {
   utility: "bg-zinc-500/15 text-zinc-700 dark:text-zinc-300",
 };
 
+/**
+ * Cooking Pot variants that exist in-game (7 colours in CampfirePotColor.kt).
+ * The hex values here are the PALE food-colour equivalents from
+ * `FoodColourComponent.COLORS` — i.e. what the cake would look like if the
+ * pot's colour were applied as an override (UI convenience; see Cake3D note).
+ */
 const POT_COLOURS = [
   { slug: null, label: "Default", hex: "#c9b89e" },
-  { slug: "white", label: "White", hex: "#f9fffe" },
-  { slug: "black", label: "Black", hex: "#1d1d21" },
-  { slug: "red", label: "Red", hex: "#b02e26" },
-  { slug: "blue", label: "Blue", hex: "#3c44aa" },
-  { slug: "green", label: "Green", hex: "#5e7c16" },
-  { slug: "pink", label: "Pink", hex: "#f38baa" },
-  { slug: "yellow", label: "Yellow", hex: "#fed83d" },
+  { slug: "white", label: "White", hex: "#ffffff" },
+  { slug: "black", label: "Black", hex: "#555555" },
+  { slug: "red", label: "Red", hex: "#ffafd7" },
+  { slug: "blue", label: "Blue", hex: "#78a5ff" },
+  { slug: "green", label: "Green", hex: "#afffb4" },
+  { slug: "pink", label: "Pink", hex: "#e1a0ff" },
+  { slug: "yellow", label: "Yellow", hex: "#ffe1af" },
 ] as const;
 
 type AttractedEntry = {
