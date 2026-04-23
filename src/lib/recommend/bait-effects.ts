@@ -42,6 +42,11 @@ export type FormattedBaitEffect = {
   description: string;
   chance: number;
   tone: "healing" | "friendship" | "defense" | "buff" | "offense" | "utility";
+  /** Raw numeric value from the bait effect (points added, multiplier, etc.). */
+  value: number;
+  /** Normalised subcategory (e.g. 'fire' for typing, 'spa' for nature/iv/ev,
+   *  'monster' for egg_group, 'female' for gender). Empty string when n/a. */
+  subcategory: string;
 };
 
 function cleanSubcategory(sc: string | undefined): string {
@@ -100,6 +105,8 @@ export function formatBaitEffect(raw: RawBaitEffect): FormattedBaitEffect {
   const value = raw.value ?? 0;
   const chance = raw.chance ?? 0;
   const sub = raw.subcategory ?? "";
+  const cleanedSub = cleanSubcategory(sub).toLowerCase();
+  const base = { value, subcategory: cleanedSub };
 
   switch (type) {
     case "bite_time": {
@@ -110,6 +117,7 @@ export function formatBaitEffect(raw: RawBaitEffect): FormattedBaitEffect {
         description: `Reduces bite time by ${pct}%.`,
         chance,
         tone: "utility",
+        ...base,
       };
     }
     case "rarity_bucket": {
@@ -119,6 +127,7 @@ export function formatBaitEffect(raw: RawBaitEffect): FormattedBaitEffect {
         description: `Boosts rarity bucket by ${value} tier(s).`,
         chance,
         tone: "buff",
+        ...base,
       };
     }
     case "shiny_reroll": {
@@ -129,6 +138,7 @@ export function formatBaitEffect(raw: RawBaitEffect): FormattedBaitEffect {
         description: `Increases shiny chance by ${v}×.`,
         chance,
         tone: "buff",
+        ...base,
       };
     }
     case "ha_chance": {
@@ -138,6 +148,7 @@ export function formatBaitEffect(raw: RawBaitEffect): FormattedBaitEffect {
         description: "Attracts Pokémon with their hidden ability.",
         chance,
         tone: "buff",
+        ...base,
       };
     }
     case "drops_reroll": {
@@ -147,6 +158,7 @@ export function formatBaitEffect(raw: RawBaitEffect): FormattedBaitEffect {
         description: "Rerolls drops once.",
         chance,
         tone: "utility",
+        ...base,
       };
     }
     case "level_raise": {
@@ -156,6 +168,7 @@ export function formatBaitEffect(raw: RawBaitEffect): FormattedBaitEffect {
         description: `Boosts lured Pokémon level by ${value}.`,
         chance,
         tone: "buff",
+        ...base,
       };
     }
     case "ev": {
@@ -166,6 +179,7 @@ export function formatBaitEffect(raw: RawBaitEffect): FormattedBaitEffect {
         description: `Attracts Pokémon with ${stat} EV yield.`,
         chance,
         tone: "offense",
+        ...base,
       };
     }
     case "iv": {
@@ -176,6 +190,7 @@ export function formatBaitEffect(raw: RawBaitEffect): FormattedBaitEffect {
         description: `Boosts lured Pokémon ${stat} IV by ${value}.`,
         chance,
         tone: "offense",
+        ...base,
       };
     }
     case "nature": {
@@ -186,6 +201,7 @@ export function formatBaitEffect(raw: RawBaitEffect): FormattedBaitEffect {
         description: `Attracts Pokémon with ${stat}-boosting natures.`,
         chance,
         tone: "offense",
+        ...base,
       };
     }
     case "egg_group": {
@@ -196,6 +212,7 @@ export function formatBaitEffect(raw: RawBaitEffect): FormattedBaitEffect {
         description: `Increases chance of ${eg} Egg Group Pokémon by 10×.`,
         chance,
         tone: "utility",
+        ...base,
       };
     }
     case "typing": {
@@ -206,6 +223,7 @@ export function formatBaitEffect(raw: RawBaitEffect): FormattedBaitEffect {
         description: `Increases chance of ${t}-type Pokémon by 10×.`,
         chance,
         tone: "offense",
+        ...base,
       };
     }
     case "gender_chance": {
@@ -216,6 +234,7 @@ export function formatBaitEffect(raw: RawBaitEffect): FormattedBaitEffect {
         description: `Attracts ${which} Pokémon.`,
         chance,
         tone: "utility",
+        ...base,
       };
     }
     case "friendship": {
@@ -225,6 +244,7 @@ export function formatBaitEffect(raw: RawBaitEffect): FormattedBaitEffect {
         description: `Boosts lured Pokémon's friendship by ${value}.`,
         chance,
         tone: "friendship",
+        ...base,
       };
     }
     case "mark_chance": {
@@ -234,6 +254,7 @@ export function formatBaitEffect(raw: RawBaitEffect): FormattedBaitEffect {
         description: "Attracts Pokémon with special marks.",
         chance,
         tone: "utility",
+        ...base,
       };
     }
     default:
@@ -243,6 +264,7 @@ export function formatBaitEffect(raw: RawBaitEffect): FormattedBaitEffect {
         description: JSON.stringify(raw),
         chance,
         tone: "utility",
+        ...base,
       };
   }
 }

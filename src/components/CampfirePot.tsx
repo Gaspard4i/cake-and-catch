@@ -1,19 +1,17 @@
 "use client";
 
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
+import { Star } from "lucide-react";
 import { ItemIcon } from "./ItemIcon";
 import { PokemonSprite } from "./PokemonSprite";
 import { TypePair } from "./TypeBadge";
 import { Snack3D, type BerryPlacement } from "./Snack3D";
 import { MultiSelect, type MultiSelectOption } from "./MultiSelect";
+import { SnackEffectsSummary } from "./SnackEffectsSummary";
+import type { FormattedBaitEffect } from "@/lib/recommend/bait-effects";
 
-type BaitEffect = {
-  kind: string;
-  title: string;
-  description: string;
-  chance: number;
-  tone: "healing" | "friendship" | "defense" | "buff" | "offense" | "utility";
-};
+type BaitEffect = FormattedBaitEffect;
 
 type Seasoning = {
   slug: string;
@@ -96,6 +94,19 @@ const TIME_OPTIONS: MultiSelectOption[] = [
   { value: "dusk", label: "Dusk" },
 ];
 
+const TYPE_OPTIONS: MultiSelectOption[] = [
+  "normal", "fire", "water", "electric", "grass", "ice", "fighting",
+  "poison", "ground", "flying", "psychic", "bug", "rock", "ghost",
+  "dragon", "dark", "steel", "fairy",
+].map((t) => ({ value: t, label: t }));
+
+const BUCKET_OPTIONS: MultiSelectOption[] = [
+  { value: "common", label: "Common" },
+  { value: "uncommon", label: "Uncommon" },
+  { value: "rare", label: "Rare" },
+  { value: "ultra-rare", label: "Ultra-rare" },
+];
+
 const NAMESPACE_OPTIONS: MultiSelectOption[] = [
   { value: "cobblemon", label: "Cobblemon (tags)", group: "Default" },
   { value: "minecraft", label: "Minecraft vanilla", group: "Default" },
@@ -136,6 +147,15 @@ export function CampfirePot() {
   const [minY, setMinY] = useState<string>("");
   const [maxY, setMaxY] = useState<string>("");
   const [attracted, setAttracted] = useState<AttractedEntry[]>([]);
+  const [attractedVisible, setAttractedVisible] = useState(24);
+  const attractedSentinelRef = useRef<HTMLDivElement>(null);
+  const [attQuery, setAttQuery] = useState("");
+  const [attTypes, setAttTypes] = useState<string[]>([]);
+  const [attBuckets, setAttBuckets] = useState<string[]>([]);
+  const [attSort, setAttSort] = useState<
+    "probability" | "dex" | "dex_desc" | "name" | "name_desc" | "bucket"
+  >("probability");
+  const [showShiny, setShowShiny] = useState(false);
   const [snackBaitEffects, setSnackBaitEffects] = useState<BaitEffect[]>([]);
   const [potColour, setPotColour] = useState<typeof POT_COLOURS[number]>(POT_COLOURS[0]);
   const [loading, setLoading] = useState(false);
@@ -270,6 +290,7 @@ export function CampfirePot() {
           snack?: { baitEffects?: BaitEffect[] };
         };
         setAttracted(data.attracted ?? []);
+        setAttractedVisible(24);
         setSnackBaitEffects(data.snack?.baitEffects ?? []);
       } catch (err) {
         if ((err as Error).name !== "AbortError") {
@@ -285,6 +306,81 @@ export function CampfirePot() {
       ctrl.abort();
     };
   }, [slots, biomes, times, minY, maxY]);
+
+
+  const attractedView = useMemo(() => {
+    const q = attQuery.trim().toLowerCase();
+    const bucketOrder: Record<AttractedEntry["bucket"], number> = {
+      "ultra-rare": 0,
+      rare: 1,
+      uncommon: 2,
+      common: 3,
+    };
+    let list = attracted.filter((p) => {
+      if (q) {
+        const hay = `${p.name} ${p.slug} ${p.dexNo} ${String(p.dexNo).padStart(4, "0")}`.toLowerCase();
+        if (!hay.includes(q)) return false;
+      }
+      if (attTypes.length > 0) {
+        // Intersection, capped at 2 (a Pokémon has at most 2 types).
+        const own = [p.primaryType, p.secondaryType].filter(
+          (t): t is string => !!t,
+        );
+        if (!attTypes.slice(0, 2).every((t) => own.includes(t))) return false;
+      }
+      if (attBuckets.length > 0 && !attBuckets.includes(p.bucket)) return false;
+      return true;
+    });
+    const cmp: Record<typeof attSort, (a: AttractedEntry, b: AttractedEntry) => number> = {
+      probability: (a, b) => b.probability - a.probability,
+      dex: (a, b) => a.dexNo - b.dexNo,
+      dex_desc: (a, b) => b.dexNo - a.dexNo,
+      name: (a, b) => a.name.localeCompare(b.name),
+      name_desc: (a, b) => b.name.localeCompare(a.name),
+      bucket: (a, b) =>
+        bucketOrder[a.bucket] - bucketOrder[b.bucket] || b.probability - a.probability,
+    };
+    list = [...list].sort(cmp[attSort]);
+    return list;
+  }, [attracted, attQuery, attTypes, attBuckets, attSort]);
+
+  useEffect(() => {
+    setAttractedVisible(24);
+  }, [attQuery, attTypes, attBuckets, attSort]);
+
+  /**
+   * Cobblemon shiny chance = 1 / 8192 per roll. A `shiny_reroll` bait adds
+   * (value) extra rolls at its own chance. P(any shiny) = 1 - ∏(1 - rollChance).
+   * We accumulate over all shiny_reroll bait effects present in the pot.
+   */
+  const shinyMultiplier = useMemo(() => {
+    let pNotShiny = 8191 / 8192; // base single roll
+    for (const e of snackBaitEffects) {
+      if (e.kind !== "shiny_reroll") continue;
+      const rolls = Math.max(1, e.value || 1);
+      const perRoll = (e.chance || 1) * (1 / 8192);
+      for (let i = 0; i < rolls; i++) pNotShiny *= 1 - perRoll;
+    }
+    const pShiny = 1 - pNotShiny;
+    return pShiny; // absolute probability per encounter
+  }, [snackBaitEffects]);
+  const hasShinyBoost = snackBaitEffects.some((e) => e.kind === "shiny_reroll");
+
+  useEffect(() => {
+    if (attractedVisible >= attractedView.length) return;
+    const el = attractedSentinelRef.current;
+    if (!el) return;
+    const io = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((e) => e.isIntersecting)) {
+          setAttractedVisible((v) => Math.min(v + 24, attractedView.length));
+        }
+      },
+      { rootMargin: "200px" },
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, [attractedVisible, attractedView.length]);
 
   const setSlot = (idx: number, s: Seasoning | null) => {
     const next = [...slots] as SlotState;
@@ -303,6 +399,7 @@ export function CampfirePot() {
     });
 
   return (
+    <div className="space-y-8">
     <div className="grid gap-8 lg:grid-cols-[auto_1fr]">
       <aside className="space-y-6">
         <div>
@@ -513,36 +610,13 @@ export function CampfirePot() {
             Snack bait effects {loading && "…"}
           </h3>
           <p className="mt-1 text-xs text-muted">
-            Effects carried by the bait seasonings in the snack. When the snack
-            is placed, it attracts Pokémon in an 8-block radius and applies
-            these modifiers (rarity, bite-time, shiny reroll, HA chance, type /
-            egg-group / nature biases…) to the spawn pool.
+            Cumulated effects from every seasoning in the pot. Merged per
+            (type, subcategory) following SpawnBaitUtils.mergeEffects: chances
+            sum and cap at 100%, values are ceil-summed.
           </p>
-          {snackBaitEffects.length === 0 ? (
-            <p className="mt-3 text-sm text-muted">
-              Drop a bait seasoning to see its effects.
-            </p>
-          ) : (
-            <ul className="mt-3 flex flex-wrap gap-2">
-              {snackBaitEffects.map((e, i) => (
-                <li
-                  key={`${e.kind}-${i}`}
-                  className={`rounded-lg px-3 py-2 text-xs ${EFFECT_TONE_STYLES[e.tone]}`}
-                  title={e.description}
-                >
-                  <div className="flex items-baseline gap-2">
-                    <span className="font-medium">{e.title}</span>
-                    {e.chance < 1 && (
-                      <span className="text-[10px] opacity-70">
-                        {Math.round(e.chance * 100)}%
-                      </span>
-                    )}
-                  </div>
-                  <div className="opacity-80 mt-0.5 max-w-xs">{e.description}</div>
-                </li>
-              ))}
-            </ul>
-          )}
+          <div className="mt-3">
+            <SnackEffectsSummary effects={snackBaitEffects} />
+          </div>
         </div>
 
 
@@ -594,6 +668,10 @@ export function CampfirePot() {
           </div>
         </div>
 
+      </div>
+      </div>
+
+      <div className="w-full">
         <div>
           <h3 className="text-sm font-medium uppercase tracking-wide text-muted">
             Attracted Pokémon {loading && "…"}
@@ -605,30 +683,120 @@ export function CampfirePot() {
             effects multiply matching entries&apos; weight, then rarity_bucket
             softens inter-bucket ratios. Probability = P(bucket) × weight share.
           </p>
-          {attracted.length === 0 ? (
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <input
+              type="search"
+              value={attQuery}
+              onChange={(e) => setAttQuery(e.target.value)}
+              placeholder="Search by name or dex…"
+              className="flex-1 min-w-40 rounded-md border border-border bg-card px-3 py-1.5 text-sm outline-none focus:border-accent"
+            />
+            <MultiSelect
+              label="Types"
+              options={TYPE_OPTIONS}
+              value={attTypes}
+              onChange={setAttTypes}
+              placeholder="Any type"
+              maxSelection={2}
+            />
+            <MultiSelect
+              label="Rarity"
+              options={BUCKET_OPTIONS}
+              value={attBuckets}
+              onChange={setAttBuckets}
+              placeholder="Any"
+              searchable={false}
+            />
+            <label className="text-xs inline-flex items-center gap-1 text-muted">
+              <span className="text-[10px] uppercase tracking-wide">Sort</span>
+              <select
+                value={attSort}
+                onChange={(e) =>
+                  setAttSort(e.target.value as typeof attSort)
+                }
+                className="rounded-md border border-border bg-card px-2 py-1 text-xs"
+              >
+                <option value="probability">Spawn % (desc)</option>
+                <option value="bucket">Rarity (ultra → common)</option>
+                <option value="dex">Dex number (asc)</option>
+                <option value="dex_desc">Dex number (desc)</option>
+                <option value="name">Name (A→Z)</option>
+                <option value="name_desc">Name (Z→A)</option>
+              </select>
+            </label>
+            {hasShinyBoost && (
+              <button
+                onClick={() => setShowShiny((v) => !v)}
+                aria-pressed={showShiny}
+                className={`text-xs inline-flex items-center gap-1 px-2 py-1 rounded-md border transition-colors ${
+                  showShiny
+                    ? "border-amber-400 bg-amber-400/10 text-amber-600 dark:text-amber-400"
+                    : "border-border text-muted hover:text-foreground"
+                }`}
+                title={`Shiny rate: ${(shinyMultiplier * 100).toFixed(4)}% per encounter`}
+              >
+                <Star
+                  className={`h-3.5 w-3.5 ${showShiny ? "text-amber-500 fill-amber-500" : ""}`}
+                  aria-hidden
+                />
+                <span className="text-[10px] uppercase tracking-wide">Shiny</span>
+              </button>
+            )}
+            {(attQuery || attTypes.length > 0 || attBuckets.length > 0) && (
+              <button
+                onClick={() => {
+                  setAttQuery("");
+                  setAttTypes([]);
+                  setAttBuckets([]);
+                }}
+                className="text-xs px-2 py-1 rounded-md border border-border text-muted hover:text-foreground"
+              >
+                Clear
+              </button>
+            )}
+          </div>
+
+          {attractedView.length === 0 ? (
             <p className="mt-3 text-sm text-muted">No Pokémon match. Try removing filters.</p>
           ) : (
-            <ul className="mt-3 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
-              {attracted.slice(0, 24).map((p) => (
-                <li
-                  key={p.slug}
-                  className="rounded-lg border border-border bg-card p-2 flex items-center gap-2"
-                >
-                  <PokemonSprite dexNo={p.dexNo} name={p.name} size={44} />
+            <ul className="mt-3 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-2">
+              {attractedView.slice(0, attractedVisible).map((p) => (
+                <li key={p.slug}>
+                  <Link
+                    href={`/pokemon/${p.slug}`}
+                    className="rounded-lg border border-border bg-card p-2 flex items-center gap-2 hover:border-accent/60 hover:bg-subtle transition-colors"
+                  >
+                    <PokemonSprite
+                      dexNo={p.dexNo}
+                      name={p.name}
+                      size={44}
+                      shiny={showShiny && hasShinyBoost}
+                    />
                   <div className="min-w-0">
                     <div className="flex items-center gap-1">
                       <span className="text-xs font-mono text-muted">
                         #{String(p.dexNo).padStart(4, "0")}
                       </span>
-                      <span
-                        className="ml-auto text-[10px] font-mono font-medium text-accent"
-                        title={`base weight ${p.weight} → adjusted ${p.adjustedWeight.toFixed(1)}`}
-                      >
-                        {(p.probability * 100).toFixed(
-                          p.probability >= 0.01 ? 2 : 3,
-                        )}
-                        %
-                      </span>
+                      {(() => {
+                        const prob = showShiny && hasShinyBoost
+                          ? p.probability * shinyMultiplier
+                          : p.probability;
+                        const digits = prob >= 0.01 ? 2 : prob >= 0.0001 ? 4 : 6;
+                        return (
+                          <span
+                            className={`ml-auto text-[10px] font-mono font-medium ${
+                              showShiny && hasShinyBoost ? "text-amber-600 dark:text-amber-400" : "text-accent"
+                            }`}
+                            title={
+                              showShiny && hasShinyBoost
+                                ? `P(spawn) = ${(p.probability * 100).toFixed(3)}% × P(shiny) = ${(shinyMultiplier * 100).toFixed(4)}%`
+                                : `base weight ${p.weight} → adjusted ${p.adjustedWeight.toFixed(1)}`
+                            }
+                          >
+                            {(prob * 100).toFixed(digits)}%
+                          </span>
+                        );
+                      })()}
                     </div>
                     <div className="font-medium text-sm truncate">{p.name}</div>
                     <div className="mt-0.5 min-w-0 max-w-full overflow-hidden">
@@ -645,13 +813,19 @@ export function CampfirePot() {
                         {p.reasons.slice(0, 2).join(" · ")}
                       </div>
                     )}
-                  </div>
+                    </div>
+                  </Link>
                 </li>
               ))}
             </ul>
           )}
-          {attracted.length > 24 && (
-            <p className="mt-3 text-xs text-muted">+ {attracted.length - 24} more…</p>
+          {attractedView.length > attractedVisible && (
+            <div
+              ref={attractedSentinelRef}
+              className="mt-3 text-center text-xs text-muted py-4"
+            >
+              Loading more… ({attractedView.length - attractedVisible} remaining)
+            </div>
           )}
         </div>
       </div>

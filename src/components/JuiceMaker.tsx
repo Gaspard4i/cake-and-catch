@@ -1,8 +1,18 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { Zap, Target, Wind, Shield, ArrowUp, X, type LucideIcon } from "lucide-react";
 import { ItemIcon } from "./ItemIcon";
-import { MultiSelect } from "./MultiSelect";
+
+const MAX_JUICE_SEASONINGS = 3;
+const FLAVOURS_ALL: Flavour[] = ["SPICY", "DRY", "SWEET", "SOUR", "BITTER"];
+const FLAVOUR_COLORS: Record<Flavour, string> = {
+  SPICY: "#e85a3a",
+  DRY: "#7fb3d5",
+  SWEET: "#f8b3d7",
+  SOUR: "#f4d35e",
+  BITTER: "#735a8a",
+};
 import type {
   Apricorn,
   Flavour,
@@ -41,12 +51,12 @@ const APRICORN_HEX: Record<Apricorn, string> = {
   WHITE: "#e9e9ee",
 };
 
-const STAT_ICON: Record<RidingStat, string> = {
-  ACCELERATION: "⚡",
-  SKILL: "🎯",
-  SPEED: "💨",
-  STAMINA: "🛡",
-  JUMP: "⬆",
+const STAT_ICON: Record<RidingStat, LucideIcon> = {
+  ACCELERATION: Zap,
+  SKILL: Target,
+  SPEED: Wind,
+  STAMINA: Shield,
+  JUMP: ArrowUp,
 };
 
 const STAT_TONE: Record<RidingStat, string> = {
@@ -95,25 +105,48 @@ export function JuiceMaker() {
     };
   }, [apricorn, slugs]);
 
-  const berryOptions = useMemo(
+  const [query, setQuery] = useState("");
+  const [activeFlavours, setActiveFlavours] = useState<Set<Flavour>>(new Set());
+  const toggleFlavour = (f: Flavour) =>
+    setActiveFlavours((prev) => {
+      const next = new Set(prev);
+      if (next.has(f)) next.delete(f);
+      else next.add(f);
+      return next;
+    });
+
+  type BerryEntry = BerryDTO & { dominant: Flavour | null };
+  const berriesWithDominant: BerryEntry[] = useMemo(
     () =>
       berries
         .filter((b) => Object.values(b.flavours).some((v) => (v ?? 0) > 0))
         .map((b) => {
           const dom = (Object.entries(b.flavours) as Array<[Flavour, number]>)
-            .sort((a, b) => (b[1] ?? 0) - (a[1] ?? 0))[0]?.[0];
-          return {
-            value: b.slug,
-            label: b.slug.replaceAll("_", " "),
-            group: dom ? `${dom} (${FLAVOUR_TO_STAT[dom]})` : "Other",
-            description: Object.entries(b.flavours)
-              .filter(([, v]) => (v ?? 0) > 0)
-              .map(([k, v]) => `${k.slice(0, 3)} ${v}`)
-              .join(" · "),
-          };
+            .sort((a, c) => (c[1] ?? 0) - (a[1] ?? 0))[0]?.[0] ?? null;
+          return { ...b, dominant: dom };
         }),
     [berries],
   );
+
+  const visibleBerries = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return berriesWithDominant.filter((b) => {
+      if (q && !b.slug.replaceAll("_", " ").includes(q) && !b.itemId.includes(q))
+        return false;
+      if (activeFlavours.size > 0 && (!b.dominant || !activeFlavours.has(b.dominant)))
+        return false;
+      return true;
+    });
+  }, [berriesWithDominant, query, activeFlavours]);
+
+  const addSlug = (slug: string) => {
+    setSlugs((prev) => {
+      if (prev.length >= MAX_JUICE_SEASONINGS) return prev;
+      return [...prev, slug];
+    });
+  };
+  const removeAt = (idx: number) =>
+    setSlugs((prev) => prev.filter((_, i) => i !== idx));
 
   const flavourTotals = result?.flavourTotals ?? {
     SPICY: 0,
@@ -157,9 +190,10 @@ export function JuiceMaker() {
             {(Object.entries(apricornDeltas) as Array<[RidingStat, number]>).map(
               ([stat, delta]) => (
                 <li key={stat} className="flex items-center gap-2">
-                  <span className={`${STAT_TONE[stat]} font-mono w-6`}>
-                    {STAT_ICON[stat]}
-                  </span>
+                  {(() => {
+                    const Icon = STAT_ICON[stat];
+                    return <Icon className={`${STAT_TONE[stat]} h-4 w-4`} />;
+                  })()}
                   <span className="text-muted flex-1">{stat.toLowerCase()}</span>
                   <span
                     className={`font-mono ${
@@ -198,44 +232,144 @@ export function JuiceMaker() {
       <div className="space-y-6">
         <div>
           <h3 className="text-sm font-medium uppercase tracking-wide text-muted">
-            Berries
+            Seasoning slots
+            <span className="ml-2 text-[10px] normal-case tracking-normal text-muted">
+              {slugs.length} / {MAX_JUICE_SEASONINGS} · Cobblemon campfire pot cap
+            </span>
           </h3>
-          <div className="mt-2 flex flex-wrap items-center gap-2">
-            <MultiSelect
-              label="Add"
-              options={berryOptions}
-              value={slugs}
-              onChange={setSlugs}
-              placeholder="Pick berries"
-            />
+
+          <div className="mt-3 inline-flex gap-3 p-3 rounded-xl border border-border bg-card">
+            {Array.from({ length: MAX_JUICE_SEASONINGS }).map((_, idx) => {
+              const slug = slugs[idx];
+              const b = slug ? berries.find((x) => x.slug === slug) : null;
+              return (
+                <button
+                  key={idx}
+                  onClick={() => slug && removeAt(idx)}
+                  className={`relative size-16 rounded-lg border-2 flex items-center justify-center transition-colors ${
+                    slug
+                      ? "border-accent bg-subtle hover:border-red-400 group"
+                      : "border-dashed border-border text-muted"
+                  }`}
+                  title={slug ? `Remove ${slug}` : "Empty slot"}
+                >
+                  {b ? (
+                    <>
+                      <ItemIcon id={b.itemId} size={40} />
+                      <span className="absolute inset-0 rounded-md bg-red-500/70 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                        <X className="h-6 w-6 text-white" />
+                      </span>
+                    </>
+                  ) : (
+                    <span className="text-[10px] uppercase">slot {idx + 1}</span>
+                  )}
+                </button>
+              );
+            })}
             {slugs.length > 0 && (
               <button
                 onClick={() => setSlugs([])}
-                className="text-xs px-2 py-1 rounded-md border border-border text-muted hover:text-foreground"
+                className="self-center text-xs px-2 py-1 rounded-md border border-border text-muted hover:text-foreground"
               >
                 Clear
               </button>
             )}
           </div>
+        </div>
 
-          <div className="mt-4 flex flex-wrap gap-2 min-h-[3rem]">
-            {slugs.map((s) => {
-              const b = berries.find((x) => x.slug === s);
-              if (!b) return null;
-              return (
+        <div>
+          <h3 className="text-sm font-medium uppercase tracking-wide text-muted">
+            Pantry — berries
+          </h3>
+
+          <div className="mt-2 flex flex-wrap items-center gap-2">
+            <input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Filter berries…"
+              className="w-full sm:w-52 rounded-md border border-border bg-card px-3 py-1.5 text-sm outline-none focus:border-accent"
+            />
+            <div className="flex flex-wrap gap-1">
+              {FLAVOURS_ALL.map((f) => {
+                const active = activeFlavours.has(f);
+                return (
+                  <button
+                    key={f}
+                    onClick={() => toggleFlavour(f)}
+                    className={`text-[10px] uppercase px-2 py-0.5 rounded-full border transition-colors ${
+                      active
+                        ? "border-transparent text-foreground"
+                        : "border-border bg-card text-muted hover:text-foreground"
+                    }`}
+                    style={
+                      active
+                        ? {
+                            background: `${FLAVOUR_COLORS[f]}33`,
+                            borderColor: FLAVOUR_COLORS[f],
+                          }
+                        : undefined
+                    }
+                    title={`${f} → ${FLAVOUR_TO_STAT[f]}`}
+                  >
+                    {f}
+                  </button>
+                );
+              })}
+              {activeFlavours.size > 0 && (
                 <button
-                  key={s}
-                  onClick={() => setSlugs((prev) => prev.filter((x) => x !== s))}
-                  className="rounded-lg border border-border bg-card px-2 py-1 flex items-center gap-2 hover:border-accent/50"
-                  title={`remove ${s}`}
+                  onClick={() => setActiveFlavours(new Set())}
+                  className="text-[10px] uppercase px-2 py-0.5 rounded-full border border-border bg-card text-muted hover:text-foreground"
                 >
-                  <ItemIcon id={b.itemId} size={24} />
-                  <span className="text-xs capitalize">
-                    {s.replaceAll("_", " ")}
-                  </span>
+                  clear
                 </button>
-              );
-            })}
+              )}
+            </div>
+          </div>
+
+          <div className="mt-3 max-h-[320px] overflow-y-auto p-2 rounded-lg border border-border bg-subtle">
+            <ul className="grid grid-cols-[repeat(auto-fill,minmax(110px,1fr))] gap-2">
+              {visibleBerries.map((b) => {
+                const full = slugs.length >= MAX_JUICE_SEASONINGS;
+                return (
+                  <li key={b.slug}>
+                    <button
+                      onClick={() => addSlug(b.slug)}
+                      disabled={full}
+                      className={`w-full rounded-lg border bg-card p-2 flex flex-col items-center gap-1 transition-colors ${
+                        full
+                          ? "opacity-40 cursor-not-allowed border-border"
+                          : "border-border hover:border-accent/60 hover:bg-subtle"
+                      }`}
+                      title={Object.entries(b.flavours)
+                        .filter(([, v]) => (v ?? 0) > 0)
+                        .map(([k, v]) => `${k} ${v}`)
+                        .join(" · ")}
+                    >
+                      <ItemIcon id={b.itemId} size={32} />
+                      <span className="text-[10px] capitalize text-center leading-tight truncate w-full">
+                        {b.slug.replaceAll("_", " ")}
+                      </span>
+                      {b.dominant && (
+                        <span
+                          className="text-[9px] uppercase font-mono rounded-full px-1.5 py-[1px]"
+                          style={{
+                            background: `${FLAVOUR_COLORS[b.dominant]}33`,
+                            color: FLAVOUR_COLORS[b.dominant],
+                          }}
+                        >
+                          {b.dominant.slice(0, 3)}
+                        </span>
+                      )}
+                    </button>
+                  </li>
+                );
+              })}
+              {visibleBerries.length === 0 && (
+                <li className="col-span-full text-center text-xs text-muted py-6">
+                  No berry matches.
+                </li>
+              )}
+            </ul>
           </div>
         </div>
 
@@ -312,9 +446,10 @@ export function JuiceMaker() {
                     }`}
                   >
                     <div className="flex items-center gap-2">
-                      <span className={`${STAT_TONE[stat]} text-lg`}>
-                        {STAT_ICON[stat]}
-                      </span>
+                      {(() => {
+                        const Icon = STAT_ICON[stat];
+                        return <Icon className={`${STAT_TONE[stat]} h-5 w-5`} />;
+                      })()}
                       <span className="text-[10px] uppercase font-medium tracking-wide">
                         {stat.toLowerCase()}
                       </span>

@@ -1,7 +1,7 @@
 "use client";
 
 import { Canvas, useFrame, useLoader } from "@react-three/fiber";
-import { Suspense, useEffect, useMemo, useRef, useState } from "react";
+import { Suspense, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { TextureLoader, NearestFilter, type Texture } from "three";
 import * as THREE from "three";
 
@@ -416,22 +416,38 @@ export function Snack3D({
   potColour?: string;
   size?: number;
 }) {
+  /**
+   * Gate the Canvas behind a post-mount flag. On client-side navigation the
+   * wrapping <div> may render with a 0×0 layout for a frame before Cache
+   * Components settles; R3F's ResizeObserver latches onto that zero size and
+   * never recovers, giving a blank canvas until a hard refresh. Waiting one
+   * tick guarantees Canvas mounts against a real size.
+   */
+  const [mounted, setMounted] = useState(false);
+  useLayoutEffect(() => {
+    setMounted(true);
+  }, []);
   return (
     <div
       className="rounded-lg border border-border bg-subtle overflow-hidden"
       style={{ width: size, height: size }}
     >
-      <Canvas camera={{ position: [1.4, 1.1, 1.4], fov: 30 }}>
-        <ambientLight intensity={0.8} />
-        <directionalLight position={[3, 4, 2]} intensity={1.1} />
-        <Suspense fallback={null}>
-          <SnackMesh
-            berries={berries}
-            fallbackFlavour={flavour ?? null}
-            potColour={potColour ?? null}
-          />
-        </Suspense>
-      </Canvas>
+      {mounted && (
+        <Canvas
+          camera={{ position: [1.4, 1.1, 1.4], fov: 30 }}
+          resize={{ scroll: false, debounce: { scroll: 0, resize: 0 } }}
+        >
+          <ambientLight intensity={0.8} />
+          <directionalLight position={[3, 4, 2]} intensity={1.1} />
+          <Suspense fallback={null}>
+            <SnackMesh
+              berries={berries}
+              fallbackFlavour={flavour ?? null}
+              potColour={potColour ?? null}
+            />
+          </Suspense>
+        </Canvas>
+      )}
     </div>
   );
 }

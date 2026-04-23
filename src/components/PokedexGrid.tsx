@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { Star } from "lucide-react";
 import { PokemonSprite } from "./PokemonSprite";
 import { TypePair } from "./TypeBadge";
 import { MultiSelect, type MultiSelectOption } from "./MultiSelect";
@@ -40,7 +41,15 @@ const LABEL_OPTIONS: MultiSelectOption[] = [
   { value: "regional", label: "Regional variant", group: "Evolution" },
 ];
 
-type SortKey = "dex" | "name" | "hp" | "attack" | "speed" | "total";
+type SortKey =
+  | "dex"
+  | "dex_desc"
+  | "name"
+  | "name_desc"
+  | "hp"
+  | "attack"
+  | "speed"
+  | "total";
 
 function totalStats(s: Record<string, number>): number {
   return Object.values(s).reduce((a, b) => a + b, 0);
@@ -69,7 +78,7 @@ function StatBar({
 
 export function PokedexGrid() {
   const [results, setResults] = useState<Species[]>([]);
-  const [cursor, setCursor] = useState<number | null>(0);
+  const [cursor, setCursor] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [done, setDone] = useState(false);
   const [q, setQ] = useState("");
@@ -77,46 +86,64 @@ export function PokedexGrid() {
   const [gens, setGens] = useState<string[]>([]);
   const [labels, setLabels] = useState<string[]>([]);
   const [sort, setSort] = useState<SortKey>("dex");
+  const [shiny, setShiny] = useState(false);
   const sentinel = useRef<HTMLDivElement>(null);
+  /**
+   * Monotonically-increasing id for each fetch. Any response whose id is
+   * stale (filters changed mid-flight) is dropped to avoid mixing rows from
+   * different filter sets, which is what produced the "two children with the
+   * same key" flood in dev.
+   */
+  const reqIdRef = useRef(0);
+  const inFlightRef = useRef(false);
 
   const buildUrl = useCallback(
-    (c: number | null) => {
+    (c: string | null) => {
       const u = new URLSearchParams();
-      if (c && c > 0) u.set("cursor", String(c));
+      if (c) u.set("cursor", c);
       if (q) u.set("q", q);
-      if (types.length > 0) u.set("type", types[0]);
+      // Intersection: API receives up to 2 types; a row must match ALL of
+      // them (primary/secondary unordered). A Pokémon has at most 2 types so
+      // we cap the selection at 2.
+      for (const t of types.slice(0, 2)) u.append("type", t);
       if (gens.length > 0) u.set("gen", gens[0]);
+      u.set("sort", sort);
       return `/api/pokedex?${u.toString()}`;
     },
-    [q, types, gens],
+    [q, types, gens, sort],
   );
 
   const reset = useCallback(() => {
+    reqIdRef.current += 1;
+    inFlightRef.current = false;
     setResults([]);
-    setCursor(0);
+    setCursor(null);
     setDone(false);
   }, []);
 
   useEffect(() => {
     reset();
-  }, [q, types, gens, labels, reset]);
+  }, [q, types, gens, labels, sort, reset]);
 
   const fetchPage = useCallback(async () => {
-    if (loading || done) return;
+    if (inFlightRef.current || done) return;
+    inFlightRef.current = true;
+    const myId = reqIdRef.current;
     setLoading(true);
     try {
       const res = await fetch(buildUrl(cursor));
       if (!res.ok) throw new Error("pokedex fetch failed");
-      const data = (await res.json()) as { results: Species[]; nextCursor: number | null };
-      // Client-side filter for multi-select types/gens + labels (API accepts
-      // only one of each). We over-fetch and narrow here for now.
+      const data = (await res.json()) as { results: Species[]; nextCursor: string | null };
+      // Stale response: filters changed while we were fetching. Drop it.
+      if (myId !== reqIdRef.current) return;
       const filtered = data.results.filter((s) => {
-        if (
-          types.length > 0 &&
-          !types.includes(s.primaryType) &&
-          !(s.secondaryType && types.includes(s.secondaryType))
-        )
-          return false;
+        if (types.length > 0) {
+          // Intersection: every selected type must be one of the two types.
+          const own = [s.primaryType, s.secondaryType].filter(
+            (t): t is string => !!t,
+          );
+          if (!types.every((t) => own.includes(t))) return false;
+        }
         if (
           gens.length > 0 &&
           !(s.labels ?? []).some((l) => gens.includes(l))
@@ -129,15 +156,29 @@ export function PokedexGrid() {
           return false;
         return true;
       });
-      setResults((prev) => [...prev, ...filtered]);
+      // Merge with existing, deduplicating by id. Guards against the same
+      // cursor being fetched twice in rapid succession (observer re-fire,
+      // React strict-mode double-invoke in dev).
+      setResults((prev) => {
+        const seen = new Set(prev.map((s) => s.id));
+        const next = prev.slice();
+        for (const s of filtered) {
+          if (!seen.has(s.id)) {
+            seen.add(s.id);
+            next.push(s);
+          }
+        }
+        return next;
+      });
       if (data.nextCursor === null) setDone(true);
       else setCursor(data.nextCursor);
     } catch {
-      setDone(true);
+      if (myId === reqIdRef.current) setDone(true);
     } finally {
-      setLoading(false);
+      if (myId === reqIdRef.current) setLoading(false);
+      inFlightRef.current = false;
     }
-  }, [buildUrl, cursor, loading, done, types, gens, labels]);
+  }, [buildUrl, cursor, done, types, gens, labels]);
 
   useEffect(() => {
     if (results.length === 0 && !done) fetchPage();
@@ -156,17 +197,10 @@ export function PokedexGrid() {
     return () => io.disconnect();
   }, [fetchPage]);
 
-  const sorted = useMemo(() => {
-    const cmp: Record<SortKey, (a: Species, b: Species) => number> = {
-      dex: (a, b) => a.dexNo - b.dexNo,
-      name: (a, b) => a.name.localeCompare(b.name),
-      hp: (a, b) => (b.baseStats.hp ?? 0) - (a.baseStats.hp ?? 0),
-      attack: (a, b) => (b.baseStats.attack ?? 0) - (a.baseStats.attack ?? 0),
-      speed: (a, b) => (b.baseStats.speed ?? 0) - (a.baseStats.speed ?? 0),
-      total: (a, b) => totalStats(b.baseStats) - totalStats(a.baseStats),
-    };
-    return [...results].sort(cmp[sort]);
-  }, [results, sort]);
+  // Sort is applied server-side via the `sort` query param and keyset cursor.
+  // We keep results in the order the API returned them — this guarantees the
+  // sort spans the whole dataset, not just the currently loaded page.
+  const sorted = results;
 
   const clearAll = () => {
     setQ("");
@@ -192,6 +226,7 @@ export function PokedexGrid() {
             value={types}
             onChange={setTypes}
             placeholder="Any type"
+            maxSelection={2}
           />
           <MultiSelect
             label="Gens"
@@ -216,14 +251,32 @@ export function PokedexGrid() {
               onChange={(e) => setSort(e.target.value as SortKey)}
               className="rounded-md border border-border bg-card px-2 py-1 text-xs"
             >
-              <option value="dex">Dex number</option>
-              <option value="name">Name</option>
-              <option value="hp">HP</option>
-              <option value="attack">Attack</option>
-              <option value="speed">Speed</option>
-              <option value="total">Total base stats</option>
+              <option value="dex">Dex number (asc)</option>
+              <option value="dex_desc">Dex number (desc)</option>
+              <option value="name">Name (A→Z)</option>
+              <option value="name_desc">Name (Z→A)</option>
+              <option value="hp">HP (desc)</option>
+              <option value="attack">Attack (desc)</option>
+              <option value="speed">Speed (desc)</option>
+              <option value="total">Total base stats (desc)</option>
             </select>
           </label>
+          <button
+            onClick={() => setShiny((v) => !v)}
+            aria-pressed={shiny}
+            className={`text-xs inline-flex items-center gap-1 px-2 py-1 rounded-md border transition-colors ${
+              shiny
+                ? "border-amber-400 bg-amber-400/10 text-amber-600 dark:text-amber-400"
+                : "border-border text-muted hover:text-foreground"
+            }`}
+            title="Toggle shiny sprites"
+          >
+            <Star
+              className={`h-3.5 w-3.5 ${shiny ? "text-amber-500 fill-amber-500" : ""}`}
+              aria-hidden
+            />
+            <span className="text-[10px] uppercase tracking-wide">Shiny</span>
+          </button>
           {(q || types.length > 0 || gens.length > 0 || labels.length > 0) && (
             <button
               onClick={clearAll}
@@ -260,6 +313,7 @@ export function PokedexGrid() {
                     dexNo={s.dexNo}
                     name={s.name}
                     size={120}
+                    shiny={shiny}
                     className="transition-transform group-hover:scale-110"
                   />
                 </div>

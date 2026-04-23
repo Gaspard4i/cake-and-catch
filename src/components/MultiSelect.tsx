@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 export type MultiSelectOption = {
   value: string;
@@ -27,6 +27,7 @@ export function MultiSelect({
   placeholder = "Any",
   searchable = true,
   maxSummary = 2,
+  maxSelection,
   className = "",
 }: {
   label: string;
@@ -37,24 +38,14 @@ export function MultiSelect({
   searchable?: boolean;
   /** How many selected labels to show in the button before falling back to count. */
   maxSummary?: number;
+  /** Optional hard cap on the number of concurrent selections. */
+  maxSelection?: number;
   className?: string;
 }) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
-  const [pos, setPos] = useState<{ top: number; left: number; width: number } | null>(
-    null,
-  );
   const btnRef = useRef<HTMLButtonElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
-
-  useLayoutEffect(() => {
-    if (!open || !btnRef.current) return;
-    const rect = btnRef.current.getBoundingClientRect();
-    const width = Math.max(rect.width, 260);
-    const vw = window.innerWidth;
-    const left = Math.min(rect.left, vw - width - 8);
-    setPos({ top: rect.bottom + 4, left, width });
-  }, [open]);
 
   useEffect(() => {
     if (!open) return;
@@ -101,12 +92,18 @@ export function MultiSelect({
   const toggle = (v: string) => {
     const next = new Set(selectedSet);
     if (next.has(v)) next.delete(v);
-    else next.add(v);
+    else {
+      if (maxSelection !== undefined && next.size >= maxSelection) return;
+      next.add(v);
+    }
     onChange([...next]);
   };
   const selectAllVisible = () => {
     const next = new Set(selectedSet);
-    for (const o of filtered) next.add(o.value);
+    for (const o of filtered) {
+      if (maxSelection !== undefined && next.size >= maxSelection) break;
+      next.add(o.value);
+    }
     onChange([...next]);
   };
   const clear = () => onChange([]);
@@ -122,7 +119,7 @@ export function MultiSelect({
         : `${selectedLabels.slice(0, maxSummary).join(", ")} +${selectedLabels.length - maxSummary}`;
 
   return (
-    <div className={`inline-block ${className}`}>
+    <div className={`relative inline-block ${className}`}>
       <button
         ref={btnRef}
         type="button"
@@ -154,12 +151,11 @@ export function MultiSelect({
         </svg>
       </button>
 
-      {open && pos && (
+      {open && (
         <div
           ref={menuRef}
           role="listbox"
-          style={{ position: "fixed", top: pos.top, left: pos.left, width: pos.width, zIndex: 60 }}
-          className="rounded-lg border border-border bg-card shadow-xl overflow-hidden"
+          className="absolute left-0 top-full mt-1 min-w-[260px] max-w-[min(320px,90vw)] z-[60] rounded-lg border border-border bg-card shadow-xl overflow-hidden"
         >
           {searchable && (
             <div className="p-2 border-b border-border">
@@ -187,17 +183,23 @@ export function MultiSelect({
                 )}
                 {items.map((o) => {
                   const active = selectedSet.has(o.value);
+                  const capped =
+                    !active &&
+                    maxSelection !== undefined &&
+                    value.length >= maxSelection;
                   return (
                     <label
                       key={o.value}
-                      className={`flex items-start gap-2 px-3 py-1.5 text-sm cursor-pointer hover:bg-subtle ${
-                        active ? "text-foreground" : "text-muted"
-                      }`}
+                      className={`flex items-start gap-2 px-3 py-1.5 text-sm ${
+                        capped ? "opacity-40 cursor-not-allowed" : "cursor-pointer hover:bg-subtle"
+                      } ${active ? "text-foreground" : "text-muted"}`}
+                      title={capped ? `Max ${maxSelection} selections` : undefined}
                     >
                       <input
                         type="checkbox"
                         className="mt-0.5 accent-accent"
                         checked={active}
+                        disabled={capped}
                         onChange={() => toggle(o.value)}
                       />
                       <span className="flex-1 min-w-0">
