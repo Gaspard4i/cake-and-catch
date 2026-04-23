@@ -1,5 +1,9 @@
 import { NextRequest } from "next/server";
-import { listBerries, listSpawnsWithSpecies } from "@/lib/db/queries";
+import {
+  listAllSeasonings,
+  listBerries,
+  listSpawnsWithSpecies,
+} from "@/lib/db/queries";
 import {
   cakeDominantFlavour,
   filterSpawns,
@@ -10,7 +14,6 @@ import {
 import type { Berry } from "@/lib/db/schema";
 
 type IncomingFilter = Partial<SpawnFilter> & {
-  // Back-compat: accept old single-value shape
   biome?: string;
   timeRange?: string;
 };
@@ -32,6 +35,120 @@ function normalizeFilter(raw: IncomingFilter | undefined): SpawnFilter {
   return out;
 }
 
+type SeasoningDTO = {
+  slug: string;
+  itemId: string;
+  kind: "berry" | "other";
+  /**
+   * Whether the item can actually sit in the flavour_seasoning slot of a Poké Cake.
+   * Per upstream data tag `cobblemon:recipe_filters/flavour_seasoning`, only
+   * `#cobblemon:berries` qualifies. Everything else in the seasonings/ folder is
+   * reserved for other Cooking Pot recipes (Poké Snack, stews, candies…).
+   */
+  cakeValid: boolean;
+  category: string;
+  colour: string | null;
+  flavours: Record<string, number>;
+  dominantFlavour: string | null;
+  description: string | null;
+  effects: Array<Record<string, unknown>>;
+};
+
+function classifySeasoning(
+  slug: string,
+  raw: Record<string, unknown>,
+): {
+  category: string;
+  description: string;
+  effects: Array<Record<string, unknown>>;
+} {
+  const mobEffects = (raw.mobEffects as Array<Record<string, unknown>>) ?? [];
+  const colour = (raw.colour as string) ?? (raw.color as string) ?? "unknown";
+
+  let category = "other";
+  if (/sweet$/.test(slug)) category = "Alcremie sweet";
+  else if (slug === "chorus_flower" || slug === "chorus_fruit") category = "End";
+  else if (slug.endsWith("_tulip") || ["allium", "azure_bluet", "blue_orchid", "cornflower", "dandelion", "oxeye_daisy", "poppy", "sunflower", "torchflower", "lilac", "peony", "rose_bush", "lily_of_the_valley", "pink_petals", "spore_blossom", "pitcher_plant", "wildflowers", "wither_rose"].includes(slug))
+    category = "flower";
+  else if (slug.endsWith("_mushroom")) category = "mushroom";
+  else if (slug.endsWith("_mint_leaf")) category = "mint";
+  else if (["apple", "carrot", "beetroot", "potato", "melon_slice", "glistening_melon_slice", "pumpkin", "honey_bottle", "dried_kelp", "sweet_berries", "golden_apple", "enchanted_golden_apple", "golden_carrot", "poisonous_potato"].includes(slug))
+    category = "food";
+  else if (["beef", "chicken", "cod", "egg", "mutton", "porkchop", "rabbit", "salmon", "rotten_flesh"].includes(slug))
+    category = "mob drop";
+  else if (["big_root", "energy_root", "revival_herb", "mental_herb", "mirror_herb", "power_herb", "white_herb", "medicinal_leek", "pep_up_flower", "tasty_tail", "galarica_nuts", "vivichoke", "moomoo_milk", "milk_bucket", "sugar", "dead_bush"].includes(slug))
+    category = "ingredient";
+
+  const parts: string[] = [];
+  parts.push(`Colour: ${colour}.`);
+  if (mobEffects.length > 0) {
+    const names = mobEffects
+      .map((e) => String(e.effect ?? "").replace(/^minecraft:/, ""))
+      .filter(Boolean);
+    if (names.length > 0)
+      parts.push(`Grants potion effect${names.length > 1 ? "s" : ""}: ${names.join(", ")}.`);
+  }
+  parts.push("Not a valid Poké Cake seasoning — used in other Cooking Pot recipes.");
+
+  return { category, description: parts.join(" "), effects: mobEffects };
+}
+
+function buildPantry(
+  berries: Berry[],
+  rawSeasonings: { slug: string; itemId: string; colour: string | null; raw: unknown }[],
+): SeasoningDTO[] {
+  const berryBySlug = new Map(berries.map((b) => [b.slug, b]));
+  const out: SeasoningDTO[] = [];
+
+  for (const berry of berries) {
+    out.push({
+      slug: berry.slug,
+      itemId: berry.itemId,
+      kind: "berry",
+      cakeValid: true,
+      category: "berry",
+      colour: berry.colour,
+      flavours: berry.flavours,
+      dominantFlavour: berry.dominantFlavour,
+      description: berry.description,
+      effects: [],
+    });
+  }
+  for (const s of rawSeasonings) {
+    if (berryBySlug.has(s.slug)) continue;
+    const raw = (s.raw ?? {}) as Record<string, unknown>;
+    const meta = classifySeasoning(s.slug, raw);
+    out.push({
+      slug: s.slug,
+      itemId: s.itemId,
+      kind: "other",
+      cakeValid: false,
+      category: meta.category,
+      colour: s.colour,
+      flavours: {},
+      dominantFlavour: null,
+      description: meta.description,
+      effects: meta.effects,
+    });
+  }
+  return out;
+}
+
+function ok(data: unknown) {
+  return Response.json(data, {
+    headers: { "cache-control": "public, s-maxage=30" },
+  });
+}
+
+export async function GET() {
+  const [berries, seasonings] = await Promise.all([listBerries(), listAllSeasonings()]);
+  const pantry = buildPantry(berries, seasonings);
+  return ok({
+    seasonings: pantry,
+    berries: pantry.filter((s) => s.kind === "berry"),
+  });
+}
+
 export async function POST(req: NextRequest) {
   let body: Body = {};
   try {
@@ -45,7 +162,9 @@ export async function POST(req: NextRequest) {
 
   const berries = await listBerries();
   const byslug = new Map<string, Berry>(berries.map((b) => [b.slug, b]));
-  const dominant = cakeDominantFlavour({ seasoningSlugs }, byslug);
+  // Only berries actually contribute to cake flavour; silently drop invalid slugs.
+  const validSlugs = seasoningSlugs.filter((s) => byslug.has(s));
+  const dominant = cakeDominantFlavour({ seasoningSlugs: validSlugs }, byslug);
 
   const spawns = await listSpawnsWithSpecies(10000);
   const matchingSpawns = filterSpawns(spawns, filter);
@@ -74,7 +193,7 @@ export async function POST(req: NextRequest) {
   for (const [speciesId, entries] of bySpecies) {
     const first = entries[0];
     const targetFlavour = preferredFlavourFor(first);
-    if (dominant && dominant !== targetFlavour) continue; // cake mismatch filters out
+    if (dominant && dominant !== targetFlavour) continue;
     const best = entries.reduce((a, b) => (b.weight > a.weight ? b : a));
     attracted.push({
       speciesId,
@@ -92,33 +211,14 @@ export async function POST(req: NextRequest) {
 
   attracted.sort((a, b) => b.bestWeight - a.bestWeight);
 
-  return Response.json(
-    {
-      cake: {
-        dominantFlavour: dominant,
-        seasoningSlugs,
-        colorHint: berries.find((b) => b.slug === seasoningSlugs[0])?.colour ?? null,
-      },
-      filter,
-      count: attracted.length,
-      attracted: attracted.slice(0, 100),
+  return ok({
+    cake: {
+      dominantFlavour: dominant,
+      seasoningSlugs: validSlugs,
+      colorHint: berries.find((b) => b.slug === validSlugs[0])?.colour ?? null,
     },
-    {
-      headers: { "cache-control": "public, s-maxage=30" },
-    },
-  );
-}
-
-export async function GET() {
-  const berries = await listBerries();
-  return Response.json({
-    berries: berries.map((b) => ({
-      slug: b.slug,
-      itemId: b.itemId,
-      colour: b.colour,
-      flavours: b.flavours,
-      dominantFlavour: b.dominantFlavour,
-      description: b.description,
-    })),
+    filter,
+    count: attracted.length,
+    attracted: attracted.slice(0, 100),
   });
 }

@@ -1,17 +1,22 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { ItemIcon } from "./ItemIcon";
 import { PokemonSprite } from "./PokemonSprite";
 import { TypePair } from "./TypeBadge";
+import { Cake3D, type BerryPlacement } from "./Cake3D";
 
-type Berry = {
+type Seasoning = {
   slug: string;
   itemId: string;
+  kind: "berry" | "other";
+  cakeValid: boolean;
+  category: string;
   colour: string | null;
   flavours: Record<string, number>;
   dominantFlavour: string | null;
   description: string | null;
+  effects: Array<Record<string, unknown>>;
 };
 
 type AttractedEntry = {
@@ -52,6 +57,7 @@ const TIMES = [
 ];
 
 const FLAVOURS = ["SWEET", "SPICY", "DRY", "BITTER", "SOUR"] as const;
+const KINDS = ["all", "berry", "other"] as const;
 
 const FLAVOUR_COLORS: Record<string, string> = {
   SWEET: "#f8b3d7",
@@ -61,10 +67,10 @@ const FLAVOUR_COLORS: Record<string, string> = {
   SOUR: "#f4d35e",
 };
 
-type SlotState = [Berry | null, Berry | null, Berry | null];
+type SlotState = [Seasoning | null, Seasoning | null, Seasoning | null];
 
 export function CampfirePot() {
-  const [berries, setBerries] = useState<Berry[]>([]);
+  const [seasonings, setSeasonings] = useState<Seasoning[]>([]);
   const [slots, setSlots] = useState<SlotState>([null, null, null]);
   const [biomes, setBiomes] = useState<string[]>([]);
   const [times, setTimes] = useState<string[]>([]);
@@ -74,33 +80,46 @@ export function CampfirePot() {
   const [loading, setLoading] = useState(false);
   const [filterQuery, setFilterQuery] = useState("");
   const [activeFlavours, setActiveFlavours] = useState<Set<string>>(new Set());
+  const [kindFilter, setKindFilter] = useState<(typeof KINDS)[number]>("all");
 
   useEffect(() => {
     fetch("/api/cake")
       .then((r) => r.json())
-      .then((d: { berries: Berry[] }) => setBerries(d.berries));
+      .then((d: { seasonings: Seasoning[] }) => setSeasonings(d.seasonings));
   }, []);
 
-  const filteredBerries = useMemo(() => {
-    let list = berries;
+  const filtered = useMemo(() => {
+    let list = seasonings;
+    if (kindFilter !== "all") list = list.filter((s) => s.kind === kindFilter);
     if (filterQuery) {
       const q = filterQuery.toLowerCase();
-      list = list.filter((b) => b.slug.includes(q));
+      list = list.filter((s) => s.slug.includes(q));
     }
     if (activeFlavours.size > 0) {
       list = list.filter(
-        (b) => b.dominantFlavour && activeFlavours.has(b.dominantFlavour),
+        (s) => s.dominantFlavour && activeFlavours.has(s.dominantFlavour),
       );
     }
     return list;
-  }, [berries, filterQuery, activeFlavours]);
+  }, [seasonings, kindFilter, filterQuery, activeFlavours]);
 
-  // Dominant flavour of the cake = sum of seasoning flavours
+  const grouped = useMemo(() => {
+    const map = new Map<string, Seasoning[]>();
+    for (const s of filtered) {
+      const key = s.kind === "berry" ? "Berries" : s.category;
+      const arr = map.get(key) ?? [];
+      arr.push(s);
+      map.set(key, arr);
+    }
+    return [...map.entries()];
+  }, [filtered]);
+
   const dominant = useMemo(() => {
     const agg: Record<string, number> = {};
     for (const slot of slots) {
       if (!slot) continue;
-      for (const [k, v] of Object.entries(slot.flavours)) agg[k] = (agg[k] ?? 0) + v;
+      for (const [k, v] of Object.entries(slot.flavours ?? {}))
+        agg[k] = (agg[k] ?? 0) + v;
     }
     let best: string | null = null;
     let bestVal = 0;
@@ -114,6 +133,18 @@ export function CampfirePot() {
     return best;
   }, [slots]);
 
+  const cakeBerries = useMemo<BerryPlacement[]>(() => {
+    return slots
+      .filter((s): s is Seasoning => s !== null)
+      .map((s) => ({
+        slug: s.slug,
+        itemId: s.itemId,
+        colour: s.colour,
+        flavours: s.flavours,
+        dominantFlavour: s.dominantFlavour,
+      }));
+  }, [slots]);
+
   // Debounced AJAX query
   useEffect(() => {
     const ctrl = new AbortController();
@@ -121,7 +152,7 @@ export function CampfirePot() {
       setLoading(true);
       try {
         const seasoningSlugs = slots
-          .filter((s): s is Berry => s !== null)
+          .filter((s): s is Seasoning => s !== null)
           .map((s) => s.slug);
         const body = {
           composition: { seasoningSlugs },
@@ -141,7 +172,9 @@ export function CampfirePot() {
         const data = (await res.json()) as { attracted: AttractedEntry[] };
         setAttracted(data.attracted ?? []);
       } catch (err) {
-        if ((err as Error).name !== "AbortError") setAttracted([]);
+        if ((err as Error).name !== "AbortError") {
+          setAttracted([]);
+        }
       } finally {
         setLoading(false);
       }
@@ -152,9 +185,9 @@ export function CampfirePot() {
     };
   }, [slots, biomes, times, minY, maxY]);
 
-  const setSlot = (idx: number, b: Berry | null) => {
+  const setSlot = (idx: number, s: Seasoning | null) => {
     const next = [...slots] as SlotState;
-    next[idx] = b;
+    next[idx] = s;
     setSlots(next);
   };
 
@@ -186,12 +219,12 @@ export function CampfirePot() {
                   onDragOver={(e) => e.preventDefault()}
                   onDrop={(e) => {
                     e.preventDefault();
-                    const slug = e.dataTransfer.getData("text/berry");
-                    const b = berries.find((x) => x.slug === slug);
-                    if (b) setSlot(idx, b);
+                    const slug = e.dataTransfer.getData("text/seasoning");
+                    const s = seasonings.find((x) => x.slug === slug);
+                    if (s && s.cakeValid) setSlot(idx, s);
                   }}
                   onClick={() => setSlot(idx, null)}
-                  title={slot ? `Remove ${slot.slug}` : "Drop a berry here"}
+                  title={slot ? `Remove ${slot.slug}` : "Drop a seasoning here"}
                   className={`size-20 rounded-lg border-2 flex items-center justify-center cursor-pointer transition-colors ${
                     slot
                       ? "border-accent bg-subtle"
@@ -212,6 +245,23 @@ export function CampfirePot() {
               ))}
             </div>
             <div className="text-[10px] text-muted uppercase">3 seasoning slots</div>
+
+            {/* 3D Cake, bound to slots */}
+            <Cake3D flavour={dominant} berries={cakeBerries} size={200} />
+
+            <div className="flex items-center gap-2 text-xs text-muted">
+              <span>Dominant:</span>
+              {dominant ? (
+                <span
+                  className="px-2 py-0.5 rounded-full font-mono text-[10px] uppercase text-foreground"
+                  style={{ background: `${FLAVOUR_COLORS[dominant]}33` }}
+                >
+                  {dominant}
+                </span>
+              ) : (
+                <span className="font-mono">—</span>
+              )}
+            </div>
 
             {/* Base cake ingredients */}
             <div className="mt-2 grid grid-cols-3 gap-1 p-2 rounded-lg bg-subtle">
@@ -236,20 +286,6 @@ export function CampfirePot() {
               ))}
             </div>
             <div className="text-[10px] text-muted uppercase">Poké Cake base</div>
-
-            <div className="flex items-center gap-2 text-xs text-muted">
-              <span>Dominant:</span>
-              {dominant ? (
-                <span
-                  className="px-2 py-0.5 rounded-full font-mono text-[10px] uppercase text-foreground"
-                  style={{ background: `${FLAVOUR_COLORS[dominant]}33` }}
-                >
-                  {dominant}
-                </span>
-              ) : (
-                <span className="font-mono">—</span>
-              )}
-            </div>
           </div>
         </div>
       </aside>
@@ -257,16 +293,31 @@ export function CampfirePot() {
       <div className="space-y-6">
         <div>
           <h3 className="text-sm font-medium uppercase tracking-wide text-muted">
-            Pantry — berries
+            Pantry — seasonings
           </h3>
 
           <div className="mt-2 flex flex-wrap items-center gap-2">
             <input
               value={filterQuery}
               onChange={(e) => setFilterQuery(e.target.value)}
-              placeholder="Filter berries…"
+              placeholder="Filter seasonings…"
               className="w-full sm:w-52 rounded-md border border-border bg-card px-3 py-1.5 text-sm outline-none focus:border-accent"
             />
+            <div className="flex gap-1">
+              {KINDS.map((k) => (
+                <button
+                  key={k}
+                  onClick={() => setKindFilter(k)}
+                  className={`text-[10px] uppercase px-2 py-0.5 rounded-full border transition-colors ${
+                    kindFilter === k
+                      ? "bg-accent text-accent-foreground border-accent"
+                      : "border-border bg-card text-muted hover:text-foreground"
+                  }`}
+                >
+                  {k}
+                </button>
+              ))}
+            </div>
             <div className="flex flex-wrap gap-1">
               {FLAVOURS.map((f) => {
                 const active = activeFlavours.has(f);
@@ -300,20 +351,31 @@ export function CampfirePot() {
             </div>
           </div>
 
-          <div className="mt-3 flex flex-wrap gap-2 max-h-64 overflow-y-auto p-2 rounded-lg border border-border bg-subtle">
-            {filteredBerries.map((b) => (
-              <BerryChip
-                key={b.slug}
-                berry={b}
-                onPick={() => {
-                  const idx = findEmptySlot();
-                  if (idx >= 0) setSlot(idx, b);
-                }}
-              />
-            ))}
-            {filteredBerries.length === 0 && (
-              <p className="text-xs text-muted p-3">No berry matches these filters.</p>
+          <div className="mt-3 max-h-[420px] overflow-y-auto p-2 rounded-lg border border-border bg-subtle space-y-3">
+            {grouped.length === 0 && (
+              <p className="text-xs text-muted p-3">No seasoning matches these filters.</p>
             )}
+            {grouped.map(([category, items]) => (
+              <div key={category}>
+                <div className="text-[10px] uppercase tracking-wider text-muted px-1 mb-1">
+                  {category} ({items.length})
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {items.map((s) => (
+                    <SeasoningChip
+                      key={s.slug}
+                      seasoning={s}
+                      onPick={() => {
+                        if (!s.cakeValid) return;
+                        const idx = findEmptySlot();
+                        if (idx >= 0) setSlot(idx, s);
+                      }}
+                      selected={slots.some((slot) => slot?.slug === s.slug)}
+                    />
+                  ))}
+                </div>
+              </div>
+            ))}
           </div>
         </div>
 
@@ -415,7 +477,7 @@ export function CampfirePot() {
           </h3>
           <p className="mt-1 text-xs text-muted">
             Pokémon who can spawn in the chosen conditions AND whose preferred flavour matches
-            the cake (derived from their type when the mod doesn&apos;t declare it).
+            the cake.
           </p>
           {attracted.length === 0 ? (
             <p className="mt-3 text-sm text-muted">No Pokémon match. Try removing filters.</p>
@@ -426,7 +488,11 @@ export function CampfirePot() {
                   key={p.slug}
                   className="rounded-lg border border-border bg-card p-2 flex items-center gap-2"
                 >
-                  <PokemonSprite dexNo={p.dexNo} name={p.name} size={44} />
+                  <PokemonSprite
+                    dexNo={p.dexNo}
+                    name={p.name}
+                    size={44}
+                  />
                   <div className="min-w-0">
                     <div className="text-xs font-mono text-muted">
                       #{String(p.dexNo).padStart(4, "0")}
@@ -452,31 +518,97 @@ export function CampfirePot() {
   );
 }
 
-function BerryChip({ berry, onPick }: { berry: Berry; onPick: () => void }) {
+function SeasoningChip({
+  seasoning,
+  onPick,
+  selected,
+}: {
+  seasoning: Seasoning;
+  onPick: () => void;
+  selected: boolean;
+}) {
   const [hovered, setHovered] = useState(false);
-  const flavourLabel = berry.dominantFlavour ?? "—";
+  const [placement, setPlacement] = useState<{
+    top?: number;
+    bottom?: number;
+    left?: number;
+    right?: number;
+  }>({});
+  const anchorRef = useRef<HTMLButtonElement>(null);
+  const tooltipRef = useRef<HTMLDivElement>(null);
+  const flavourLabel = seasoning.dominantFlavour ?? seasoning.category;
+
+  useLayoutEffect(() => {
+    if (!hovered || !anchorRef.current) return;
+    const rect = anchorRef.current.getBoundingClientRect();
+    const tooltipW = 260;
+    const tooltipH = 160;
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+
+    // Flip above when too close to bottom
+    const flipAbove = rect.bottom + tooltipH + 8 > vh;
+    // Clamp horizontally
+    let left = rect.left + rect.width / 2 - tooltipW / 2;
+    if (left < 8) left = 8;
+    if (left + tooltipW > vw - 8) left = vw - 8 - tooltipW;
+
+    if (flipAbove) {
+      setPlacement({ top: rect.top - tooltipH - 8, left });
+    } else {
+      setPlacement({ top: rect.bottom + 4, left });
+    }
+  }, [hovered]);
+
   return (
-    <div
-      className="relative"
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-    >
+    <>
       <button
-        draggable
-        onDragStart={(e) => e.dataTransfer.setData("text/berry", berry.slug)}
+        ref={anchorRef}
+        draggable={seasoning.cakeValid}
+        onDragStart={(e) => {
+          if (!seasoning.cakeValid) {
+            e.preventDefault();
+            return;
+          }
+          e.dataTransfer.setData("text/seasoning", seasoning.slug);
+        }}
         onClick={onPick}
-        title={`${berry.slug} · ${flavourLabel}`}
-        className="size-12 rounded border border-border bg-card hover:border-accent transition-colors flex items-center justify-center"
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
+        onFocus={() => setHovered(true)}
+        onBlur={() => setHovered(false)}
+        title={`${seasoning.slug} · ${flavourLabel}${seasoning.cakeValid ? "" : " (not a cake seasoning)"}`}
+        className={`size-12 rounded border transition-colors flex items-center justify-center relative ${
+          selected
+            ? "border-accent ring-2 ring-ring/30 bg-subtle"
+            : seasoning.cakeValid
+              ? "border-border bg-card hover:border-accent cursor-pointer"
+              : "border-border bg-card opacity-50 cursor-help"
+        }`}
       >
-        <ItemIcon id={berry.itemId} size={40} />
+        <ItemIcon id={seasoning.itemId} size={40} />
+        {!seasoning.cakeValid && (
+          <span className="absolute -top-1 -right-1 size-3 rounded-full bg-muted/60 border border-border" />
+        )}
       </button>
       {hovered && (
-        <div className="absolute z-50 top-full left-1/2 -translate-x-1/2 mt-1 w-64 p-3 rounded-lg border border-border bg-card shadow-lg pointer-events-none">
+        <div
+          ref={tooltipRef}
+          style={{
+            position: "fixed",
+            ...placement,
+            width: 260,
+            zIndex: 60,
+          }}
+          className="p-3 rounded-lg border border-border bg-card shadow-lg pointer-events-none"
+        >
           <div className="flex items-center gap-2">
-            <ItemIcon id={berry.itemId} size={24} />
-            <div className="font-medium capitalize">{berry.slug.replaceAll("_", " ")}</div>
+            <ItemIcon id={seasoning.itemId} size={24} />
+            <div className="font-medium capitalize min-w-0 truncate">
+              {seasoning.slug.replaceAll("_", " ")}
+            </div>
             <span
-              className="ml-auto text-[10px] uppercase px-1.5 py-0.5 rounded-full"
+              className="ml-auto shrink-0 text-[10px] uppercase px-1.5 py-0.5 rounded-full"
               style={{
                 background: `${FLAVOUR_COLORS[flavourLabel] ?? "#888"}33`,
               }}
@@ -484,16 +616,24 @@ function BerryChip({ berry, onPick }: { berry: Berry; onPick: () => void }) {
               {flavourLabel}
             </span>
           </div>
-          <div className="mt-1 text-[10px] text-muted font-mono">
-            {Object.entries(berry.flavours)
-              .map(([k, v]) => `${k.slice(0, 3)} ${v}`)
-              .join(" · ")}
-          </div>
-          {berry.description && (
-            <p className="mt-2 text-xs text-muted leading-snug">{berry.description}</p>
+          {seasoning.kind === "berry" && (
+            <div className="mt-1 text-[10px] text-muted font-mono">
+              {Object.entries(seasoning.flavours)
+                .filter(([, v]) => v > 0)
+                .map(([k, v]) => `${k.slice(0, 3)} ${v}`)
+                .join(" · ")}
+            </div>
+          )}
+          {!seasoning.cakeValid && (
+            <div className="mt-1 text-[10px] uppercase text-amber-700 dark:text-amber-300">
+              ✗ not a Poké Cake seasoning
+            </div>
+          )}
+          {seasoning.description && (
+            <p className="mt-2 text-xs text-muted leading-snug">{seasoning.description}</p>
           )}
         </div>
       )}
-    </div>
+    </>
   );
 }

@@ -106,6 +106,10 @@ export async function listBerries() {
   return db.select().from(schema.berries).orderBy(asc(schema.berries.slug));
 }
 
+export async function listAllSeasonings() {
+  return db.select().from(schema.seasonings).orderBy(asc(schema.seasonings.slug));
+}
+
 export async function getBerriesBySlug(slugs: string[]) {
   if (slugs.length === 0) return [];
   return db

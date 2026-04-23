@@ -8,19 +8,23 @@ export function PokemonSprite({
   name,
   size = 64,
   variant = "default",
+  shiny = false,
   className = "",
 }: {
   dexNo: number;
   name: string;
   size?: number;
   variant?: "default" | "artwork";
+  /** If true, use the shiny sprite variant (downloaded locally). */
+  shiny?: boolean;
   className?: string;
 }) {
   const [errored, setErrored] = useState(false);
+  const base = shiny ? `/textures/pokemon/shiny/${dexNo}.png` : `/textures/pokemon/${dexNo}.png`;
   const src =
     variant === "artwork"
       ? `https://cdn.jsdelivr.net/gh/PokeAPI/sprites@master/sprites/pokemon/other/official-artwork/${dexNo}.png`
-      : `/textures/pokemon/${dexNo}.png`;
+      : base;
   if (errored) {
     return (
       <span
