@@ -2,9 +2,16 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { Suspense } from "react";
 import { getTranslations } from "next-intl/server";
-import { getSourcesFor, getSpeciesBySlug, listSpawnsForSpecies } from "@/lib/db/queries";
+import {
+  getSourcesFor,
+  getSpeciesBySlug,
+  listBaitEffects,
+  listSpawnsForSpecies,
+} from "@/lib/db/queries";
 import { SourceBadge } from "@/components/SourceBadge";
 import { TypePair } from "@/components/TypeBadge";
+import { BaitList } from "@/components/BaitList";
+import { topBaits } from "@/lib/recommend/bait";
 
 function formatBiome(biome: string) {
   return biome.replace(/^#?cobblemon:/, "").replace(/is_/, "").replace(/_/g, " ");
@@ -51,13 +58,19 @@ async function SpeciesDetail({ params }: { params: Promise<{ slug: string }> }) 
   const species = await getSpeciesBySlug(slug);
   if (!species) notFound();
 
-  const [spawns, sources, t] = await Promise.all([
+  const [spawns, sources, baits, t] = await Promise.all([
     listSpawnsForSpecies(species.id),
     getSourcesFor("species", species.id),
+    listBaitEffects(),
     getTranslations("pokemon"),
   ]);
 
   const primarySource = sources[0];
+  const recommendedBaits = topBaits(baits, {
+    primaryType: species.primaryType,
+    preferredFlavours: species.preferredFlavours,
+    limit: 6,
+  });
 
   return (
     <>
@@ -90,6 +103,8 @@ async function SpeciesDetail({ params }: { params: Promise<{ slug: string }> }) 
           ))}
         </dl>
       </section>
+
+      <BaitList baits={recommendedBaits} />
 
       <section className="mt-10">
         <h2 className="text-sm font-medium uppercase tracking-wide text-muted">

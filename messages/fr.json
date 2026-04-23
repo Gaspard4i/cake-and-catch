@@ -23,6 +23,15 @@
   "pokemon": {
     "back": "← Retour",
     "stats": "Stats",
+    "baitsTitle": "Appâts recommandés",
+    "baitsHelp": "Appâts de pêche qui affectent la rencontre (couleur, nature, HA, shiny).",
+    "reason": {
+      "shiny_reroll": "boost shiny",
+      "hidden_ability": "talent caché",
+      "nature_boost": "nature",
+      "level_boost": "niveau",
+      "baseline": "basique"
+    },
     "spawnsCount": "Spawns ({count})",
     "noSpawn": "Aucun spawn naturel documenté pour cette espèce.",
     "captureRate": "Capture rate {value}",
