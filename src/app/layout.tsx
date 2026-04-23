@@ -9,6 +9,7 @@ import { ThemeProvider } from "@/components/ThemeProvider";
 import { ThemeSwitcher } from "@/components/ThemeSwitcher";
 import { LocaleSwitcher } from "@/components/LocaleSwitcher";
 import { FooterText } from "@/components/FooterText";
+import { HeaderNav } from "@/components/HeaderNav";
 
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
@@ -42,9 +43,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <IntlShell>
               <header className="border-b border-border bg-card/60 backdrop-blur-sm sticky top-0 z-40">
                 <div className="mx-auto max-w-5xl px-6 py-3 flex items-center justify-between gap-4">
-                  <Link href="/" className="font-semibold tracking-tight">
-                    Cake <span className="text-accent">&amp;</span> Catch
-                  </Link>
+                  <div className="flex items-center gap-6">
+                    <Link href="/" className="font-semibold tracking-tight">
+                      Cake <span className="text-accent">&amp;</span> Catch
+                    </Link>
+                    <HeaderNav />
+                  </div>
                   <div className="flex items-center gap-2">
                     <LocaleSwitcher />
                     <ThemeSwitcher />

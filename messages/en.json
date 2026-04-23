@@ -13,6 +13,42 @@
   "home": {
     "pokedexPreview": "Pokédex preview"
   },
+  "nav": {
+    "pokedex": "Pokédex",
+    "recipes": "Recipes",
+    "about": "About"
+  },
+  "biome": {
+    "spawnsHere": "Spawns listed ({count})"
+  },
+  "about": {
+    "title": "About",
+    "intro": "Cake & Catch references data published by the Cobblemon mod and popular community addons. Every displayed value is linked to its source.",
+    "sources": "Data sources",
+    "api": "Public API",
+    "apiIntro": "Read-only JSON endpoint, 60s cache, rate limit 60 req/min/IP.",
+    "pokemon": "Pokémon trademark",
+    "pokemonNotice": "Pokémon and creature names are trademarks of Nintendo / Game Freak / The Pokémon Company. This project is unofficial and not affiliated."
+  },
+  "recipes": {
+    "title": "Cooking recipes",
+    "intro": "Cobblemon Campfire Pot recipes: cake, bait, snack, aprijuice. Seasoning slots personalize the resulting effects.",
+    "shaped": "fixed pattern",
+    "shapeless": "shapeless",
+    "seasoningTag": "Accepted seasoning slot",
+    "kinds": {
+      "cake": "Poké Cake",
+      "bait": "Poké Bait",
+      "snack": "Poké Snack",
+      "aprijuice": "Aprijuice"
+    },
+    "kindsHelp": {
+      "cake": "Shared cake that biases encounters (color depends on seasoning).",
+      "bait": "Fishing bait — tweaks rarity / nature / HA according to the seasoning used.",
+      "snack": "Snack that attracts a Pokémon by flavor type.",
+      "aprijuice": "Apricorn berry juice to boost mount stats."
+    }
+  },
   "search": {
     "placeholder": "Search a Pokémon (e.g. pikachu, victini…)",
     "submit": "Search",
@@ -23,6 +59,7 @@
   "pokemon": {
     "back": "← Back",
     "stats": "Stats",
+    "notes": "Notes",
     "baitsTitle": "Recommended baits",
     "baitsHelp": "Fishing baits that affect the encounter (color, nature, HA, shiny).",
     "reason": {

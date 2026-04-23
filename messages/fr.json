@@ -13,6 +13,42 @@
   "home": {
     "pokedexPreview": "Aperçu du Pokédex"
   },
+  "nav": {
+    "pokedex": "Pokédex",
+    "recipes": "Recettes",
+    "about": "À propos"
+  },
+  "biome": {
+    "spawnsHere": "Spawns répertoriés ({count})"
+  },
+  "about": {
+    "title": "À propos",
+    "intro": "Cake & Catch référence les données publiées par le mod Cobblemon et ses addons populaires. Chaque donnée affichée est liée à sa source.",
+    "sources": "Sources de données",
+    "api": "API publique",
+    "apiIntro": "Endpoint JSON read-only, cache 60s, rate limit 60 req/min/IP.",
+    "pokemon": "Marque Pokémon",
+    "pokemonNotice": "Pokémon et les noms des créatures sont des marques de Nintendo / Game Freak / The Pokémon Company. Ce projet est non officiel et non affilié."
+  },
+  "recipes": {
+    "title": "Recettes de cuisine",
+    "intro": "Recettes du Campfire Pot Cobblemon : gâteau, appât, encas et aprijuice. Les seasoning slots permettent de personnaliser les effets.",
+    "shaped": "recette fixe",
+    "shapeless": "mélange libre",
+    "seasoningTag": "Slot seasoning accepté",
+    "kinds": {
+      "cake": "Poké Cake",
+      "bait": "Poké Bait",
+      "snack": "Poké Snack",
+      "aprijuice": "Aprijuice"
+    },
+    "kindsHelp": {
+      "cake": "Gâteau à partager qui influence la rencontre (couleur selon seasoning).",
+      "bait": "Appât de pêche — change la probabilité / nature / HA selon le seasoning utilisé.",
+      "snack": "Encas qui attire un Pokémon par type de saveur.",
+      "aprijuice": "Jus de baies Aprikoko pour booster les stats de monture."
+    }
+  },
   "search": {
     "placeholder": "Cherche un Pokémon (ex: pikachu, victini…)",
     "submit": "Chercher",
@@ -23,6 +59,7 @@
   "pokemon": {
     "back": "← Retour",
     "stats": "Stats",
+    "notes": "Notes",
     "baitsTitle": "Appâts recommandés",
     "baitsHelp": "Appâts de pêche qui affectent la rencontre (couleur, nature, HA, shiny).",
     "reason": {

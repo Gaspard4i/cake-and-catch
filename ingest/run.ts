@@ -20,6 +20,7 @@ import {
 import { speciesSchema } from "../src/lib/parsers/species";
 import { spawnFileSchema, parseLevelRange } from "../src/lib/parsers/spawn";
 import { seasoningSchema, baitEffectSchema } from "../src/lib/parsers/seasoning";
+import { cookingRecipeSchema, shapedToGrid, classifyRecipe } from "../src/lib/parsers/recipe";
 import { basename, relative } from "node:path";
 
 function slugify(name: string): string {
@@ -241,6 +242,56 @@ async function ingestSeasonings(clone: RepoClone) {
   console.log(`[seasonings] ok=${ok} failed=${failed}`);
 }
 
+async function ingestRecipes(clone: RepoClone) {
+  const dir = dataPath(clone, "recipe", "campfire_pot");
+  const files = await listJsonFiles(dir);
+  let ok = 0;
+  let skipped = 0;
+  let failed = 0;
+  for (const file of files) {
+    try {
+      const raw = (await readJson(file)) as { type?: string };
+      if (
+        raw.type !== "cobblemon:cooking_pot" &&
+        raw.type !== "cobblemon:cooking_pot_shapeless"
+      ) {
+        skipped++;
+        continue;
+      }
+      const parsed = cookingRecipeSchema.parse(raw);
+      const slug = basename(file, ".json");
+      const resultId = parsed.result.id;
+      const kind = classifyRecipe(resultId);
+      const shape =
+        parsed.type === "cobblemon:cooking_pot" ? "shaped" : "shapeless";
+
+      const values = {
+        slug,
+        kind,
+        resultId,
+        resultCount: parsed.result.count ?? 1,
+        shape,
+        grid: parsed.type === "cobblemon:cooking_pot" ? shapedToGrid(parsed) : null,
+        ingredients:
+          parsed.type === "cobblemon:cooking_pot_shapeless" ? parsed.ingredients : null,
+        seasoningTag: parsed.seasoningTag ?? null,
+        seasoningProcessors: parsed.seasoningProcessors,
+        raw: parsed,
+      } as const;
+
+      await db
+        .insert(schema.recipes)
+        .values(values)
+        .onConflictDoUpdate({ target: schema.recipes.slug, set: values });
+      ok++;
+    } catch (err) {
+      failed++;
+      console.warn(`[recipes] skip ${file}:`, err instanceof Error ? err.message : err);
+    }
+  }
+  console.log(`[recipes] ok=${ok} skipped=${skipped} failed=${failed}`);
+}
+
 async function ingestBaitEffects(clone: RepoClone) {
   const dir = dataPath(clone, "spawn_bait_effects");
   const files = await listJsonFiles(dir);
@@ -290,6 +341,7 @@ async function main() {
   await ingestAddons(slugToId);
   await ingestSeasonings(clone);
   await ingestBaitEffects(clone);
+  await ingestRecipes(clone);
 
   console.log("[ingest] done");
   process.exit(0);

@@ -1,24 +1,128 @@
 import Link from "next/link";
 import { Suspense } from "react";
 import { getTranslations } from "next-intl/server";
-import { searchSpecies } from "@/lib/db/queries";
+import { listSourceNames, searchSpeciesFiltered } from "@/lib/db/queries";
 import { SearchBar } from "@/components/SearchBar";
 import { TypePair } from "@/components/TypeBadge";
+
+const TYPES = [
+  "normal",
+  "fire",
+  "water",
+  "electric",
+  "grass",
+  "ice",
+  "fighting",
+  "poison",
+  "ground",
+  "flying",
+  "psychic",
+  "bug",
+  "rock",
+  "ghost",
+  "dragon",
+  "dark",
+  "steel",
+  "fairy",
+];
+
+const BUCKETS = ["common", "uncommon", "rare", "ultra-rare"];
+
+function FilterLink({
+  current,
+  value,
+  field,
+  label,
+  params,
+}: {
+  current: string | undefined;
+  value: string;
+  field: string;
+  label: string;
+  params: Record<string, string | undefined>;
+}) {
+  const next: Record<string, string | undefined> = { ...params };
+  next[field] = current === value ? undefined : value;
+  const qs = new URLSearchParams();
+  for (const [k, v] of Object.entries(next)) if (v) qs.set(k, v);
+  const href = `/search${qs.toString() ? `?${qs.toString()}` : ""}`;
+  const active = current === value;
+  return (
+    <Link
+      href={href}
+      className={`px-2 py-0.5 rounded-full text-xs border transition-colors ${
+        active
+          ? "bg-accent text-accent-foreground border-accent"
+          : "border-border bg-card text-muted hover:text-foreground"
+      }`}
+    >
+      {label}
+    </Link>
+  );
+}
 
 async function ResultsAsync({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string }>;
+  searchParams: Promise<{ q?: string; type?: string; bucket?: string; source?: string }>;
 }) {
-  const { q = "" } = await searchParams;
-  const [rows, t] = await Promise.all([searchSpecies(q, 50), getTranslations("search")]);
+  const params = await searchParams;
+  const [rows, sources, t] = await Promise.all([
+    searchSpeciesFiltered(params, 100),
+    listSourceNames(),
+    getTranslations("search"),
+  ]);
+
   return (
     <>
       <div className="mt-4">
-        <SearchBar defaultValue={q} autoFocus />
+        <SearchBar defaultValue={params.q ?? ""} autoFocus />
       </div>
+
+      <div className="mt-4 flex flex-col gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="text-[10px] uppercase tracking-wide text-muted w-16">Type</span>
+          {TYPES.map((type) => (
+            <FilterLink
+              key={type}
+              current={params.type}
+              value={type}
+              field="type"
+              label={type}
+              params={params}
+            />
+          ))}
+        </div>
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="text-[10px] uppercase tracking-wide text-muted w-16">Bucket</span>
+          {BUCKETS.map((b) => (
+            <FilterLink
+              key={b}
+              current={params.bucket}
+              value={b}
+              field="bucket"
+              label={b}
+              params={params}
+            />
+          ))}
+        </div>
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="text-[10px] uppercase tracking-wide text-muted w-16">Source</span>
+          {sources.map((s) => (
+            <FilterLink
+              key={s}
+              current={params.source}
+              value={s}
+              field="source"
+              label={s}
+              params={params}
+            />
+          ))}
+        </div>
+      </div>
+
       {rows.length === 0 ? (
-        <p className="mt-6 text-sm text-muted">{t("noResults", { q })}</p>
+        <p className="mt-6 text-sm text-muted">{t("noResults", { q: params.q ?? "" })}</p>
       ) : (
         <ul className="mt-6 divide-y divide-border border border-border rounded-lg bg-card overflow-hidden">
           {rows.map((s) => (
@@ -51,7 +155,7 @@ async function SearchHeader() {
 export default function SearchPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string }>;
+  searchParams: Promise<{ q?: string; type?: string; bucket?: string; source?: string }>;
 }) {
   return (
     <div className="mx-auto max-w-3xl px-6 py-10">

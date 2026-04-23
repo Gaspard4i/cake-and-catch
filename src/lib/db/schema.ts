@@ -77,6 +77,32 @@ export const dataSources = pgTable(
   (t) => [index("data_sources_entity_idx").on(t.entityType, t.entityId)],
 );
 
+export const recipeKindEnum = pgEnum("recipe_kind", [
+  "cake",
+  "bait",
+  "snack",
+  "aprijuice",
+  "other",
+]);
+
+export const recipes = pgTable(
+  "recipes",
+  {
+    id: serial("id").primaryKey(),
+    slug: text("slug").notNull(),
+    kind: recipeKindEnum("kind").notNull(),
+    resultId: text("result_id").notNull(),
+    resultCount: integer("result_count").notNull().default(1),
+    shape: text("shape").notNull(), // 'shaped' | 'shapeless'
+    grid: jsonb("grid"), // GridCell[][] for shaped
+    ingredients: jsonb("ingredients"), // Array for shapeless
+    seasoningTag: text("seasoning_tag"),
+    seasoningProcessors: jsonb("seasoning_processors").$type<string[]>().notNull(),
+    raw: jsonb("raw").notNull(),
+  },
+  (t) => [uniqueIndex("recipes_slug_idx").on(t.slug), index("recipes_kind_idx").on(t.kind)],
+);
+
 export const seasonings = pgTable(
   "seasonings",
   {
@@ -101,9 +127,26 @@ export const baitEffects = pgTable(
   (t) => [uniqueIndex("bait_effects_slug_idx").on(t.slug)],
 );
 
+export const speciesWiki = pgTable(
+  "species_wiki",
+  {
+    id: serial("id").primaryKey(),
+    speciesId: integer("species_id")
+      .notNull()
+      .references(() => species.id, { onDelete: "cascade" }),
+    pageTitle: text("page_title").notNull(),
+    pageUrl: text("page_url").notNull(),
+    summary: text("summary"),
+    fetchedAt: timestamp("fetched_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [uniqueIndex("species_wiki_species_idx").on(t.speciesId)],
+);
+
 export type Species = typeof species.$inferSelect;
 export type NewSpecies = typeof species.$inferInsert;
 export type Spawn = typeof spawns.$inferSelect;
 export type NewSpawn = typeof spawns.$inferInsert;
 export type Seasoning = typeof seasonings.$inferSelect;
 export type BaitEffect = typeof baitEffects.$inferSelect;
+export type Recipe = typeof recipes.$inferSelect;
+export type SpeciesWiki = typeof speciesWiki.$inferSelect;

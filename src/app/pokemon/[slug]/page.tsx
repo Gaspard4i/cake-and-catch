@@ -1,10 +1,27 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import type { Metadata } from "next";
 import { Suspense } from "react";
 import { getTranslations } from "next-intl/server";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}): Promise<Metadata> {
+  const { slug } = await params;
+  const species = await getSpeciesBySlug(slug);
+  if (!species) return { title: "Cake & Catch" };
+  const types = [species.primaryType, species.secondaryType].filter(Boolean).join(" / ");
+  return {
+    title: `${species.name} · Cake & Catch`,
+    description: `#${String(species.dexNo).padStart(4, "0")} ${species.name} — ${types}. Spawns, recettes et appâts pour Cobblemon.`,
+  };
+}
 import {
   getSourcesFor,
   getSpeciesBySlug,
+  getWikiSummary,
   listBaitEffects,
   listSpawnsForSpecies,
 } from "@/lib/db/queries";
@@ -58,10 +75,11 @@ async function SpeciesDetail({ params }: { params: Promise<{ slug: string }> }) 
   const species = await getSpeciesBySlug(slug);
   if (!species) notFound();
 
-  const [spawns, sources, baits, t] = await Promise.all([
+  const [spawns, sources, baits, wiki, t] = await Promise.all([
     listSpawnsForSpecies(species.id),
     getSourcesFor("species", species.id),
     listBaitEffects(),
+    getWikiSummary(species.id),
     getTranslations("pokemon"),
   ]);
 
@@ -91,6 +109,20 @@ async function SpeciesDetail({ params }: { params: Promise<{ slug: string }> }) 
           <span>{t("friendship", { value: species.baseFriendship })}</span>
         )}
       </div>
+
+      {wiki?.summary && (
+        <section className="mt-6 rounded-lg border border-border bg-card p-4">
+          <div className="flex items-center gap-2">
+            <h2 className="text-sm font-medium uppercase tracking-wide text-muted">
+              {t("notes")}
+            </h2>
+            <SourceBadge kind="wiki" href={wiki.pageUrl} />
+          </div>
+          <p className="mt-2 text-sm leading-relaxed whitespace-pre-line">
+            {wiki.summary.split("\n\n")[0]}
+          </p>
+        </section>
+      )}
 
       <section className="mt-8">
         <h2 className="text-sm font-medium uppercase tracking-wide text-muted">{t("stats")}</h2>
@@ -137,9 +169,17 @@ async function SpeciesDetail({ params }: { params: Promise<{ slug: string }> }) 
                   />
                 </div>
                 {s.biomes.length > 0 && (
-                  <div className="mt-2 text-sm">
+                  <div className="mt-2 text-sm flex flex-wrap gap-x-2 gap-y-1 items-baseline">
                     <span className="text-muted">{t("biomes")}</span>
-                    {s.biomes.map(formatBiome).join(", ")}
+                    {s.biomes.map((b, i) => (
+                      <Link
+                        key={i}
+                        href={`/biome/${encodeURIComponent(b.replace(/^#/, ""))}`}
+                        className="underline decoration-dotted underline-offset-2 hover:text-accent capitalize"
+                      >
+                        {formatBiome(b)}
+                      </Link>
+                    ))}
                   </div>
                 )}
                 {formatCondition(s.condition, t as never).map((line, i) => (
