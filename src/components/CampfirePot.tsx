@@ -5,6 +5,7 @@ import { ItemIcon } from "./ItemIcon";
 import { PokemonSprite } from "./PokemonSprite";
 import { TypePair } from "./TypeBadge";
 import { Snack3D, type BerryPlacement } from "./Snack3D";
+import { MultiSelect, type MultiSelectOption } from "./MultiSelect";
 
 type BaitEffect = {
   kind: string;
@@ -71,29 +72,37 @@ type AttractedEntry = {
   spawnCount: number;
 };
 
-const BIOME_PRESETS = [
-  { value: "#cobblemon:is_plains", label: "Plains" },
-  { value: "#cobblemon:is_forest", label: "Forest" },
-  { value: "#cobblemon:is_jungle", label: "Jungle" },
-  { value: "#cobblemon:is_savanna", label: "Savanna" },
-  { value: "#cobblemon:is_ocean", label: "Ocean" },
-  { value: "#cobblemon:is_desert", label: "Desert" },
-  { value: "#cobblemon:is_mountain", label: "Mountain" },
-  { value: "#cobblemon:is_snowy", label: "Snowy" },
-  { value: "#cobblemon:is_swamp", label: "Swamp" },
-  { value: "#cobblemon:is_tropical_island", label: "Tropical island" },
-  { value: "#cobblemon:is_river", label: "River" },
-  { value: "#cobblemon:is_cave", label: "Cave" },
-  { value: "#cobblemon:is_nether", label: "Nether" },
-  { value: "#cobblemon:is_end", label: "End" },
-];
+/** Pretty group label shown in the multi-select dropdown per namespace. */
+const NS_LABEL: Record<string, string> = {
+  cobblemon: "Cobblemon tags",
+  minecraft: "Minecraft vanilla",
+  terralith: "Terralith",
+  biomesoplenty: "Biomes O' Plenty",
+  byg: "Oh The Biomes You'll Go",
+  aether: "The Aether",
+  incendium: "Incendium",
+  nullscape: "Nullscape",
+  the_bumblezone: "The Bumblezone",
+};
 
-const TIMES = [
+const TIME_OPTIONS: MultiSelectOption[] = [
   { value: "day", label: "Day" },
   { value: "night", label: "Night" },
   { value: "morning", label: "Morning" },
   { value: "noon", label: "Noon" },
   { value: "dusk", label: "Dusk" },
+];
+
+const NAMESPACE_OPTIONS: MultiSelectOption[] = [
+  { value: "cobblemon", label: "Cobblemon (tags)", group: "Default" },
+  { value: "minecraft", label: "Minecraft vanilla", group: "Default" },
+  { value: "terralith", label: "Terralith", group: "Mods" },
+  { value: "biomesoplenty", label: "Biomes O' Plenty", group: "Mods" },
+  { value: "byg", label: "Oh The Biomes You'll Go", group: "Mods" },
+  { value: "aether", label: "The Aether", group: "Mods" },
+  { value: "incendium", label: "Incendium", group: "Mods" },
+  { value: "nullscape", label: "Nullscape", group: "Mods" },
+  { value: "the_bumblezone", label: "The Bumblezone", group: "Mods" },
 ];
 
 const FLAVOURS = ["SWEET", "SPICY", "DRY", "BITTER", "SOUR"] as const;
@@ -109,10 +118,17 @@ const FLAVOUR_COLORS: Record<string, string> = {
 
 type SlotState = [Seasoning | null, Seasoning | null, Seasoning | null];
 
+type BiomeApiEntry = { value: string; label: string; namespace: string };
+
 export function CampfirePot() {
   const [seasonings, setSeasonings] = useState<Seasoning[]>([]);
   const [slots, setSlots] = useState<SlotState>([null, null, null]);
   const [biomes, setBiomes] = useState<string[]>([]);
+  const [biomeCatalog, setBiomeCatalog] = useState<BiomeApiEntry[]>([]);
+  const [allowedNamespaces, setAllowedNamespaces] = useState<string[]>([
+    "cobblemon",
+    "minecraft",
+  ]);
   const [times, setTimes] = useState<string[]>([]);
   const [minY, setMinY] = useState<string>("");
   const [maxY, setMaxY] = useState<string>("");
@@ -130,7 +146,33 @@ export function CampfirePot() {
       .then((r) => r.json())
       .then((d: { seasonings: Seasoning[] }) => setSeasonings(d.seasonings ?? []))
       .catch(() => setSeasonings([]));
+    fetch("/api/biomes")
+      .then((r) => r.json())
+      .then((d: { biomes: BiomeApiEntry[] }) => setBiomeCatalog(d.biomes ?? []))
+      .catch(() => setBiomeCatalog([]));
   }, []);
+
+  const biomeOptions = useMemo<MultiSelectOption[]>(() => {
+    const set = new Set(allowedNamespaces);
+    return biomeCatalog
+      .filter((b) => set.has(b.namespace))
+      .map((b) => ({
+        value: b.value,
+        label: b.label,
+        group: NS_LABEL[b.namespace] ?? b.namespace,
+      }));
+  }, [biomeCatalog, allowedNamespaces]);
+
+  // Prune selected biomes that are no longer in the allowed namespace set.
+  useEffect(() => {
+    setBiomes((prev) =>
+      prev.filter((v) =>
+        allowedNamespaces.includes(
+          biomeCatalog.find((b) => b.value === v)?.namespace ?? "",
+        ),
+      ),
+    );
+  }, [allowedNamespaces, biomeCatalog]);
 
   const filtered = useMemo(() => {
     let list = seasonings;
@@ -249,10 +291,6 @@ export function CampfirePot() {
 
   const findEmptySlot = () => slots.findIndex((s) => s === null);
 
-  const toggleBiome = (b: string) =>
-    setBiomes((prev) => (prev.includes(b) ? prev.filter((x) => x !== b) : [...prev, b]));
-  const toggleTime = (t: string) =>
-    setTimes((prev) => (prev.includes(t) ? prev.filter((x) => x !== t) : [...prev, t]));
   const toggleFlavour = (f: string) =>
     setActiveFlavours((prev) => {
       const next = new Set(prev);
@@ -507,93 +545,49 @@ export function CampfirePot() {
 
         <div>
           <h3 className="text-sm font-medium uppercase tracking-wide text-muted">Filters</h3>
-          <div className="mt-2 space-y-3">
-            <div>
-              <div className="text-[10px] uppercase tracking-wide text-muted mb-1">
-                Biomes (any)
-              </div>
-              <div className="flex flex-wrap gap-1">
-                {BIOME_PRESETS.map((p) => {
-                  const active = biomes.includes(p.value);
-                  return (
-                    <button
-                      key={p.value}
-                      onClick={() => toggleBiome(p.value)}
-                      className={`text-xs px-2 py-0.5 rounded-full border transition-colors ${
-                        active
-                          ? "bg-accent text-accent-foreground border-accent"
-                          : "bg-card border-border text-muted hover:text-foreground"
-                      }`}
-                    >
-                      {p.label}
-                    </button>
-                  );
-                })}
-                {biomes.length > 0 && (
-                  <button
-                    onClick={() => setBiomes([])}
-                    className="text-xs px-2 py-0.5 rounded-full border border-border bg-card text-muted hover:text-foreground"
-                  >
-                    clear
-                  </button>
-                )}
-              </div>
-            </div>
-
-            <div>
-              <div className="text-[10px] uppercase tracking-wide text-muted mb-1">
-                Time (any)
-              </div>
-              <div className="flex flex-wrap gap-1">
-                {TIMES.map((t) => {
-                  const active = times.includes(t.value);
-                  return (
-                    <button
-                      key={t.value}
-                      onClick={() => toggleTime(t.value)}
-                      className={`text-xs px-2 py-0.5 rounded-full border transition-colors ${
-                        active
-                          ? "bg-accent text-accent-foreground border-accent"
-                          : "bg-card border-border text-muted hover:text-foreground"
-                      }`}
-                    >
-                      {t.label}
-                    </button>
-                  );
-                })}
-                {times.length > 0 && (
-                  <button
-                    onClick={() => setTimes([])}
-                    className="text-xs px-2 py-0.5 rounded-full border border-border bg-card text-muted hover:text-foreground"
-                  >
-                    clear
-                  </button>
-                )}
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3 max-w-xs">
-              <label className="text-xs">
-                <span className="block text-muted mb-1">Min Y</span>
-                <input
-                  value={minY}
-                  onChange={(e) => setMinY(e.target.value)}
-                  inputMode="numeric"
-                  placeholder="-64"
-                  className="w-full rounded-md border border-border bg-card px-2 py-1 text-sm"
-                />
-              </label>
-              <label className="text-xs">
-                <span className="block text-muted mb-1">Max Y</span>
-                <input
-                  value={maxY}
-                  onChange={(e) => setMaxY(e.target.value)}
-                  inputMode="numeric"
-                  placeholder="320"
-                  className="w-full rounded-md border border-border bg-card px-2 py-1 text-sm"
-                />
-              </label>
-            </div>
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <MultiSelect
+              label="Mods"
+              options={NAMESPACE_OPTIONS}
+              value={allowedNamespaces}
+              onChange={setAllowedNamespaces}
+              placeholder="Cobblemon + vanilla"
+            />
+            <MultiSelect
+              label="Biomes"
+              options={biomeOptions}
+              value={biomes}
+              onChange={setBiomes}
+              placeholder="Any biome"
+            />
+            <MultiSelect
+              label="Time"
+              options={TIME_OPTIONS}
+              value={times}
+              onChange={setTimes}
+              placeholder="Any time"
+              searchable={false}
+            />
+            <label className="text-xs inline-flex items-center gap-1 text-muted">
+              <span className="text-[10px] uppercase tracking-wide">Min Y</span>
+              <input
+                value={minY}
+                onChange={(e) => setMinY(e.target.value)}
+                inputMode="numeric"
+                placeholder="-64"
+                className="w-16 rounded-md border border-border bg-card px-2 py-1 text-sm"
+              />
+            </label>
+            <label className="text-xs inline-flex items-center gap-1 text-muted">
+              <span className="text-[10px] uppercase tracking-wide">Max Y</span>
+              <input
+                value={maxY}
+                onChange={(e) => setMaxY(e.target.value)}
+                inputMode="numeric"
+                placeholder="320"
+                className="w-16 rounded-md border border-border bg-card px-2 py-1 text-sm"
+              />
+            </label>
           </div>
         </div>
 
