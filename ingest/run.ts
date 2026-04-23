@@ -247,9 +247,52 @@ async function ingestSeasonings(clone: RepoClone) {
   console.log(`[seasonings] ok=${ok} failed=${failed}`);
 }
 
+const EFFECT_TAG_WHITELIST = new Set([
+  "hp_recovery",
+  "status_recovery",
+  "pp_recovery",
+  "nature_recovery",
+  "friendship",
+  "damage_reduction",
+  "stat_buff",
+  "damaging",
+  "non_battle",
+]);
+
+async function loadEffectTags(clone: RepoClone): Promise<Map<string, string[]>> {
+  // Read `data/cobblemon/tags/item/berries/*.json` (non-recursive) and return itemId -> effect tags[].
+  // We intentionally skip the `colour/` sub-directory and `filling`/`mutation_result`/composite tags.
+  const dir = dataPath(clone, "tags", "item", "berries");
+  const { readdir } = await import("node:fs/promises");
+  const entries = await readdir(dir, { withFileTypes: true });
+  const files = entries
+    .filter((e) => e.isFile() && e.name.endsWith(".json"))
+    .map((e) => `${dir}/${e.name}`);
+
+  const map = new Map<string, string[]>();
+  for (const file of files) {
+    try {
+      const name = basename(file, ".json");
+      if (!EFFECT_TAG_WHITELIST.has(name)) continue;
+      const raw = (await readJson(file)) as { values?: string[] };
+      if (!raw.values) continue;
+      for (const v of raw.values) {
+        if (v.startsWith("#")) continue;
+        const arr = map.get(v) ?? [];
+        if (!arr.includes(name)) arr.push(name);
+        map.set(v, arr);
+      }
+    } catch {
+      // tolerate malformed
+    }
+  }
+  return map;
+}
+
 async function ingestBerries(clone: RepoClone) {
   const dir = dataPath(clone, "berries");
   const files = await listJsonFiles(dir);
+  const effectTagsByItem = await loadEffectTags(clone);
   let ok = 0;
   let failed = 0;
   for (const file of files) {
@@ -259,6 +302,7 @@ async function ingestBerries(clone: RepoClone) {
       const slug = basename(file, ".json");
       const itemId = parsed.identifier ?? `cobblemon:${slug}`;
       const dom = dominantFlavour(parsed.flavours);
+      const effectTags = effectTagsByItem.get(itemId) ?? [];
       await db
         .insert(schema.berries)
         .values({
@@ -268,6 +312,7 @@ async function ingestBerries(clone: RepoClone) {
           dominantFlavour: dom,
           colour: parsed.colour ?? null,
           weight: parsed.weight ?? null,
+          effectTags,
           raw: parsed,
         })
         .onConflictDoUpdate({
@@ -278,6 +323,7 @@ async function ingestBerries(clone: RepoClone) {
             dominantFlavour: dom,
             colour: parsed.colour ?? null,
             weight: parsed.weight ?? null,
+            effectTags,
             raw: parsed,
           },
         });

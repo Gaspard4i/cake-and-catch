@@ -1,0 +1,1 @@
+ALTER TABLE "berries" ADD COLUMN "effect_tags" jsonb DEFAULT '[]'::jsonb NOT NULL;

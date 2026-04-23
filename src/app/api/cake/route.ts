@@ -6,6 +6,8 @@ import {
 } from "@/lib/db/queries";
 import {
   cakeDominantFlavour,
+  cakeEffectTags,
+  EFFECT_TAG_LABELS,
   filterSpawns,
   preferredFlavourFor,
   type CakeComposition,
@@ -51,6 +53,7 @@ type SeasoningDTO = {
   flavours: Record<string, number>;
   dominantFlavour: string | null;
   description: string | null;
+  effectTags: string[];
   effects: Array<Record<string, unknown>>;
 };
 
@@ -111,6 +114,7 @@ function buildPantry(
       flavours: berry.flavours,
       dominantFlavour: berry.dominantFlavour,
       description: berry.description,
+      effectTags: berry.effectTags ?? [],
       effects: [],
     });
   }
@@ -128,6 +132,7 @@ function buildPantry(
       flavours: {},
       dominantFlavour: null,
       description: meta.description,
+      effectTags: [],
       effects: meta.effects,
     });
   }
@@ -165,6 +170,11 @@ export async function POST(req: NextRequest) {
   // Only berries actually contribute to cake flavour; silently drop invalid slugs.
   const validSlugs = seasoningSlugs.filter((s) => byslug.has(s));
   const dominant = cakeDominantFlavour({ seasoningSlugs: validSlugs }, byslug);
+  const effectTags = cakeEffectTags({ seasoningSlugs: validSlugs }, byslug);
+  const effects = effectTags.map((t) => ({
+    tag: t,
+    ...(EFFECT_TAG_LABELS[t] ?? { title: t, description: "", tone: "utility" }),
+  }));
 
   const spawns = await listSpawnsWithSpecies(10000);
   const matchingSpawns = filterSpawns(spawns, filter);
@@ -216,6 +226,7 @@ export async function POST(req: NextRequest) {
       dominantFlavour: dominant,
       seasoningSlugs: validSlugs,
       colorHint: berries.find((b) => b.slug === validSlugs[0])?.colour ?? null,
+      effects,
     },
     filter,
     count: attracted.length,

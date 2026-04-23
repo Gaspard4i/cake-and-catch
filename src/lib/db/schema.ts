@@ -138,6 +138,13 @@ export const berries = pgTable(
     colour: text("colour"),
     weight: real("weight"),
     description: text("description"),
+    /**
+     * Effect tags this berry belongs to, from upstream
+     * `tags/item/berries/*.json`. Possible values:
+     *   hp_recovery, status_recovery, pp_recovery, nature_recovery,
+     *   friendship, damage_reduction, stat_buff, damaging, non_battle, filling.
+     */
+    effectTags: jsonb("effect_tags").$type<string[]>().notNull().default([]),
     raw: jsonb("raw").notNull(),
   },
   (t) => [uniqueIndex("berries_slug_idx").on(t.slug)],

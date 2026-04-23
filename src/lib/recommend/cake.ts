@@ -136,6 +136,79 @@ export function cakeDominantFlavour(
 }
 
 /**
+ * Human-friendly descriptions of the effect tags berries carry, per the
+ * upstream tag files in `data/cobblemon/tags/item/berries/*.json`. The
+ * PokeCake itself does not apply any battle effect — the berries just
+ * decorate and influence the cake's colour (food_colour processor) and are
+ * recorded as "ingredients" for tooltip display. Effects below come into play
+ * when the berry is held / eaten by a Pokémon in battle or outside.
+ */
+export const EFFECT_TAG_LABELS: Record<
+  string,
+  { title: string; description: string; tone: "healing" | "friendship" | "defense" | "buff" | "offense" | "utility" }
+> = {
+  hp_recovery: {
+    title: "HP recovery",
+    description: "Restores HP when held and HP drops low.",
+    tone: "healing",
+  },
+  status_recovery: {
+    title: "Status cure",
+    description: "Cures a specific (or any) status condition when held.",
+    tone: "healing",
+  },
+  pp_recovery: {
+    title: "PP recovery",
+    description: "Restores PP of a move whose PP reached 0.",
+    tone: "healing",
+  },
+  nature_recovery: {
+    title: "Confuse-heal",
+    description: "Restores HP but may confuse Pokémon that dislike its flavour.",
+    tone: "healing",
+  },
+  friendship: {
+    title: "Friendship ↑",
+    description: "Boosts friendship even though it lowers one EV. Cake use keeps the friendship boost intact.",
+    tone: "friendship",
+  },
+  damage_reduction: {
+    title: "Type resist",
+    description: "Halves a super-effective hit of a specific type once.",
+    tone: "defense",
+  },
+  stat_buff: {
+    title: "Stat buff",
+    description: "Sharply raises a stat in a pinch (low HP or crit).",
+    tone: "buff",
+  },
+  damaging: {
+    title: "Counter-damage",
+    description: "Damages the attacker when held Pokémon is hit (physical/special).",
+    tone: "offense",
+  },
+  non_battle: {
+    title: "Out-of-battle",
+    description: "Has no battle effect but is used for crafting, friendship, or EV lowering.",
+    tone: "utility",
+  },
+};
+
+/** Aggregate effect tags across berries placed in the cake, deduplicated. */
+export function cakeEffectTags(
+  composition: CakeComposition,
+  berriesBySlug: Map<string, Berry>,
+): string[] {
+  const set = new Set<string>();
+  for (const slug of composition.seasoningSlugs) {
+    const b = berriesBySlug.get(slug);
+    if (!b) continue;
+    for (const tag of b.effectTags ?? []) set.add(tag);
+  }
+  return [...set];
+}
+
+/**
  * Filter a pool of spawns against a filter. `spawns` is a lightweight DTO joining
  * spawn + species so the caller can pre-load once.
  */

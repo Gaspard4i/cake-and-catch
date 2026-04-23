@@ -170,9 +170,11 @@ function BerryOnTop({
 function CakeMesh({
   berries,
   fallbackFlavour,
+  potColour,
 }: {
   berries: BerryPlacement[];
   fallbackFlavour: string | null;
+  potColour: string;
 }) {
   const group = useRef<THREE.Group>(null);
 
@@ -269,10 +271,10 @@ function CakeMesh({
 
   return (
     <group ref={group}>
-      {/* White pot base (a flat plate under the cake) */}
-      <mesh position={[0, -0.02, 0]}>
-        <cylinderGeometry args={[0.78, 0.78, 0.04, 24]} />
-        <meshStandardMaterial color="#fafafa" roughness={0.6} />
+      {/* Cooking Pot plate under the cake — colour picker */}
+      <mesh position={[0, -0.04, 0]}>
+        <cylinderGeometry args={[0.78, 0.82, 0.08, 24]} />
+        <meshStandardMaterial color={potColour} roughness={0.5} />
       </mesh>
 
       <mesh position={[0, H / 2, 0]} geometry={innerGeo} material={innerMats} />
@@ -288,10 +290,13 @@ function CakeMesh({
 export function Cake3D({
   flavour,
   berries = [],
+  potColour = "#c9b89e",
   size = 200,
 }: {
   flavour?: string | null;
   berries?: BerryPlacement[];
+  /** Hex colour for the Cooking Pot plate under the cake. Purely cosmetic (upstream pot colour does not affect cake tint). */
+  potColour?: string;
   size?: number;
 }) {
   return (
@@ -303,7 +308,11 @@ export function Cake3D({
         <ambientLight intensity={0.8} />
         <directionalLight position={[3, 4, 2]} intensity={1.1} />
         <Suspense fallback={null}>
-          <CakeMesh berries={berries} fallbackFlavour={flavour ?? null} />
+          <CakeMesh
+            berries={berries}
+            fallbackFlavour={flavour ?? null}
+            potColour={potColour}
+          />
         </Suspense>
       </Canvas>
     </div>

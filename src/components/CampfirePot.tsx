@@ -16,8 +16,36 @@ type Seasoning = {
   flavours: Record<string, number>;
   dominantFlavour: string | null;
   description: string | null;
+  effectTags: string[];
   effects: Array<Record<string, unknown>>;
 };
+
+type CakeEffect = {
+  tag: string;
+  title: string;
+  description: string;
+  tone: "healing" | "friendship" | "defense" | "buff" | "offense" | "utility";
+};
+
+const EFFECT_TONE_STYLES: Record<CakeEffect["tone"], string> = {
+  healing: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300",
+  friendship: "bg-pink-500/15 text-pink-700 dark:text-pink-300",
+  defense: "bg-sky-500/15 text-sky-700 dark:text-sky-300",
+  buff: "bg-amber-500/15 text-amber-700 dark:text-amber-300",
+  offense: "bg-red-500/15 text-red-700 dark:text-red-300",
+  utility: "bg-zinc-500/15 text-zinc-700 dark:text-zinc-300",
+};
+
+const POT_COLOURS = [
+  { slug: null, label: "Default", hex: "#c9b89e" },
+  { slug: "white", label: "White", hex: "#f9fffe" },
+  { slug: "black", label: "Black", hex: "#1d1d21" },
+  { slug: "red", label: "Red", hex: "#b02e26" },
+  { slug: "blue", label: "Blue", hex: "#3c44aa" },
+  { slug: "green", label: "Green", hex: "#5e7c16" },
+  { slug: "pink", label: "Pink", hex: "#f38baa" },
+  { slug: "yellow", label: "Yellow", hex: "#fed83d" },
+] as const;
 
 type AttractedEntry = {
   slug: string;
@@ -77,6 +105,8 @@ export function CampfirePot() {
   const [minY, setMinY] = useState<string>("");
   const [maxY, setMaxY] = useState<string>("");
   const [attracted, setAttracted] = useState<AttractedEntry[]>([]);
+  const [effects, setEffects] = useState<CakeEffect[]>([]);
+  const [potColour, setPotColour] = useState<typeof POT_COLOURS[number]>(POT_COLOURS[0]);
   const [loading, setLoading] = useState(false);
   const [filterQuery, setFilterQuery] = useState("");
   const [activeFlavours, setActiveFlavours] = useState<Set<string>>(new Set());
@@ -169,11 +199,16 @@ export function CampfirePot() {
           body: JSON.stringify(body),
           signal: ctrl.signal,
         });
-        const data = (await res.json()) as { attracted: AttractedEntry[] };
+        const data = (await res.json()) as {
+          attracted: AttractedEntry[];
+          cake?: { effects?: CakeEffect[] };
+        };
         setAttracted(data.attracted ?? []);
+        setEffects(data.cake?.effects ?? []);
       } catch (err) {
         if ((err as Error).name !== "AbortError") {
           setAttracted([]);
+          setEffects([]);
         }
       } finally {
         setLoading(false);
@@ -246,8 +281,34 @@ export function CampfirePot() {
             </div>
             <div className="text-[10px] text-muted uppercase">3 seasoning slots</div>
 
-            {/* 3D Cake, bound to slots */}
-            <Cake3D flavour={dominant} berries={cakeBerries} size={200} />
+            {/* Cooking Pot colour picker (cosmetic in the mod; purely visual here) */}
+            <div className="flex items-center gap-1 pt-1">
+              {POT_COLOURS.map((c) => (
+                <button
+                  key={c.slug ?? "default"}
+                  onClick={() => setPotColour(c)}
+                  title={`${c.label} Cooking Pot`}
+                  aria-label={`${c.label} Cooking Pot`}
+                  className={`size-5 rounded-full border transition-transform ${
+                    potColour.slug === c.slug
+                      ? "border-accent scale-110 ring-2 ring-ring/30"
+                      : "border-border hover:scale-105"
+                  }`}
+                  style={{ background: c.hex }}
+                />
+              ))}
+            </div>
+            <div className="text-[10px] text-muted uppercase">
+              Pot: {potColour.label}
+            </div>
+
+            {/* 3D Cake, bound to slots and pot colour */}
+            <Cake3D
+              flavour={dominant}
+              berries={cakeBerries}
+              potColour={potColour.hex}
+              size={200}
+            />
 
             <div className="flex items-center gap-2 text-xs text-muted">
               <span>Dominant:</span>
@@ -469,6 +530,36 @@ export function CampfirePot() {
               </label>
             </div>
           </div>
+        </div>
+
+        <div>
+          <h3 className="text-sm font-medium uppercase tracking-wide text-muted">
+            Cake effects {loading && "…"}
+          </h3>
+          <p className="mt-1 text-xs text-muted">
+            Effects carried by the berries placed in the seasoning slot.
+            These describe what the berries do in-game when held or eaten.
+            The cake itself spawns Pokémon from the local pool in an 8-block
+            radius; it does not grant battle effects to the player.
+          </p>
+          {effects.length === 0 ? (
+            <p className="mt-3 text-sm text-muted">
+              Drop a berry to see its effect.
+            </p>
+          ) : (
+            <ul className="mt-3 flex flex-wrap gap-2">
+              {effects.map((e) => (
+                <li
+                  key={e.tag}
+                  className={`rounded-lg px-3 py-2 text-xs ${EFFECT_TONE_STYLES[e.tone]}`}
+                  title={e.description}
+                >
+                  <div className="font-medium">{e.title}</div>
+                  <div className="opacity-80 mt-0.5 max-w-xs">{e.description}</div>
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
 
         <div>
