@@ -206,8 +206,8 @@ export function PokedexGrid() {
                     </span>
                   </div>
                   <div className="font-medium truncate">{s.name}</div>
-                  <div className="mt-1">
-                    <TypePair primary={s.primaryType} secondary={s.secondaryType} size={18} />
+                  <div className="mt-1 min-w-0 max-w-full overflow-hidden">
+                    <TypePair primary={s.primaryType} secondary={s.secondaryType} size={16} />
                   </div>
                 </div>
               </div>

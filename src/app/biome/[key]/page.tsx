@@ -1,11 +1,8 @@
 import Link from "next/link";
 import { Suspense } from "react";
 import { notFound } from "next/navigation";
-import { getTranslations } from "next-intl/server";
 import { listSpawnsForBiome } from "@/lib/db/queries";
-import { TypePair } from "@/components/TypeBadge";
-import { SourceBadge } from "@/components/SourceBadge";
-import { PokemonSprite } from "@/components/PokemonSprite";
+import { BiomeSpawnList, type BiomeSpawnEntry } from "@/components/BiomeSpawnList";
 
 function prettifyBiome(key: string): string {
   return key
@@ -18,18 +15,30 @@ function prettifyBiome(key: string): string {
 
 async function BiomeContent({ params }: { params: Promise<{ key: string }> }) {
   const { key } = await params;
-  // The URL-safe form strips leading '#' and uses ':'. We accept both encodings.
   const decoded = decodeURIComponent(key);
   const biomeKey = decoded.startsWith("#") ? decoded : `#${decoded}`;
-  const spawns = await listSpawnsForBiome(biomeKey);
+  const primary = await listSpawnsForBiome(biomeKey);
 
-  // Fallback: also try without '#' for non-tag biomes (e.g. "minecraft:plains")
-  const finalSpawns =
-    spawns.length > 0 ? spawns : await listSpawnsForBiome(decoded);
+  const rows = primary.length > 0 ? primary : await listSpawnsForBiome(decoded);
+  if (rows.length === 0) notFound();
 
-  if (finalSpawns.length === 0) notFound();
-
-  const t = await getTranslations("biome");
+  const entries: BiomeSpawnEntry[] = rows.map((s) => ({
+    spawnId: s.spawnId,
+    speciesId: s.speciesId,
+    slug: s.slug,
+    name: s.name,
+    dexNo: s.dexNo,
+    primaryType: s.primaryType,
+    secondaryType: s.secondaryType,
+    bucket: s.bucket,
+    weight: s.weight,
+    levelMin: s.levelMin,
+    levelMax: s.levelMax,
+    sourceKind: s.sourceKind,
+    sourceName: s.sourceName,
+    sourceUrl: s.sourceUrl,
+    condition: s.condition,
+  }));
 
   return (
     <>
@@ -41,49 +50,14 @@ async function BiomeContent({ params }: { params: Promise<{ key: string }> }) {
       </h1>
       <p className="mt-1 text-sm text-muted font-mono">{decoded}</p>
 
-      <h2 className="mt-8 text-sm font-medium uppercase tracking-wide text-muted">
-        {t("spawnsHere", { count: finalSpawns.length })}
-      </h2>
-      <ul className="mt-3 space-y-2">
-        {finalSpawns.map((s) => (
-          <li
-            key={s.spawnId}
-            className="rounded-lg border border-border bg-card p-3 flex items-center justify-between gap-3 flex-wrap"
-          >
-            <Link
-              href={`/pokemon/${s.slug}`}
-              className="flex items-center gap-3 min-w-0 hover:text-accent transition-colors"
-            >
-              <PokemonSprite dexNo={s.dexNo} name={s.name} size={40} />
-              <span className="font-mono text-xs text-muted shrink-0">
-                #{String(s.dexNo).padStart(4, "0")}
-              </span>
-              <span className="truncate font-medium">{s.name}</span>
-              <TypePair primary={s.primaryType} secondary={s.secondaryType} size={20} />
-            </Link>
-            <div className="flex items-center gap-2">
-              <span className="text-xs rounded bg-subtle px-1.5 py-0.5 capitalize">
-                {s.bucket}
-              </span>
-              <span className="text-xs text-muted">
-                Niv. {s.levelMin}–{s.levelMax}
-              </span>
-              <SourceBadge
-                kind={s.sourceKind === "addon" ? "addon" : "mod"}
-                label={s.sourceKind === "addon" ? `Addon · ${s.sourceName}` : undefined}
-                href={s.sourceUrl ?? undefined}
-              />
-            </div>
-          </li>
-        ))}
-      </ul>
+      <BiomeSpawnList entries={entries} />
     </>
   );
 }
 
 export default function BiomePage({ params }: { params: Promise<{ key: string }> }) {
   return (
-    <div className="mx-auto max-w-5xl px-6 py-10">
+    <div className="mx-auto max-w-6xl px-6 py-10">
       <Suspense fallback={<p className="text-sm text-muted">…</p>}>
         <BiomeContent params={params} />
       </Suspense>

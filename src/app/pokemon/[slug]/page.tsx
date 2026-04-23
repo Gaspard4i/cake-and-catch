@@ -28,11 +28,16 @@ import {
 } from "@/lib/db/queries";
 import { SourceBadge } from "@/components/SourceBadge";
 import { TypePair } from "@/components/TypeBadge";
-import { BaitList } from "@/components/BaitList";
 import { PokemonSprite } from "@/components/PokemonSprite";
 import { ItemIcon } from "@/components/ItemIcon";
-import { topBaits } from "@/lib/recommend/bait";
-import { rankCakeForSpecies, preferredFlavourFor } from "@/lib/recommend/snack";
+import {
+  rankBaitsForSpecies,
+  strongestStatOf,
+  type SeasoningLike,
+} from "@/lib/recommend/bait-for-species";
+import { formatBaitEffects, type RawBaitEffect } from "@/lib/recommend/bait-effects";
+import { BAIT_VANILLA_ITEMS } from "@/lib/recommend/bait-effects";
+import { listAllSeasonings } from "@/lib/db/queries";
 
 function formatBiome(biome: string) {
   return biome.replace(/^#?cobblemon:/, "").replace(/is_/, "").replace(/_/g, " ");
@@ -79,23 +84,60 @@ async function SpeciesDetail({ params }: { params: Promise<{ slug: string }> }) 
   const species = await getSpeciesBySlug(slug);
   if (!species) notFound();
 
-  const [spawns, sources, baits, berries, wiki, t] = await Promise.all([
+  const [spawns, sources, baits, berries, seasonings, wiki, t] = await Promise.all([
     listSpawnsForSpecies(species.id),
     getSourcesFor("species", species.id),
     listBaitEffects(),
     listBerries(),
+    listAllSeasonings(),
     getWikiSummary(species.id),
     getTranslations("pokemon"),
   ]);
 
   const primarySource = sources[0];
-  const recommendedBaits = topBaits(baits, {
-    primaryType: species.primaryType,
-    preferredFlavours: species.preferredFlavours,
-    limit: 6,
-  });
-  const topBerries = rankCakeForSpecies(species, berries, { limit: 5 });
-  const preferredFlavour = preferredFlavourFor(species);
+
+  // Build the pool of valid bait seasonings with their raw effects, and rank
+  // them by how much they actually help catch THIS Pokémon.
+  const baitByItem = new Map<string, RawBaitEffect[]>();
+  for (const b of baits as Array<{ itemId: string; effects: RawBaitEffect[] }>) {
+    baitByItem.set(b.itemId, b.effects as RawBaitEffect[]);
+  }
+  const pool: SeasoningLike[] = [];
+  for (const b of berries) {
+    pool.push({
+      slug: b.slug,
+      itemId: b.itemId,
+      colour: b.colour,
+      flavours: b.flavours,
+      dominantFlavour: b.dominantFlavour,
+      rawBaitEffects: baitByItem.get(b.itemId) ?? [],
+      baitEffects: formatBaitEffects(baitByItem.get(b.itemId) ?? []),
+    });
+  }
+  for (const s of seasonings) {
+    if (!BAIT_VANILLA_ITEMS.has(s.itemId)) continue;
+    pool.push({
+      slug: s.slug,
+      itemId: s.itemId,
+      colour: s.colour,
+      flavours: {},
+      dominantFlavour: null,
+      rawBaitEffects: baitByItem.get(s.itemId) ?? [],
+      baitEffects: formatBaitEffects(baitByItem.get(s.itemId) ?? []),
+    });
+  }
+  const rawSpecies = (species.raw ?? {}) as Record<string, unknown>;
+  const eggGroups = (rawSpecies.eggGroups as string[] | undefined) ?? [];
+  const rankedSeasonings = rankBaitsForSpecies(
+    pool,
+    {
+      primaryType: species.primaryType,
+      secondaryType: species.secondaryType,
+      eggGroups,
+      strongestStat: strongestStatOf(species.baseStats),
+    },
+    { limit: 8 },
+  );
 
   return (
     <>
@@ -111,7 +153,11 @@ async function SpeciesDetail({ params }: { params: Promise<{ slug: string }> }) 
               #{String(species.dexNo).padStart(4, "0")}
             </span>
             <h1 className="text-3xl font-semibold tracking-tight">{species.name}</h1>
-            <SourceBadge kind="mod" href={primarySource?.url} />
+            <SourceBadge
+              kind="mod"
+              name="cobblemon"
+              href={primarySource?.url ?? undefined}
+            />
           </div>
           <div className="mt-2 flex items-center gap-3 flex-wrap text-sm text-muted">
             <TypePair primary={species.primaryType} secondary={species.secondaryType} size={24} />
@@ -182,34 +228,47 @@ async function SpeciesDetail({ params }: { params: Promise<{ slug: string }> }) 
 
       <section className="mt-10">
         <h2 className="text-sm font-medium uppercase tracking-wide text-muted">
-          {t("cakeSection")}
+          Best bait seasonings for {species.name}
         </h2>
         <p className="mt-1 text-xs text-muted">
-          {t("cakeHelp", { flavour: preferredFlavour.toLowerCase() })}
+          Ranked by how much they bias the encounter toward this Pokémon —
+          type, egg-group, and nature alignment come first, rarity and shiny
+          boosts next.
         </p>
-        <ul className="mt-3 flex flex-wrap gap-3">
-          {topBerries.map((b) => (
-            <li
-              key={b.berrySlug}
-              className="rounded-lg border border-border bg-card p-3 flex flex-col items-center gap-1 w-24"
-              title={b.reason}
-            >
-              <ItemIcon id={b.berryItemId} size={48} />
-              <div className="text-xs font-medium capitalize text-center">
-                {b.berrySlug.replaceAll("_", " ")}
-              </div>
-              <div className="text-[10px] uppercase text-muted">{b.dominantFlavour}</div>
-              {b.reason === "type_derived" && (
-                <span className="text-[9px] uppercase px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-700 dark:text-amber-300">
-                  derived
-                </span>
-              )}
-            </li>
-          ))}
-        </ul>
+        {rankedSeasonings.length === 0 ? (
+          <p className="mt-3 text-sm text-muted">
+            No documented bait seasoning biases the encounter toward this
+            Pokémon yet.
+          </p>
+        ) : (
+          <ul className="mt-3 flex flex-wrap gap-3">
+            {rankedSeasonings.map((r, i) => (
+              <li
+                key={r.seasoning.slug}
+                className={`rounded-lg border p-3 flex flex-col items-center gap-1 w-28 text-center transition-transform ${
+                  i === 0
+                    ? "border-accent bg-accent/5 scale-105"
+                    : "border-border bg-card"
+                }`}
+                title={r.reasons.join(" · ")}
+              >
+                <ItemIcon id={r.seasoning.itemId} size={48} />
+                <div className="text-xs font-medium capitalize leading-tight">
+                  {r.seasoning.slug.replaceAll("_", " ")}
+                </div>
+                <div className="text-[10px] uppercase text-accent font-medium">
+                  {r.primaryReason}
+                </div>
+                {r.reasons.length > 1 && (
+                  <div className="text-[9px] text-muted leading-tight">
+                    + {r.reasons.slice(1, 3).join(" · ")}
+                  </div>
+                )}
+              </li>
+            ))}
+          </ul>
+        )}
       </section>
-
-      <BaitList baits={recommendedBaits} />
 
       <section className="mt-10">
         <h2 className="text-sm font-medium uppercase tracking-wide text-muted">
@@ -233,11 +292,7 @@ async function SpeciesDetail({ params }: { params: Promise<{ slug: string }> }) 
                   </div>
                   <SourceBadge
                     kind={s.sourceKind === "addon" ? "addon" : "mod"}
-                    label={
-                      s.sourceKind === "addon"
-                        ? `Addon · ${s.sourceName}`
-                        : undefined
-                    }
+                    name={s.sourceName}
                     href={s.sourceUrl ?? undefined}
                   />
                 </div>

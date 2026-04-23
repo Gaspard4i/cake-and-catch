@@ -65,6 +65,15 @@ type SeasoningDTO = {
   rawBaitEffects: RawBaitEffect[];
   /** Human-readable effects ready for UI display. */
   baitEffects: FormattedBaitEffect[];
+  /** Bedrock 3D model name (without extension). Null for non-berries. */
+  fruitModel: string | null;
+  /** Fruit texture name (without extension). Null for non-berries. */
+  fruitTexture: string | null;
+  /** Up to 3 placements on the snack top face (pixel units). */
+  snackPositionings: Array<{
+    position: { x: number; y: number; z: number };
+    rotation: { x: number; y: number; z: number };
+  }>;
 };
 
 function classifySeasoning(
@@ -200,6 +209,9 @@ function buildPantry(
       effectTags: berry.effectTags ?? [],
       rawBaitEffects: raw,
       baitEffects: formatBaitEffects(raw),
+      fruitModel: berry.fruitModel ?? null,
+      fruitTexture: berry.fruitTexture ?? null,
+      snackPositionings: berry.snackPositionings ?? [],
     });
   }
   for (const s of rawSeasonings) {
@@ -221,6 +233,9 @@ function buildPantry(
       effectTags: [],
       rawBaitEffects: baitRaw,
       baitEffects: formatBaitEffects(baitRaw),
+      fruitModel: null,
+      fruitTexture: null,
+      snackPositionings: [],
     });
   }
   return out;

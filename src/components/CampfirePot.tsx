@@ -26,6 +26,12 @@ type Seasoning = {
   description: string | null;
   effectTags: string[];
   baitEffects: BaitEffect[];
+  fruitModel?: string | null;
+  fruitTexture?: string | null;
+  snackPositionings?: Array<{
+    position: { x: number; y: number; z: number };
+    rotation: { x: number; y: number; z: number };
+  }>;
 };
 
 const EFFECT_TONE_STYLES: Record<BaitEffect["tone"], string> = {
@@ -185,6 +191,9 @@ export function CampfirePot() {
         colour: s.colour,
         flavours: s.flavours,
         dominantFlavour: s.dominantFlavour,
+        fruitModel: s.fruitModel ?? null,
+        fruitTexture: s.fruitTexture ?? null,
+        snackPositionings: s.snackPositionings ?? [],
       }));
   }, [slots]);
 

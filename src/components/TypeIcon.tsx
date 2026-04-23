@@ -39,6 +39,7 @@ export function TypeIcon({ type, size = 28 }: { type: string; size?: number }) {
   }
   // PokeAPI type icons aren't 2.5:1 exactly (some are 64x28, others 70x28),
   // so we set explicit pixel height and let the image keep its native ratio.
+  // `max-w-full` prevents the image from overflowing narrow parents.
   return (
     <Image
       src={`/textures/type/${lowered}.png`}
@@ -47,7 +48,7 @@ export function TypeIcon({ type, size = 28 }: { type: string; size?: number }) {
       height={size}
       unoptimized
       onError={() => setErrored(true)}
-      className="inline-block"
+      className="inline-block max-w-full shrink"
       style={{ height: size, width: "auto" }}
       title={type}
     />
@@ -64,7 +65,7 @@ export function TypePair({
   size?: number;
 }) {
   return (
-    <span className="inline-flex gap-1 items-center">
+    <span className="inline-flex flex-wrap gap-1 items-center max-w-full">
       <TypeIcon type={primary} size={size} />
       {secondary && <TypeIcon type={secondary} size={size} />}
     </span>
