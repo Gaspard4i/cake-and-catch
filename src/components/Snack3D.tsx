@@ -289,26 +289,40 @@ function BerryOnTop({
     );
   }
 
-  // Fallback: crossed planes (MC plant-style) so seasonings without geo still
-  // show something.
-  const size = 0.28;
-  const H = 7 / 16;
-  const y = H + size / 2 - 0.02;
-  const d = totalCount === 1 ? 0 : 0.25;
-  const fx = totalCount === 1 ? 0 : index === 0 ? -d / 2 : index === 1 ? d / 2 : 0;
-  const fz = totalCount <= 2 ? 0 : index === 2 ? d / 2 : -d / 4;
+  // No Bedrock model (typically a vanilla bait item: apple, golden_apple…).
+  // Render it as two crossed sprite planes standing on top of the snack —
+  // same visual language MC uses for grass/flowers on cake-like blocks.
+  const fbSize = 0.28;
+  const fbH = 7 / 16;
+  const fbY = fbH + fbSize / 2 - 0.02;
+  const fbD = 0.3;
+  let fbX = 0;
+  let fbZ = 0;
+  if (totalCount === 2) {
+    fbX = index === 0 ? -fbD / 2 : fbD / 2;
+  } else if (totalCount >= 3) {
+    if (index === 0) fbZ = fbD / 2;
+    else if (index === 1) {
+      fbX = -fbD / 2;
+      fbZ = -fbD / 4;
+    } else {
+      fbX = fbD / 2;
+      fbZ = -fbD / 4;
+    }
+  }
   return (
-    <group position={[fx, y, fz]}>
+    <group position={[fbX, fbY, fbZ]}>
       <mesh>
-        <planeGeometry args={[size, size]} />
+        <planeGeometry args={[fbSize, fbSize]} />
         <primitive object={material} attach="material" />
       </mesh>
       <mesh rotation={[0, Math.PI / 2, 0]}>
-        <planeGeometry args={[size, size]} />
+        <planeGeometry args={[fbSize, fbSize]} />
         <primitive object={material} attach="material" />
       </mesh>
     </group>
   );
+
 }
 
 function SnackMesh({

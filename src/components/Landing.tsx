@@ -46,28 +46,17 @@ function randomBerries(pool: Seasoning[]): Seasoning[] {
 }
 
 /**
- * Cache of berry pools for each of the 3 random snacks. Re-rolled on demand
- * (timer) so the home page feels alive without being noisy.
+ * Single hero snack: rolls a fresh composition of 1-3 berries every 4.5s.
  */
-function useRandomSnacks(pool: Seasoning[], count = 3): Seasoning[][] {
-  const [rolls, setRolls] = useState<Seasoning[][]>(() =>
-    Array.from({ length: count }, () => randomBerries(pool)),
-  );
+function useRandomSnack(pool: Seasoning[]): Seasoning[] {
+  const [roll, setRoll] = useState<Seasoning[]>(() => randomBerries(pool));
   useEffect(() => {
     if (pool.length === 0) return;
-    // Initial roll once the pool arrives.
-    setRolls(Array.from({ length: count }, () => randomBerries(pool)));
-    const id = setInterval(() => {
-      setRolls((prev) => {
-        const idx = Math.floor(Math.random() * prev.length);
-        const next = [...prev];
-        next[idx] = randomBerries(pool);
-        return next;
-      });
-    }, 4500);
+    setRoll(randomBerries(pool));
+    const id = setInterval(() => setRoll(randomBerries(pool)), 4500);
     return () => clearInterval(id);
-  }, [pool, count]);
-  return rolls;
+  }, [pool]);
+  return roll;
 }
 
 export function Landing({ labels }: { labels: Labels }) {
@@ -92,7 +81,7 @@ export function Landing({ labels }: { labels: Labels }) {
     };
   }, []);
 
-  const rolls = useRandomSnacks(pool, 3);
+  const berries = useRandomSnack(pool);
 
   const floaters = useMemo(
     () =>
@@ -139,59 +128,49 @@ export function Landing({ labels }: { labels: Labels }) {
         ))}
       </div>
 
-      <section className="mx-auto max-w-6xl px-6 pt-20 pb-16">
-        <div className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-3 py-1 text-[10px] uppercase tracking-widest text-muted">
-          <span className="size-1.5 rounded-full bg-accent animate-pulse" />
-          <span>Cobblemon companion</span>
-        </div>
-        <h1 className="mt-4 text-4xl sm:text-5xl font-semibold tracking-tight">
-          Cook the right snack.
-          <br />
-          <span className="text-accent">Catch the right Pokémon.</span>
-        </h1>
-        <p className="mt-4 text-muted max-w-xl">{labels.tagline}</p>
-        <p className="mt-2 text-sm text-muted">
-          <span className="text-foreground font-medium">{labels.indexedSpecies}</span>
-        </p>
+      <section className="mx-auto max-w-6xl px-6 pt-20 pb-24 flex flex-col-reverse md:flex-row items-start gap-10">
+        <div className="flex-1 w-full">
+          <div className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-3 py-1 text-[10px] uppercase tracking-widest text-muted">
+            <span className="size-1.5 rounded-full bg-accent animate-pulse" />
+            <span>Cobblemon companion</span>
+          </div>
+          <h1 className="mt-4 text-4xl sm:text-5xl font-semibold tracking-tight">
+            Cook the right snack.
+            <br />
+            <span className="text-accent">Catch the right Pokémon.</span>
+          </h1>
+          <p className="mt-4 text-muted max-w-xl">{labels.tagline}</p>
+          <p className="mt-2 text-sm text-muted">
+            <span className="text-foreground font-medium">{labels.indexedSpecies}</span>
+          </p>
 
-        <div className="mt-8">
-          <HomeSearch />
-        </div>
+          <div className="mt-8">
+            <HomeSearch />
+          </div>
 
-        <div className="mt-6 flex flex-wrap gap-3">
-          <Link
-            href="/pokedex"
-            className="rounded-lg bg-accent text-accent-foreground px-5 py-2.5 text-sm font-medium hover:opacity-90 transition"
-          >
-            Open the Pokédex →
-          </Link>
-          <Link
-            href="/snack"
-            className="rounded-lg border border-border bg-card px-5 py-2.5 text-sm font-medium hover:bg-subtle transition"
-          >
-            Snack maker
-          </Link>
-        </div>
-      </section>
-
-      <section className="mx-auto max-w-6xl px-6 pb-24">
-        <h2 className="text-sm font-medium uppercase tracking-wide text-muted">
-          Random snacks
-        </h2>
-        <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-4">
-          {rolls.map((berries, i) => (
-            <div
-              key={i}
-              className="rounded-lg border border-border bg-card p-4 flex flex-col items-center gap-3"
+          <div className="mt-6 flex flex-wrap gap-3">
+            <Link
+              href="/pokedex"
+              className="rounded-lg bg-accent text-accent-foreground px-5 py-2.5 text-sm font-medium hover:opacity-90 transition"
             >
-              <Snack3D berries={berries} size={180} />
-              <div className="text-[10px] uppercase tracking-widest text-muted text-center">
-                {berries.length === 0
-                  ? "no seasoning"
-                  : berries.map((b) => b.slug.replaceAll("_", " ")).join(" · ")}
-              </div>
-            </div>
-          ))}
+              Open the Pokédex →
+            </Link>
+            <Link
+              href="/snack"
+              className="rounded-lg border border-border bg-card px-5 py-2.5 text-sm font-medium hover:bg-subtle transition"
+            >
+              Snack maker
+            </Link>
+          </div>
+        </div>
+
+        <div className="shrink-0 flex flex-col items-center gap-2">
+          <Snack3D berries={berries} size={280} />
+          <div className="text-[10px] uppercase tracking-widest text-muted text-center max-w-[280px]">
+            {berries.length === 0
+              ? "no seasoning"
+              : berries.map((b) => b.slug.replaceAll("_", " ")).join(" · ")}
+          </div>
         </div>
       </section>
     </div>
