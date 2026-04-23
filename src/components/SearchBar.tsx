@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { TypePair } from "./TypeBadge";
+import { PokemonSprite } from "./PokemonSprite";
 
 type Suggestion = {
   slug: string;
@@ -145,12 +146,13 @@ export function SearchBar({
                 aria-selected={highlight === i}
               >
                 <span className="flex items-center gap-3 min-w-0">
+                  <PokemonSprite dexNo={r.dexNo} name={r.name} size={28} />
                   <span className="font-mono text-xs text-muted shrink-0">
                     #{String(r.dexNo).padStart(4, "0")}
                   </span>
                   <span className="truncate">{r.name}</span>
                 </span>
-                <TypePair primary={r.primaryType} secondary={r.secondaryType} />
+                <TypePair primary={r.primaryType} secondary={r.secondaryType} size={20} />
               </Link>
             </li>
           ))}

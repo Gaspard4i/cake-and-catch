@@ -106,3 +106,21 @@ body {
   font-family: var(--font-sans), system-ui, sans-serif;
   transition: background-color 150ms ease, color 150ms ease;
 }
+
+/* Minecraft pixel-art renders */
+.pixel {
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
+
+@keyframes floaty {
+  0%, 100% {
+    transform: translateY(0px) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-20px) rotate(3deg);
+  }
+}
+.animate-floaty {
+  animation: floaty ease-in-out infinite;
+}

@@ -102,6 +102,43 @@ export async function searchSpeciesFiltered(filters: SpeciesFilters, limit = 100
   return q.orderBy(asc(schema.species.dexNo)).limit(limit);
 }
 
+export async function listBerries() {
+  return db.select().from(schema.berries).orderBy(asc(schema.berries.slug));
+}
+
+export async function getBerriesBySlug(slugs: string[]) {
+  if (slugs.length === 0) return [];
+  return db
+    .select()
+    .from(schema.berries)
+    .where(sql`${schema.berries.slug} IN ${slugs}`);
+}
+
+export async function listSpawnsWithSpecies(limit = 5000) {
+  return db
+    .select({
+      spawnId: schema.spawns.id,
+      speciesId: schema.spawns.speciesId,
+      bucket: schema.spawns.bucket,
+      weight: schema.spawns.weight,
+      levelMin: schema.spawns.levelMin,
+      levelMax: schema.spawns.levelMax,
+      biomes: schema.spawns.biomes,
+      condition: schema.spawns.condition,
+      sourceKind: schema.spawns.sourceKind,
+      sourceName: schema.spawns.sourceName,
+      slug: schema.species.slug,
+      name: schema.species.name,
+      dexNo: schema.species.dexNo,
+      primaryType: schema.species.primaryType,
+      secondaryType: schema.species.secondaryType,
+      preferredFlavours: schema.species.preferredFlavours,
+    })
+    .from(schema.spawns)
+    .innerJoin(schema.species, eq(schema.species.id, schema.spawns.speciesId))
+    .limit(limit);
+}
+
 export async function listSourceNames() {
   const rows = await db
     .selectDistinct({ sourceName: schema.spawns.sourceName })

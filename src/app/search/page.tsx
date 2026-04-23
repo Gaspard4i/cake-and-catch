@@ -4,6 +4,7 @@ import { getTranslations } from "next-intl/server";
 import { listSourceNames, searchSpeciesFiltered } from "@/lib/db/queries";
 import { SearchBar } from "@/components/SearchBar";
 import { TypePair } from "@/components/TypeBadge";
+import { PokemonSprite } from "@/components/PokemonSprite";
 
 const TYPES = [
   "normal",
@@ -132,12 +133,13 @@ async function ResultsAsync({
                 className="flex items-center justify-between gap-4 px-4 py-3 hover:bg-subtle transition-colors"
               >
                 <span className="flex items-center gap-3 min-w-0">
+                  <PokemonSprite dexNo={s.dexNo} name={s.name} size={40} />
                   <span className="font-mono text-xs text-muted shrink-0">
                     #{String(s.dexNo).padStart(4, "0")}
                   </span>
                   <span className="truncate">{s.name}</span>
                 </span>
-                <TypePair primary={s.primaryType} secondary={s.secondaryType} />
+                <TypePair primary={s.primaryType} secondary={s.secondaryType} size={20} />
               </Link>
             </li>
           ))}

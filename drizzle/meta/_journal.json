@@ -36,6 +36,13 @@
       "when": 1776944916148,
       "tag": "0004_mean_freak",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1776946371015,
+      "tag": "0005_typical_magus",
+      "breakpoints": true
     }
   ]
 }

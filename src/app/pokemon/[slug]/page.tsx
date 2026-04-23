@@ -28,6 +28,7 @@ import {
 import { SourceBadge } from "@/components/SourceBadge";
 import { TypePair } from "@/components/TypeBadge";
 import { BaitList } from "@/components/BaitList";
+import { PokemonSprite } from "@/components/PokemonSprite";
 import { topBaits } from "@/lib/recommend/bait";
 
 function formatBiome(biome: string) {
@@ -96,19 +97,25 @@ async function SpeciesDetail({ params }: { params: Promise<{ slug: string }> }) 
         {t("back")}
       </Link>
 
-      <header className="mt-4 flex items-baseline gap-4 flex-wrap">
-        <span className="text-muted font-mono">#{String(species.dexNo).padStart(4, "0")}</span>
-        <h1 className="text-3xl font-semibold tracking-tight">{species.name}</h1>
-        <SourceBadge kind="mod" href={primarySource?.url} />
+      <header className="mt-4 flex items-center gap-4 flex-wrap">
+        <PokemonSprite dexNo={species.dexNo} name={species.name} size={96} />
+        <div>
+          <div className="flex items-center gap-3 flex-wrap">
+            <span className="text-muted font-mono">
+              #{String(species.dexNo).padStart(4, "0")}
+            </span>
+            <h1 className="text-3xl font-semibold tracking-tight">{species.name}</h1>
+            <SourceBadge kind="mod" href={primarySource?.url} />
+          </div>
+          <div className="mt-2 flex items-center gap-3 flex-wrap text-sm text-muted">
+            <TypePair primary={species.primaryType} secondary={species.secondaryType} size={24} />
+            <span>{t("captureRate", { value: species.catchRate })}</span>
+            {species.baseFriendship != null && (
+              <span>{t("friendship", { value: species.baseFriendship })}</span>
+            )}
+          </div>
+        </div>
       </header>
-
-      <div className="mt-3 flex items-center gap-3 flex-wrap text-sm text-muted">
-        <TypePair primary={species.primaryType} secondary={species.secondaryType} size="md" />
-        <span>{t("captureRate", { value: species.catchRate })}</span>
-        {species.baseFriendship != null && (
-          <span>{t("friendship", { value: species.baseFriendship })}</span>
-        )}
-      </div>
 
       {wiki?.summary && (
         <section className="mt-6 rounded-lg border border-border bg-card p-4">
@@ -127,13 +134,44 @@ async function SpeciesDetail({ params }: { params: Promise<{ slug: string }> }) 
       <section className="mt-8">
         <h2 className="text-sm font-medium uppercase tracking-wide text-muted">{t("stats")}</h2>
         <dl className="mt-2 grid grid-cols-3 sm:grid-cols-6 gap-2">
-          {Object.entries(species.baseStats).map(([k, v]) => (
-            <div key={k} className="rounded-md border border-border bg-card px-3 py-2">
-              <dt className="text-[10px] uppercase text-muted">{k.replace("_", " ")}</dt>
-              <dd className="font-mono text-lg">{v as number}</dd>
-            </div>
-          ))}
+          {Object.entries(species.baseStats).map(([k, v]) => {
+            const value = v as number;
+            const pct = Math.min(100, (value / 255) * 100);
+            return (
+              <div
+                key={k}
+                className="rounded-md border border-border bg-card px-3 py-2 relative overflow-hidden"
+              >
+                <div
+                  className="absolute inset-y-0 left-0 bg-accent/15"
+                  style={{ width: `${pct}%` }}
+                />
+                <div className="relative">
+                  <dt className="text-[10px] uppercase text-muted">{k.replace("_", " ")}</dt>
+                  <dd className="font-mono text-lg">{value}</dd>
+                </div>
+              </div>
+            );
+          })}
         </dl>
+        {species.abilities && species.abilities.length > 0 && (
+          <div className="mt-4 flex flex-wrap gap-2 text-xs">
+            <span className="text-muted uppercase">Abilities:</span>
+            {species.abilities.map((a, i) => (
+              <span
+                key={i}
+                className={`px-2 py-0.5 rounded-full border capitalize ${
+                  a.startsWith("h:")
+                    ? "border-accent text-accent bg-accent/5"
+                    : "border-border bg-subtle"
+                }`}
+                title={a.startsWith("h:") ? "Hidden ability" : "Ability"}
+              >
+                {a.replace(/^h:/, "").replaceAll("_", " ")}
+              </span>
+            ))}
+          </div>
+        )}
       </section>
 
       <BaitList baits={recommendedBaits} />

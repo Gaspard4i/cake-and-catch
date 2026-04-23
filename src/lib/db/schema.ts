@@ -127,6 +127,21 @@ export const baitEffects = pgTable(
   (t) => [uniqueIndex("bait_effects_slug_idx").on(t.slug)],
 );
 
+export const berries = pgTable(
+  "berries",
+  {
+    id: serial("id").primaryKey(),
+    slug: text("slug").notNull(),
+    itemId: text("item_id").notNull(),
+    flavours: jsonb("flavours").$type<Record<string, number>>().notNull(),
+    dominantFlavour: text("dominant_flavour"),
+    colour: text("colour"),
+    weight: real("weight"),
+    raw: jsonb("raw").notNull(),
+  },
+  (t) => [uniqueIndex("berries_slug_idx").on(t.slug)],
+);
+
 export const speciesWiki = pgTable(
   "species_wiki",
   {
@@ -150,3 +165,4 @@ export type Seasoning = typeof seasonings.$inferSelect;
 export type BaitEffect = typeof baitEffects.$inferSelect;
 export type Recipe = typeof recipes.$inferSelect;
 export type SpeciesWiki = typeof speciesWiki.$inferSelect;
+export type Berry = typeof berries.$inferSelect;

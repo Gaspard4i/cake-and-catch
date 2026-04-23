@@ -11,12 +11,25 @@
     "wikiSource": "wiki Cobblemon (CC BY 4.0)"
   },
   "home": {
-    "pokedexPreview": "Aperçu du Pokédex"
+    "pokedexPreview": "Aperçu du Pokédex",
+    "ctaPokedex": "Ouvrir le Pokédex",
+    "ctaCake": "Cake maker",
+    "ctaRecipes": "Recettes",
+    "recentlyIndexed": "Extrait du Pokédex"
+  },
+  "pokedex": {
+    "title": "Pokédex Cobblemon",
+    "intro": "Toutes les espèces indexées par le mod et ses addons, avec leurs stats réelles. Filtre par type ou génération, scrolle pour charger la suite."
   },
   "nav": {
     "pokedex": "Pokédex",
     "recipes": "Recettes",
+    "cake": "Cake maker",
     "about": "À propos"
+  },
+  "cake": {
+    "title": "Cake maker",
+    "intro": "Compose un Poké Cake en faisant glisser une berry dans le slot seasoning. L'outil liste les Pokémon qui peuvent spawn dans les conditions choisies ET dont la saveur préférée correspond au cake. Le seasoning colore le cake et déclenche le flavour effect, mais le mod ne fait pas apparaître de Pokémon hors pool de spawn."
   },
   "biome": {
     "spawnsHere": "Spawns répertoriés ({count})"

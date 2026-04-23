@@ -5,6 +5,7 @@ import { getTranslations } from "next-intl/server";
 import { listSpawnsForBiome } from "@/lib/db/queries";
 import { TypePair } from "@/components/TypeBadge";
 import { SourceBadge } from "@/components/SourceBadge";
+import { PokemonSprite } from "@/components/PokemonSprite";
 
 function prettifyBiome(key: string): string {
   return key
@@ -53,11 +54,12 @@ async function BiomeContent({ params }: { params: Promise<{ key: string }> }) {
               href={`/pokemon/${s.slug}`}
               className="flex items-center gap-3 min-w-0 hover:text-accent transition-colors"
             >
+              <PokemonSprite dexNo={s.dexNo} name={s.name} size={40} />
               <span className="font-mono text-xs text-muted shrink-0">
                 #{String(s.dexNo).padStart(4, "0")}
               </span>
               <span className="truncate font-medium">{s.name}</span>
-              <TypePair primary={s.primaryType} secondary={s.secondaryType} />
+              <TypePair primary={s.primaryType} secondary={s.secondaryType} size={20} />
             </Link>
             <div className="flex items-center gap-2">
               <span className="text-xs rounded bg-subtle px-1.5 py-0.5 capitalize">

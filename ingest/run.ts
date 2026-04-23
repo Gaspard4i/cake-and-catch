@@ -19,7 +19,12 @@ import {
 } from "../src/lib/sources/addons";
 import { speciesSchema } from "../src/lib/parsers/species";
 import { spawnFileSchema, parseLevelRange } from "../src/lib/parsers/spawn";
-import { seasoningSchema, baitEffectSchema } from "../src/lib/parsers/seasoning";
+import {
+  seasoningSchema,
+  baitEffectSchema,
+  berrySchema,
+  dominantFlavour,
+} from "../src/lib/parsers/seasoning";
 import { cookingRecipeSchema, shapedToGrid, classifyRecipe } from "../src/lib/parsers/recipe";
 import { basename, relative } from "node:path";
 
@@ -242,6 +247,49 @@ async function ingestSeasonings(clone: RepoClone) {
   console.log(`[seasonings] ok=${ok} failed=${failed}`);
 }
 
+async function ingestBerries(clone: RepoClone) {
+  const dir = dataPath(clone, "berries");
+  const files = await listJsonFiles(dir);
+  let ok = 0;
+  let failed = 0;
+  for (const file of files) {
+    try {
+      const raw = await readJson(file);
+      const parsed = berrySchema.parse(raw);
+      const slug = basename(file, ".json");
+      const itemId = parsed.identifier ?? `cobblemon:${slug}`;
+      const dom = dominantFlavour(parsed.flavours);
+      await db
+        .insert(schema.berries)
+        .values({
+          slug,
+          itemId,
+          flavours: parsed.flavours,
+          dominantFlavour: dom,
+          colour: parsed.colour ?? null,
+          weight: parsed.weight ?? null,
+          raw: parsed,
+        })
+        .onConflictDoUpdate({
+          target: schema.berries.slug,
+          set: {
+            itemId,
+            flavours: parsed.flavours,
+            dominantFlavour: dom,
+            colour: parsed.colour ?? null,
+            weight: parsed.weight ?? null,
+            raw: parsed,
+          },
+        });
+      ok++;
+    } catch (err) {
+      failed++;
+      console.warn(`[berries] skip ${file}:`, err instanceof Error ? err.message : err);
+    }
+  }
+  console.log(`[berries] ok=${ok} failed=${failed}`);
+}
+
 async function ingestRecipes(clone: RepoClone) {
   const dir = dataPath(clone, "recipe", "campfire_pot");
   const files = await listJsonFiles(dir);
@@ -342,6 +390,7 @@ async function main() {
   await ingestSeasonings(clone);
   await ingestBaitEffects(clone);
   await ingestRecipes(clone);
+  await ingestBerries(clone);
 
   console.log("[ingest] done");
   process.exit(0);

@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import { getTranslations } from "next-intl/server";
 import { listCoreRecipes } from "@/lib/db/queries";
 import { RecipeGrid } from "@/components/RecipeGrid";
+import { ItemIcon } from "@/components/ItemIcon";
 import type { GridCell } from "@/lib/parsers/recipe";
 
 function prettifyItem(id: string): string {
@@ -38,11 +39,16 @@ async function RecipesList() {
                   key={r.id}
                   className="rounded-lg border border-border bg-card p-5 flex flex-col gap-4"
                 >
-                  <div>
-                    <h3 className="font-medium capitalize">{prettifyItem(r.resultId)}</h3>
-                    <p className="text-xs text-muted mt-0.5">
-                      {r.shape === "shaped" ? t("shaped") : t("shapeless")} · ×{r.resultCount}
-                    </p>
+                  <div className="flex items-center gap-3">
+                    <ItemIcon id={r.resultId} size={48} />
+                    <div>
+                      <h3 className="font-medium capitalize">
+                        {prettifyItem(r.resultId)}
+                      </h3>
+                      <p className="text-xs text-muted mt-0.5">
+                        {r.shape === "shaped" ? t("shaped") : t("shapeless")} · ×{r.resultCount}
+                      </p>
+                    </div>
                   </div>
                   {r.shape === "shaped" && (
                     <RecipeGrid
@@ -51,18 +57,22 @@ async function RecipesList() {
                     />
                   )}
                   {r.shape === "shapeless" && Array.isArray(r.ingredients) && (
-                    <ul className="flex flex-wrap gap-1.5 text-xs">
+                    <ul className="flex flex-wrap gap-2">
                       {(r.ingredients as Array<{ item?: string; tag?: string }>).map(
-                        (ing, i) => (
-                          <li
-                            key={i}
-                            className="rounded-md border border-border bg-subtle px-2 py-1 capitalize"
-                          >
-                            {ing.item
-                              ? prettifyItem(ing.item)
-                              : `#${prettifyItem(ing.tag ?? "")}`}
-                          </li>
-                        ),
+                        (ing, i) => {
+                          const id = ing.item
+                            ? ing.item
+                            : `c:${(ing.tag ?? "").replace(/^c:|^cobblemon:|^minecraft:/, "")}`;
+                          return (
+                            <li
+                              key={i}
+                              className="rounded-md border border-border bg-subtle p-1"
+                              title={id}
+                            >
+                              <ItemIcon id={id} size={32} />
+                            </li>
+                          );
+                        },
                       )}
                     </ul>
                   )}

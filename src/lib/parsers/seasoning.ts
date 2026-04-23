@@ -19,3 +19,32 @@ export const baitEffectSchema = z
   .passthrough();
 
 export type BaitEffectRaw = z.infer<typeof baitEffectSchema>;
+
+export const FLAVOURS = ["SWEET", "SPICY", "DRY", "BITTER", "SOUR"] as const;
+export type Flavour = (typeof FLAVOURS)[number];
+
+export const berrySchema = z
+  .object({
+    identifier: z.string().optional(),
+    flavours: z.record(z.string(), z.number()).default({}),
+    colour: z.string().optional(),
+    weight: z.number().optional(),
+  })
+  .passthrough();
+
+export type BerryRaw = z.infer<typeof berrySchema>;
+
+export function dominantFlavour(
+  flavours: Record<string, number>,
+): Flavour | null {
+  let best: Flavour | null = null;
+  let bestVal = -Infinity;
+  for (const f of FLAVOURS) {
+    const v = flavours[f] ?? 0;
+    if (v > bestVal) {
+      bestVal = v;
+      best = f;
+    }
+  }
+  return bestVal > 0 ? best : null;
+}
