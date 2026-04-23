@@ -129,10 +129,20 @@ function computeSnackTint(berries: BerryPlacement[], fallback: string | null): s
   return `#${r.toString(16).padStart(2, "0")}${g.toString(16).padStart(2, "0")}${b.toString(16).padStart(2, "0")}`;
 }
 
+/**
+ * Renders a berry as two crossed vertical planes (Minecraft plant style —
+ * same trick vanilla uses for flowers, saplings and grass). From most angles
+ * this reads as a volumetric berry rather than a flat decal, while remaining
+ * cheap to render and pixel-perfect with the pixelated source texture.
+ *
+ * Both planes are DoubleSide so the texture is visible from behind too; we
+ * sacrifice depthWrite so the transparent pixels don't punch holes into each
+ * other at the cross intersection.
+ */
 function BerryOnTop({
   berry,
   position,
-  size = 0.18,
+  size = 0.28,
 }: {
   berry: BerryPlacement;
   position: [number, number, number];
@@ -141,18 +151,35 @@ function BerryOnTop({
   const url = `/textures/cobblemon/item/berries/${berry.slug}.png`;
   const texture = useLoader(TextureLoader, url);
   pixelate(texture);
+
+  // Standing upright, halfway embedded so the bottom sits flush on the snack.
+  const y = position[1] + size / 2 - 0.02;
+
+  const material = useMemo(
+    () =>
+      new THREE.MeshStandardMaterial({
+        map: texture,
+        transparent: true,
+        alphaTest: 0.1,
+        depthWrite: false,
+        side: THREE.DoubleSide,
+        polygonOffset: true,
+        polygonOffsetFactor: -2,
+      }),
+    [texture],
+  );
+
   return (
-    <mesh position={position} rotation={[-Math.PI / 2, 0, 0]}>
-      <planeGeometry args={[size, size]} />
-      <meshStandardMaterial
-        map={texture}
-        transparent
-        alphaTest={0.1}
-        depthWrite={false}
-        polygonOffset
-        polygonOffsetFactor={-2}
-      />
-    </mesh>
+    <group position={[position[0], y, position[2]]}>
+      {/* plane A (aligned with X axis) */}
+      <mesh rotation={[0, 0, 0]} material={material}>
+        <planeGeometry args={[size, size]} />
+      </mesh>
+      {/* plane B (rotated 90° around Y, forming a cross) */}
+      <mesh rotation={[0, Math.PI / 2, 0]} material={material}>
+        <planeGeometry args={[size, size]} />
+      </mesh>
+    </group>
   );
 }
 
@@ -213,10 +240,11 @@ function SnackMesh({
     [sideTex, topTex, bottomTex, tint],
   );
 
-  // Berry placements on top of the snack.
+  // Berry placements on the snack's top face. Y anchors the berry base; the
+  // BerryOnTop component lifts the mesh to size/2 above this origin.
   const placements = useMemo<Array<[number, number, number]>>(() => {
     const y = H + 0.005;
-    const d = 0.22;
+    const d = 0.3;
     if (berries.length === 0) return [];
     if (berries.length === 1) return [[0, y, 0]];
     if (berries.length === 2)
@@ -224,10 +252,11 @@ function SnackMesh({
         [-d / 2, y, 0],
         [d / 2, y, 0],
       ];
+    // Triangle: one in front, two behind
     return [
-      [0, y, -d / 2],
-      [-d / 2, y, d / 3],
-      [d / 2, y, d / 3],
+      [0, y, d / 2],
+      [-d / 2, y, -d / 4],
+      [d / 2, y, -d / 4],
     ];
   }, [berries.length, H]);
 
