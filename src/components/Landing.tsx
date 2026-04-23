@@ -4,40 +4,26 @@ import Link from "next/link";
 import dynamic from "next/dynamic";
 import { useEffect, useMemo, useState } from "react";
 import type { BerryPlacement } from "./Snack3D";
+import { HomeSearch } from "./HomeSearch";
 
 const Snack3D = dynamic(() => import("./Snack3D").then((m) => m.Snack3D), {
   ssr: false,
-  loading: () => <div className="rounded-lg border border-border bg-subtle size-[280px]" />,
+  loading: () => <div className="rounded-lg border border-border bg-subtle size-[180px]" />,
 });
 
 type Labels = {
   tagline: string;
   indexedSpecies: string;
-  ctaPokedex: string;
-  ctaCake: string;
-  recentlyIndexed: string;
 };
 
-type PreviewMon = {
-  dexNo: number;
-  name: string;
-  slug: string;
-  primaryType: string;
-  secondaryType: string | null;
+type Seasoning = BerryPlacement & {
+  snackValid?: boolean;
+  fruitModel?: string | null;
+  fruitTexture?: string | null;
+  snackPositionings?: BerryPlacement["snackPositionings"];
 };
 
-type SeasoningDTO = BerryPlacement & {
-  kind: "berry" | "other";
-  cakeValid: boolean;
-};
-
-/**
- * Canonical fallback berries — a handful of Cobblemon berries with their real
- * colour/flavour profile. Used when the API returns an empty list (typically
- * because the prod DB has not been provisioned yet). Textures are already
- * bundled under /textures/cobblemon/item/berries/ so they render immediately.
- */
-const FALLBACK_BERRIES: BerryPlacement[] = [
+const FALLBACK_BERRIES: Seasoning[] = [
   { slug: "oran_berry", itemId: "cobblemon:oran_berry", colour: "light_blue",
     flavours: { SOUR: 10 }, dominantFlavour: "SOUR" },
   { slug: "cheri_berry", itemId: "cobblemon:cheri_berry", colour: "red",
@@ -48,83 +34,81 @@ const FALLBACK_BERRIES: BerryPlacement[] = [
     flavours: { DRY: 10 }, dominantFlavour: "DRY" },
   { slug: "rawst_berry", itemId: "cobblemon:rawst_berry", colour: "green",
     flavours: { BITTER: 10 }, dominantFlavour: "BITTER" },
-  { slug: "aspear_berry", itemId: "cobblemon:aspear_berry", colour: "yellow",
-    flavours: { SOUR: 10 }, dominantFlavour: "SOUR" },
-  { slug: "leppa_berry", itemId: "cobblemon:leppa_berry", colour: "red",
-    flavours: { SPICY: 10 }, dominantFlavour: "SPICY" },
-  { slug: "sitrus_berry", itemId: "cobblemon:sitrus_berry", colour: "yellow",
-    flavours: { SWEET: 10, BITTER: 10 }, dominantFlavour: "SWEET" },
-  { slug: "liechi_berry", itemId: "cobblemon:liechi_berry", colour: "red",
-    flavours: { SPICY: 10 }, dominantFlavour: "SPICY" },
   { slug: "starf_berry", itemId: "cobblemon:starf_berry", colour: "orange",
     flavours: { SPICY: 10, DRY: 10, SWEET: 10, BITTER: 10, SOUR: 10 },
     dominantFlavour: "SPICY" },
 ];
 
-export function Landing({
-  labels,
-  total,
-  preview,
-}: {
-  labels: Labels;
-  total: number;
-  preview: PreviewMon[];
-}) {
-  const [berry, setBerry] = useState<BerryPlacement | null>(null);
+function randomBerries(pool: Seasoning[]): Seasoning[] {
+  const count = 1 + Math.floor(Math.random() * 3);
+  const shuffled = [...pool].sort(() => Math.random() - 0.5);
+  return shuffled.slice(0, Math.min(count, pool.length));
+}
 
-  // Fetch berries from the API on mount; fall back to the canonical list when
-  // the response is empty (prod without DB) or fails.
+/**
+ * Cache of berry pools for each of the 3 random snacks. Re-rolled on demand
+ * (timer) so the home page feels alive without being noisy.
+ */
+function useRandomSnacks(pool: Seasoning[], count = 3): Seasoning[][] {
+  const [rolls, setRolls] = useState<Seasoning[][]>(() =>
+    Array.from({ length: count }, () => randomBerries(pool)),
+  );
+  useEffect(() => {
+    if (pool.length === 0) return;
+    // Initial roll once the pool arrives.
+    setRolls(Array.from({ length: count }, () => randomBerries(pool)));
+    const id = setInterval(() => {
+      setRolls((prev) => {
+        const idx = Math.floor(Math.random() * prev.length);
+        const next = [...prev];
+        next[idx] = randomBerries(pool);
+        return next;
+      });
+    }, 4500);
+    return () => clearInterval(id);
+  }, [pool, count]);
+  return rolls;
+}
+
+export function Landing({ labels }: { labels: Labels }) {
+  const [pool, setPool] = useState<Seasoning[]>(FALLBACK_BERRIES);
+
   useEffect(() => {
     let cancelled = false;
-    let timer: ReturnType<typeof setInterval> | null = null;
-
-    const start = (pool: BerryPlacement[]) => {
-      if (cancelled || pool.length === 0) return;
-      const pick = () => pool[Math.floor(Math.random() * pool.length)];
-      setBerry(pick());
-      timer = setInterval(() => setBerry(pick()), 4000);
-    };
-
     fetch("/api/snack")
       .then((r) => r.json())
-      .then((data: { berries?: SeasoningDTO[] }) => {
-        const pool = (data.berries ?? []).length > 0
-          ? (data.berries as SeasoningDTO[])
-          : FALLBACK_BERRIES;
-        start(pool);
+      .then((data: { berries?: Seasoning[] }) => {
+        if (cancelled) return;
+        const arr = (data.berries ?? []).filter(
+          (b) => b.fruitModel && b.snackPositionings && b.snackPositionings.length > 0,
+        );
+        if (arr.length > 0) setPool(arr);
       })
-      .catch(() => start(FALLBACK_BERRIES));
-
+      .catch(() => {
+        /* keep fallback */
+      });
     return () => {
       cancelled = true;
-      if (timer) clearInterval(timer);
     };
   }, []);
 
-  // Floating dex numbers for a parallax Pokéball-like backdrop.
+  const rolls = useRandomSnacks(pool, 3);
+
   const floaters = useMemo(
     () =>
-      Array.from({ length: 14 }, () => {
-        const dex = Math.floor(Math.random() * 1025) + 1;
-        const size = 40 + Math.random() * 80;
-        return {
-          dex,
-          size,
-          left: Math.random() * 100,
-          top: Math.random() * 100,
-          delay: Math.random() * 10,
-          duration: 15 + Math.random() * 20,
-        };
-      }),
+      Array.from({ length: 14 }, () => ({
+        dex: Math.floor(Math.random() * 1025) + 1,
+        size: 40 + Math.random() * 80,
+        left: Math.random() * 100,
+        top: Math.random() * 100,
+        delay: Math.random() * 10,
+        duration: 15 + Math.random() * 20,
+      })),
     [],
   );
 
-  const snackBerries: BerryPlacement[] = berry ? [berry] : [];
-  const prettyBerry = berry?.slug?.replaceAll("_", " ") ?? "snack";
-
   return (
     <div className="relative overflow-hidden">
-      {/* Animated backdrop */}
       <div className="absolute inset-0 -z-10 pointer-events-none">
         <div className="absolute inset-0 bg-gradient-to-br from-accent/10 via-transparent to-subtle" />
         <svg className="absolute inset-0 size-full opacity-[0.04]" aria-hidden>
@@ -155,65 +139,60 @@ export function Landing({
         ))}
       </div>
 
-      <section className="mx-auto max-w-6xl px-6 pt-20 pb-24 flex flex-col-reverse md:flex-row items-center gap-10">
-        <div className="flex-1">
-          <div className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-3 py-1 text-[10px] uppercase tracking-widest text-muted">
-            <span className="size-1.5 rounded-full bg-accent animate-pulse" />
-            <span>Cobblemon companion</span>
-          </div>
-          <h1 className="mt-4 text-4xl sm:text-5xl font-semibold tracking-tight">
-            Cook the right snack.
-            <br />
-            <span className="text-accent">Catch the right Pokémon.</span>
-          </h1>
-          <p className="mt-4 text-muted max-w-lg">{labels.tagline}</p>
-          <p className="mt-2 text-sm text-muted">
-            <span className="text-foreground font-medium">{labels.indexedSpecies}</span>
-          </p>
-          <div className="mt-6 flex flex-wrap gap-3">
-            <Link
-              href="/pokedex"
-              className="rounded-lg bg-accent text-accent-foreground px-5 py-2.5 text-sm font-medium hover:opacity-90 transition"
-            >
-              {labels.ctaPokedex} →
-            </Link>
-            <Link
-              href="/snack"
-              className="rounded-lg border border-border bg-card px-5 py-2.5 text-sm font-medium hover:bg-subtle transition"
-            >
-              {labels.ctaCake}
-            </Link>
-          </div>
+      <section className="mx-auto max-w-6xl px-6 pt-20 pb-16">
+        <div className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-3 py-1 text-[10px] uppercase tracking-widest text-muted">
+          <span className="size-1.5 rounded-full bg-accent animate-pulse" />
+          <span>Cobblemon companion</span>
         </div>
-        <div className="flex-shrink-0 flex flex-col items-center">
-          <Snack3D berries={snackBerries} size={280} />
-          <p className="mt-2 text-[10px] uppercase tracking-widest text-muted text-center">
-            {berry ? `with ${prettyBerry}` : "no seasoning"}
-          </p>
+        <h1 className="mt-4 text-4xl sm:text-5xl font-semibold tracking-tight">
+          Cook the right snack.
+          <br />
+          <span className="text-accent">Catch the right Pokémon.</span>
+        </h1>
+        <p className="mt-4 text-muted max-w-xl">{labels.tagline}</p>
+        <p className="mt-2 text-sm text-muted">
+          <span className="text-foreground font-medium">{labels.indexedSpecies}</span>
+        </p>
+
+        <div className="mt-8">
+          <HomeSearch />
+        </div>
+
+        <div className="mt-6 flex flex-wrap gap-3">
+          <Link
+            href="/pokedex"
+            className="rounded-lg bg-accent text-accent-foreground px-5 py-2.5 text-sm font-medium hover:opacity-90 transition"
+          >
+            Open the Pokédex →
+          </Link>
+          <Link
+            href="/snack"
+            className="rounded-lg border border-border bg-card px-5 py-2.5 text-sm font-medium hover:bg-subtle transition"
+          >
+            Snack maker
+          </Link>
         </div>
       </section>
 
-      <section className="mx-auto max-w-6xl px-6 pb-20">
+      <section className="mx-auto max-w-6xl px-6 pb-24">
         <h2 className="text-sm font-medium uppercase tracking-wide text-muted">
-          {labels.recentlyIndexed}
+          Random snacks
         </h2>
-        <ul className="mt-4 grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-2">
-          {preview.map((p) => (
-            <li key={p.slug}>
-              <Link
-                href={`/pokemon/${p.slug}`}
-                className="group block rounded-lg border border-border bg-card p-2 hover:border-accent/50 transition"
-              >
-                <img
-                  src={`/textures/pokemon/${p.dexNo}.png`}
-                  alt={p.name}
-                  className="pixel mx-auto size-14 group-hover:scale-110 transition"
-                />
-                <div className="mt-1 text-center text-[10px] truncate">{p.name}</div>
-              </Link>
-            </li>
+        <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-4">
+          {rolls.map((berries, i) => (
+            <div
+              key={i}
+              className="rounded-lg border border-border bg-card p-4 flex flex-col items-center gap-3"
+            >
+              <Snack3D berries={berries} size={180} />
+              <div className="text-[10px] uppercase tracking-widest text-muted text-center">
+                {berries.length === 0
+                  ? "no seasoning"
+                  : berries.map((b) => b.slug.replaceAll("_", " ")).join(" · ")}
+              </div>
+            </div>
           ))}
-        </ul>
+        </div>
       </section>
     </div>
   );
