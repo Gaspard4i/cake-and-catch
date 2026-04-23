@@ -145,6 +145,27 @@ export const berries = pgTable(
      *   friendship, damage_reduction, stat_buff, damaging, non_battle, filling.
      */
     effectTags: jsonb("effect_tags").$type<string[]>().notNull().default([]),
+    /**
+     * Placements used when this berry sits on top of a Poké Snack. Upstream
+     * field `pokeSnackPositionings[]`: up to 3 entries with `position` and
+     * `rotation` in Bedrock-model space (16 units per block).
+     */
+    snackPositionings: jsonb("snack_positionings")
+      .$type<
+        Array<{
+          position: { x: number; y: number; z: number };
+          rotation: { x: number; y: number; z: number };
+        }>
+      >()
+      .notNull()
+      .default([]),
+    /**
+     * Path of the Bedrock 3D model (relative to /textures/cobblemon/bedrock/).
+     * Nullable when the .geo.json is missing.
+     */
+    fruitModel: text("fruit_model"),
+    /** Path of the fruit texture served under /textures/cobblemon/berries/. */
+    fruitTexture: text("fruit_texture"),
     raw: jsonb("raw").notNull(),
   },
   (t) => [uniqueIndex("berries_slug_idx").on(t.slug)],

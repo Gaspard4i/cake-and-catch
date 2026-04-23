@@ -37,6 +37,8 @@ export function TypeIcon({ type, size = 28 }: { type: string; size?: number }) {
       </span>
     );
   }
+  // PokeAPI type icons aren't 2.5:1 exactly (some are 64x28, others 70x28),
+  // so we set explicit pixel height and let the image keep its native ratio.
   return (
     <Image
       src={`/textures/type/${lowered}.png`}
@@ -46,6 +48,7 @@ export function TypeIcon({ type, size = 28 }: { type: string; size?: number }) {
       unoptimized
       onError={() => setErrored(true)}
       className="inline-block"
+      style={{ height: size, width: "auto" }}
       title={type}
     />
   );

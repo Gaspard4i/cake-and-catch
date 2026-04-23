@@ -297,12 +297,26 @@ async function ingestBerries(clone: RepoClone) {
   let failed = 0;
   for (const file of files) {
     try {
-      const raw = await readJson(file);
+      const raw = (await readJson(file)) as Record<string, unknown>;
       const parsed = berrySchema.parse(raw);
       const slug = basename(file, ".json");
       const itemId = parsed.identifier ?? `cobblemon:${slug}`;
       const dom = dominantFlavour(parsed.flavours);
       const effectTags = effectTagsByItem.get(itemId) ?? [];
+      const snackPositionings = (raw.pokeSnackPositionings as Array<{
+        position: { x: number; y: number; z: number };
+        rotation: { x: number; y: number; z: number };
+      }> | undefined) ?? [];
+      const fruitModel =
+        ((raw.fruitModel as string | undefined) ?? null)?.replace(
+          /^cobblemon:/,
+          "",
+        ) ?? null;
+      const fruitTexture =
+        ((raw.fruitTexture as string | undefined) ?? null)?.replace(
+          /^cobblemon:/,
+          "",
+        ) ?? null;
       await db
         .insert(schema.berries)
         .values({
@@ -313,6 +327,9 @@ async function ingestBerries(clone: RepoClone) {
           colour: parsed.colour ?? null,
           weight: parsed.weight ?? null,
           effectTags,
+          snackPositionings,
+          fruitModel,
+          fruitTexture,
           raw: parsed,
         })
         .onConflictDoUpdate({
@@ -324,6 +341,9 @@ async function ingestBerries(clone: RepoClone) {
             colour: parsed.colour ?? null,
             weight: parsed.weight ?? null,
             effectTags,
+            snackPositionings,
+            fruitModel,
+            fruitTexture,
             raw: parsed,
           },
         });

@@ -45,7 +45,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 <div className="mx-auto max-w-5xl px-6 py-3 flex items-center justify-between gap-4">
                   <div className="flex items-center gap-6">
                     <Link href="/" className="font-semibold tracking-tight">
-                      Cake <span className="text-accent">&amp;</span> Catch
+                      Snack <span className="text-accent">&amp;</span> Catch
                     </Link>
                     <HeaderNav />
                   </div>

@@ -16,6 +16,15 @@ const TAG_TEXTURE: Record<string, string> = {
   "c:berries": "cobblemon:oran_berry",
 };
 
+/**
+ * Vanilla items that share a sprite with another item (Minecraft reuses one
+ * texture + applies an enchanted overlay at render time). Redirect here so
+ * we never 404.
+ */
+const ITEM_ALIAS: Record<string, string> = {
+  "minecraft:enchanted_golden_apple": "minecraft:golden_apple",
+};
+
 function resolvePath(id: string): { src: string; alt: string } | null {
   if (!id) return null;
 
@@ -27,6 +36,7 @@ function resolvePath(id: string): { src: string; alt: string } | null {
     if (!mapped) return null;
     normalized = mapped;
   }
+  if (ITEM_ALIAS[normalized]) normalized = ITEM_ALIAS[normalized];
 
   const [ns, raw] = normalized.includes(":")
     ? normalized.split(":", 2)

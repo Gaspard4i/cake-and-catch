@@ -34,6 +34,26 @@ async function pathExists(p: string): Promise<boolean> {
   }
 }
 
+async function fetchJson(url: string, out: string): Promise<"ok" | "missing"> {
+  const res = await fetch(url, { headers: { "User-Agent": UA } });
+  if (res.status === 404) return "missing";
+  if (!res.ok) throw new Error(`${url}: HTTP ${res.status}`);
+  const text = await res.text();
+  if (!text.trim().startsWith("{")) return "missing";
+  await ensureDir(out);
+  await writeFile(out, text);
+  return "ok";
+}
+
+async function tryManyJson(urls: string[], out: string): Promise<"ok" | "cached" | "missing"> {
+  if (await pathExists(out)) return "cached";
+  for (const url of urls) {
+    const r = await fetchJson(url, out);
+    if (r === "ok") return "ok";
+  }
+  return "missing";
+}
+
 async function fetchUrl(url: string, out: string): Promise<"ok" | "missing"> {
   const res = await fetch(url, { headers: { "User-Agent": UA } });
   if (res.status === 404) return "missing";
@@ -197,6 +217,40 @@ async function main() {
     }
   }
   console.log(`[textures:cobblemon/block] ok=${block.ok} cached=${block.cached} missing=${block.missing}`);
+
+  // --- Berry 3D Bedrock models + fruit textures ---
+  // Needed by Snack3D to render the real 3D berries on top of the Poké Snack,
+  // matching PokeSnackBlockEntityRenderer in the mod.
+  console.log("[textures:cobblemon/berry-geo] berry Bedrock models + fruit textures");
+  const geoTargets = await db
+    .select({ slug: schema.berries.slug, raw: schema.berries.raw })
+    .from(schema.berries);
+  const geo = bucket();
+  const fruit = bucket();
+  for (const b of geoTargets) {
+    const raw = (b.raw ?? {}) as Record<string, unknown>;
+    const geoId = (raw.fruitModel as string | undefined) ?? `cobblemon:${b.slug}.geo`;
+    const texId = (raw.fruitTexture as string | undefined) ?? `cobblemon:${b.slug.replace(/_berry$/, "")}`;
+    const geoName = geoId.replace(/^cobblemon:/, "").replace(/\.geo$/, "");
+    const texName = texId.replace(/^cobblemon:/, "");
+    try {
+      const geoOut = join(PUBLIC_DIR, "cobblemon", "bedrock", "berries", `${geoName}.geo.json`);
+      const url = `https://gitlab.com/cable-mc/cobblemon/-/raw/main/common/src/main/resources/assets/cobblemon/bedrock/berries/${geoName}.geo.json`;
+      add(geo, await tryManyJson([url], geoOut));
+    } catch (err) {
+      geo.missing++;
+      console.warn(`[berry-geo] ${geoName}:`, err instanceof Error ? err.message : err);
+    }
+    try {
+      const texOut = join(PUBLIC_DIR, "cobblemon", "berries", `${texName}.png`);
+      add(fruit, await tryMany([COBBLEMON_GH(`berries/${texName}.png`)], texOut));
+    } catch (err) {
+      fruit.missing++;
+      console.warn(`[berry-fruit] ${texName}:`, err instanceof Error ? err.message : err);
+    }
+  }
+  console.log(`[berry-geo] ok=${geo.ok} cached=${geo.cached} missing=${geo.missing}`);
+  console.log(`[berry-fruit] ok=${fruit.ok} cached=${fruit.cached} missing=${fruit.missing}`);
 
   // --- Type icons (PokeAPI) ---
   console.log("[textures:type] 18 types");

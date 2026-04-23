@@ -1,7 +1,7 @@
 "use client";
 
 import { Canvas, useFrame, useLoader } from "@react-three/fiber";
-import { Suspense, useMemo, useRef } from "react";
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { TextureLoader, NearestFilter, type Texture } from "three";
 import * as THREE from "three";
 
@@ -55,6 +55,15 @@ export type BerryPlacement = {
   colour: string | null;
   flavours: Record<string, number>;
   dominantFlavour: string | null;
+  /** Bedrock model filename without extension, e.g. "oran_berry". */
+  fruitModel?: string | null;
+  /** Fruit texture filename without extension, e.g. "oran". */
+  fruitTexture?: string | null;
+  /** Up to 3 placements on the snack top face, in pixel units. */
+  snackPositionings?: Array<{
+    position: { x: number; y: number; z: number };
+    rotation: { x: number; y: number; z: number };
+  }>;
 };
 
 const TEX = {
@@ -130,30 +139,67 @@ function computeSnackTint(berries: BerryPlacement[], fallback: string | null): s
 }
 
 /**
- * Renders a berry as two crossed vertical planes (Minecraft plant style —
- * same trick vanilla uses for flowers, saplings and grass). From most angles
- * this reads as a volumetric berry rather than a flat decal, while remaining
- * cheap to render and pixel-perfect with the pixelated source texture.
+ * Renders a berry using its actual Cobblemon Bedrock `.geo.json` model and
+ * fruit texture — faithful to PokeSnackBlockEntityRenderer.kt. Positions
+ * and rotations come from `berry.snackPositionings[index]` which mirror the
+ * upstream `pokeSnackPositionings` data. All coordinates in the model are in
+ * Minecraft pixels (16 units per block), so we scale by 1/16.
  *
- * Both planes are DoubleSide so the texture is visible from behind too; we
- * sacrifice depthWrite so the transparent pixels don't punch holes into each
- * other at the cross intersection.
+ * Falls back to two crossed textured planes when the 3D model or fruit
+ * texture can't be resolved (e.g. legacy seasonings without geo).
  */
+type BedrockDoc = import("@/lib/bedrock/geo").BedrockFile;
+
+const geoCache = new Map<string, Promise<BedrockDoc>>();
+async function loadGeo(fruitModel: string): Promise<BedrockDoc> {
+  const url = `/textures/cobblemon/bedrock/berries/${fruitModel}.geo.json`;
+  let p = geoCache.get(url);
+  if (!p) {
+    p = fetch(url).then((r) => {
+      if (!r.ok) throw new Error(`geo 404: ${fruitModel}`);
+      return r.json() as Promise<BedrockDoc>;
+    });
+    geoCache.set(url, p);
+  }
+  return p;
+}
+
 function BerryOnTop({
   berry,
-  position,
-  size = 0.28,
+  index,
+  totalCount,
 }: {
   berry: BerryPlacement;
-  position: [number, number, number];
-  size?: number;
+  index: number;
+  totalCount: number;
 }) {
-  const url = `/textures/cobblemon/item/berries/${berry.slug}.png`;
-  const texture = useLoader(TextureLoader, url);
+  const texUrl = berry.fruitTexture
+    ? `/textures/cobblemon/berries/${berry.fruitTexture}.png`
+    : `/textures/cobblemon/item/berries/${berry.slug}.png`;
+  const texture = useLoader(TextureLoader, texUrl);
   pixelate(texture);
 
-  // Standing upright, halfway embedded so the bottom sits flush on the snack.
-  const y = position[1] + size / 2 - 0.02;
+  const [geometry, setGeometry] = useState<THREE.BufferGeometry | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    if (!berry.fruitModel) return;
+    loadGeo(berry.fruitModel)
+      .then(async (doc) => {
+        if (cancelled) return;
+        const { boneToGeometry, firstBone } = await import("@/lib/bedrock/geo");
+        const g = doc["minecraft:geometry"]?.[0];
+        const bone = g ? firstBone(g) : null;
+        if (!g || !bone) return;
+        setGeometry(boneToGeometry(bone, g));
+      })
+      .catch(() => {
+        /* model missing — fall back to plane below */
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [berry.fruitModel]);
 
   const material = useMemo(
     () =>
@@ -161,23 +207,59 @@ function BerryOnTop({
         map: texture,
         transparent: true,
         alphaTest: 0.1,
-        depthWrite: false,
         side: THREE.DoubleSide,
-        polygonOffset: true,
-        polygonOffsetFactor: -2,
       }),
     [texture],
   );
 
+  // Placement resolution: pick the matching index, with the same fallback
+  // behaviour as the mod (1-berry variant uses index 0 centred, etc.).
+  const positionings = berry.snackPositionings ?? [];
+  const placement =
+    positionings[Math.min(index, positionings.length - 1)] ?? null;
+
+  // MC model units are pixels (16 per block). The model origin in the game
+  // is at the block's local origin; subtract 0.5 blocks to center it on our
+  // snack which is drawn around x=0, z=0. y=0 sits on the snack top face.
+  const px = placement ? placement.position.x / 16 - 0.5 : 0;
+  const py = placement ? placement.position.y / 16 - (7 / 16) : 0;
+  const pz = placement ? placement.position.z / 16 - 0.5 : 0;
+
+  const rx = placement ? THREE.MathUtils.degToRad(placement.rotation.x) : 0;
+  const ry = placement ? THREE.MathUtils.degToRad(placement.rotation.y) : 0;
+  const rz = placement ? THREE.MathUtils.degToRad(placement.rotation.z) : 0;
+
+  if (geometry) {
+    // The cube coordinates in the .geo.json are in pixel space, so we scale
+    // the whole mesh by 1/16 to bring it into Three.js block-units.
+    return (
+      <group position={[px, py, pz]} rotation={[rx, ry, rz]}>
+        <mesh
+          geometry={geometry}
+          material={material}
+          scale={[1 / 16, 1 / 16, 1 / 16]}
+        />
+      </group>
+    );
+  }
+
+  // Fallback: crossed planes (MC plant-style) so seasonings without geo still
+  // show something.
+  const size = 0.28;
+  const H = 7 / 16;
+  const y = H + size / 2 - 0.02;
+  const d = totalCount === 1 ? 0 : 0.25;
+  const fx = totalCount === 1 ? 0 : index === 0 ? -d / 2 : index === 1 ? d / 2 : 0;
+  const fz = totalCount <= 2 ? 0 : index === 2 ? d / 2 : -d / 4;
   return (
-    <group position={[position[0], y, position[2]]}>
-      {/* plane A (aligned with X axis) */}
-      <mesh rotation={[0, 0, 0]} material={material}>
+    <group position={[fx, y, fz]}>
+      <mesh>
         <planeGeometry args={[size, size]} />
+        <primitive object={material} attach="material" />
       </mesh>
-      {/* plane B (rotated 90° around Y, forming a cross) */}
-      <mesh rotation={[0, Math.PI / 2, 0]} material={material}>
+      <mesh rotation={[0, Math.PI / 2, 0]}>
         <planeGeometry args={[size, size]} />
+        <primitive object={material} attach="material" />
       </mesh>
     </group>
   );
@@ -240,31 +322,19 @@ function SnackMesh({
     [sideTex, topTex, bottomTex, tint],
   );
 
-  // Berry placements on the snack's top face. Y anchors the berry base; the
-  // BerryOnTop component lifts the mesh to size/2 above this origin.
-  const placements = useMemo<Array<[number, number, number]>>(() => {
-    const y = H + 0.005;
-    const d = 0.3;
-    if (berries.length === 0) return [];
-    if (berries.length === 1) return [[0, y, 0]];
-    if (berries.length === 2)
-      return [
-        [-d / 2, y, 0],
-        [d / 2, y, 0],
-      ];
-    // Triangle: one in front, two behind
-    return [
-      [0, y, d / 2],
-      [-d / 2, y, -d / 4],
-      [d / 2, y, -d / 4],
-    ];
-  }, [berries.length, H]);
+  // Berry placements are now read per-berry from pokeSnackPositionings inside
+  // BerryOnTop. No global lookup table needed here.
 
   return (
     <group ref={group}>
       <mesh position={[0, H / 2, 0]} geometry={geo} material={mats} />
       {berries.map((b, i) => (
-        <BerryOnTop key={`${b.slug}-${i}`} berry={b} position={placements[i]} />
+        <BerryOnTop
+          key={`${b.slug}-${i}`}
+          berry={b}
+          index={i}
+          totalCount={berries.length}
+        />
       ))}
     </group>
   );
