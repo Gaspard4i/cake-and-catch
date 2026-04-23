@@ -164,6 +164,30 @@ async function loadGeo(fruitModel: string): Promise<BedrockDoc> {
   return p;
 }
 
+/**
+ * Resolve the texture for an ingredient in a snack slot. Berries come with
+ * their fruit sheet; vanilla bait seasonings (apple, golden_apple, glow_berries,
+ * sweet_berries, etc.) fall back to their Minecraft item sprite.
+ */
+function resolveSeasoningTexture(berry: BerryPlacement): string {
+  if (berry.fruitTexture) {
+    return `/textures/cobblemon/berries/${berry.fruitTexture}.png`;
+  }
+  const [ns, raw] = berry.itemId.includes(":")
+    ? berry.itemId.split(":", 2)
+    : ["cobblemon", berry.itemId];
+  if (ns === "minecraft") {
+    // enchanted_golden_apple shares the golden_apple sprite in vanilla.
+    const name =
+      raw === "enchanted_golden_apple" ? "golden_apple" : raw;
+    return `/textures/minecraft/item/${name}.png`;
+  }
+  if (raw.endsWith("_berry")) {
+    return `/textures/cobblemon/item/berries/${raw}.png`;
+  }
+  return `/textures/cobblemon/item/${raw}.png`;
+}
+
 function BerryOnTop({
   berry,
   index,
@@ -173,11 +197,29 @@ function BerryOnTop({
   index: number;
   totalCount: number;
 }) {
-  const texUrl = berry.fruitTexture
-    ? `/textures/cobblemon/berries/${berry.fruitTexture}.png`
-    : `/textures/cobblemon/item/berries/${berry.slug}.png`;
-  const texture = useLoader(TextureLoader, texUrl);
-  pixelate(texture);
+  const texUrl = resolveSeasoningTexture(berry);
+  // Wrap useLoader in an error boundary via a lazy fallback: Three's
+  // useLoader throws synchronously on 404, which kills the whole Canvas.
+  // We pre-check with a stateful loader to keep the canvas alive.
+  const [texture, setTexture] = useState<THREE.Texture | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    new TextureLoader().load(
+      texUrl,
+      (t) => {
+        if (cancelled) return;
+        pixelate(t);
+        setTexture(t);
+      },
+      undefined,
+      () => {
+        /* 404 — leave texture null, component renders nothing */
+      },
+    );
+    return () => {
+      cancelled = true;
+    };
+  }, [texUrl]);
 
   const [geometry, setGeometry] = useState<THREE.BufferGeometry | null>(null);
 
@@ -203,14 +245,18 @@ function BerryOnTop({
 
   const material = useMemo(
     () =>
-      new THREE.MeshStandardMaterial({
-        map: texture,
-        transparent: true,
-        alphaTest: 0.1,
-        side: THREE.DoubleSide,
-      }),
+      texture
+        ? new THREE.MeshStandardMaterial({
+            map: texture,
+            transparent: true,
+            alphaTest: 0.1,
+            side: THREE.DoubleSide,
+          })
+        : null,
     [texture],
   );
+
+  if (!material) return null;
 
   // Placement resolution: pick the matching index, with the same fallback
   // behaviour as the mod (1-berry variant uses index 0 centred, etc.).
