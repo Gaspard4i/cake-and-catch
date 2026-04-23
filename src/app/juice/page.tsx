@@ -1,0 +1,26 @@
+import { Suspense } from "react";
+import dynamic from "next/dynamic";
+
+const JuiceMaker = dynamic(() =>
+  import("@/components/JuiceMaker").then((m) => m.JuiceMaker),
+);
+
+export default function JuicePage() {
+  return (
+    <div className="mx-auto max-w-6xl px-6 py-10">
+      <h1 className="text-3xl font-semibold tracking-tight">Aprijuice maker</h1>
+      <p className="mt-2 text-muted max-w-2xl">
+        Brew an aprijuice in the Campfire Pot. The apricorn colour provides a
+        baked-in set of ride stat deltas; berries added as seasoning contribute
+        flavour points that convert into extra boosts via the threshold table
+        (15 → 1pt, 35 → 2pt, 45 → 3pt, 55 → 4pt, 75 → 5pt, 105 → 6pt).
+      </p>
+
+      <div className="mt-8">
+        <Suspense fallback={<div className="text-muted text-sm">…</div>}>
+          <JuiceMaker />
+        </Suspense>
+      </div>
+    </div>
+  );
+}
