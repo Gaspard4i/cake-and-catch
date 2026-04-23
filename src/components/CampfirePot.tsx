@@ -6,28 +6,36 @@ import { PokemonSprite } from "./PokemonSprite";
 import { TypePair } from "./TypeBadge";
 import { Snack3D, type BerryPlacement } from "./Snack3D";
 
+type BaitEffect = {
+  kind: string;
+  title: string;
+  description: string;
+  chance: number;
+  tone: "healing" | "friendship" | "defense" | "buff" | "offense" | "utility";
+};
+
 type Seasoning = {
   slug: string;
   itemId: string;
   kind: "berry" | "other";
-  cakeValid: boolean;
+  snackValid: boolean;
   category: string;
   colour: string | null;
   flavours: Record<string, number>;
   dominantFlavour: string | null;
   description: string | null;
   effectTags: string[];
-  effects: Array<Record<string, unknown>>;
+  baitEffects: BaitEffect[];
 };
 
-type CakeEffect = {
+type HoldEffect = {
   tag: string;
   title: string;
   description: string;
-  tone: "healing" | "friendship" | "defense" | "buff" | "offense" | "utility";
+  tone: BaitEffect["tone"];
 };
 
-const EFFECT_TONE_STYLES: Record<CakeEffect["tone"], string> = {
+const EFFECT_TONE_STYLES: Record<BaitEffect["tone"], string> = {
   healing: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300",
   friendship: "bg-pink-500/15 text-pink-700 dark:text-pink-300",
   defense: "bg-sky-500/15 text-sky-700 dark:text-sky-300",
@@ -37,10 +45,9 @@ const EFFECT_TONE_STYLES: Record<CakeEffect["tone"], string> = {
 };
 
 /**
- * Cooking Pot variants that exist in-game (7 colours in CampfirePotColor.kt).
- * The hex values here are the PALE food-colour equivalents from
- * `FoodColourComponent.COLORS` — i.e. what the cake would look like if the
- * pot's colour were applied as an override (UI convenience; see Snack3D note).
+ * Cobblemon pot colour variants. In-game the pot tint is cosmetic, but the
+ * cooked item inherits the pale FoodColourComponent palette, so we reuse
+ * those pastel hex values here for a plausible-looking cake override.
  */
 const POT_COLOURS = [
   { slug: null, label: "Default", hex: "#c9b89e" },
@@ -91,7 +98,7 @@ const TIMES = [
 ];
 
 const FLAVOURS = ["SWEET", "SPICY", "DRY", "BITTER", "SOUR"] as const;
-const KINDS = ["all", "berry", "other"] as const;
+const KINDS = ["all", "berry", "vanilla"] as const;
 
 const FLAVOUR_COLORS: Record<string, string> = {
   SWEET: "#f8b3d7",
@@ -111,22 +118,30 @@ export function CampfirePot() {
   const [minY, setMinY] = useState<string>("");
   const [maxY, setMaxY] = useState<string>("");
   const [attracted, setAttracted] = useState<AttractedEntry[]>([]);
-  const [effects, setEffects] = useState<CakeEffect[]>([]);
+  const [holdEffects, setHoldEffects] = useState<HoldEffect[]>([]);
+  const [snackBaitEffects, setSnackBaitEffects] = useState<BaitEffect[]>([]);
   const [potColour, setPotColour] = useState<typeof POT_COLOURS[number]>(POT_COLOURS[0]);
   const [loading, setLoading] = useState(false);
   const [filterQuery, setFilterQuery] = useState("");
   const [activeFlavours, setActiveFlavours] = useState<Set<string>>(new Set());
   const [kindFilter, setKindFilter] = useState<(typeof KINDS)[number]>("all");
+  const [validOnly, setValidOnly] = useState(true);
 
   useEffect(() => {
     fetch("/api/snack")
       .then((r) => r.json())
-      .then((d: { seasonings: Seasoning[] }) => setSeasonings(d.seasonings));
+      .then((d: { seasonings: Seasoning[] }) => setSeasonings(d.seasonings ?? []))
+      .catch(() => setSeasonings([]));
   }, []);
 
   const filtered = useMemo(() => {
     let list = seasonings;
-    if (kindFilter !== "all") list = list.filter((s) => s.kind === kindFilter);
+    if (validOnly) list = list.filter((s) => s.snackValid);
+    if (kindFilter !== "all") {
+      list = list.filter((s) =>
+        kindFilter === "berry" ? s.kind === "berry" : s.kind === "other",
+      );
+    }
     if (filterQuery) {
       const q = filterQuery.toLowerCase();
       list = list.filter((s) => s.slug.includes(q));
@@ -137,7 +152,7 @@ export function CampfirePot() {
       );
     }
     return list;
-  }, [seasonings, kindFilter, filterQuery, activeFlavours]);
+  }, [seasonings, validOnly, kindFilter, filterQuery, activeFlavours]);
 
   const grouped = useMemo(() => {
     const map = new Map<string, Seasoning[]>();
@@ -169,7 +184,7 @@ export function CampfirePot() {
     return best;
   }, [slots]);
 
-  const cakeBerries = useMemo<BerryPlacement[]>(() => {
+  const snackBerries = useMemo<BerryPlacement[]>(() => {
     return slots
       .filter((s): s is Seasoning => s !== null)
       .map((s) => ({
@@ -181,7 +196,6 @@ export function CampfirePot() {
       }));
   }, [slots]);
 
-  // Debounced AJAX query
   useEffect(() => {
     const ctrl = new AbortController();
     const timer = setTimeout(async () => {
@@ -207,14 +221,17 @@ export function CampfirePot() {
         });
         const data = (await res.json()) as {
           attracted: AttractedEntry[];
-          cake?: { effects?: CakeEffect[] };
+          cake?: { effects?: HoldEffect[] };
+          snack?: { baitEffects?: BaitEffect[] };
         };
         setAttracted(data.attracted ?? []);
-        setEffects(data.cake?.effects ?? []);
+        setHoldEffects(data.cake?.effects ?? []);
+        setSnackBaitEffects(data.snack?.baitEffects ?? []);
       } catch (err) {
         if ((err as Error).name !== "AbortError") {
           setAttracted([]);
-          setEffects([]);
+          setHoldEffects([]);
+          setSnackBaitEffects([]);
         }
       } finally {
         setLoading(false);
@@ -250,9 +267,8 @@ export function CampfirePot() {
     <div className="grid gap-8 lg:grid-cols-[auto_1fr]">
       <aside className="space-y-6">
         <div>
-          <h3 className="text-sm font-medium uppercase tracking-wide text-muted">Pot</h3>
+          <h3 className="text-sm font-medium uppercase tracking-wide text-muted">Cooking Pot</h3>
           <div className="mt-3 inline-flex flex-col items-center gap-3 p-4 rounded-xl border border-border bg-card">
-            {/* 3 seasoning slots */}
             <div className="flex gap-2">
               {slots.map((slot, idx) => (
                 <div
@@ -262,10 +278,10 @@ export function CampfirePot() {
                     e.preventDefault();
                     const slug = e.dataTransfer.getData("text/seasoning");
                     const s = seasonings.find((x) => x.slug === slug);
-                    if (s && s.cakeValid) setSlot(idx, s);
+                    if (s && s.snackValid) setSlot(idx, s);
                   }}
                   onClick={() => setSlot(idx, null)}
-                  title={slot ? `Remove ${slot.slug}` : "Drop a seasoning here"}
+                  title={slot ? `Remove ${slot.slug}` : "Drop a bait seasoning here"}
                   className={`size-20 rounded-lg border-2 flex items-center justify-center cursor-pointer transition-colors ${
                     slot
                       ? "border-accent bg-subtle"
@@ -287,7 +303,6 @@ export function CampfirePot() {
             </div>
             <div className="text-[10px] text-muted uppercase">3 seasoning slots</div>
 
-            {/* Cooking Pot colour picker (cosmetic in the mod; purely visual here) */}
             <div className="flex items-center gap-1 pt-1">
               {POT_COLOURS.map((c) => (
                 <button
@@ -304,14 +319,11 @@ export function CampfirePot() {
                 />
               ))}
             </div>
-            <div className="text-[10px] text-muted uppercase">
-              Pot: {potColour.label}
-            </div>
+            <div className="text-[10px] text-muted uppercase">Pot: {potColour.label}</div>
 
-            {/* 3D Cake, bound to slots and pot colour */}
             <Snack3D
               flavour={dominant}
-              berries={cakeBerries}
+              berries={snackBerries}
               potColour={potColour.hex}
               size={200}
             />
@@ -330,15 +342,14 @@ export function CampfirePot() {
               )}
             </div>
 
-            {/* Base cake ingredients */}
             <div className="mt-2 grid grid-cols-3 gap-1 p-2 rounded-lg bg-subtle">
               {[
                 "c:drinks/milk",
                 "c:drinks/milk",
                 "c:drinks/milk",
-                "minecraft:sugar",
+                "minecraft:honey_bottle",
                 "cobblemon:vivichoke",
-                "minecraft:sugar",
+                "minecraft:honey_bottle",
                 "cobblemon:hearty_grains",
                 "cobblemon:hearty_grains",
                 "cobblemon:hearty_grains",
@@ -352,7 +363,7 @@ export function CampfirePot() {
                 </div>
               ))}
             </div>
-            <div className="text-[10px] text-muted uppercase">Poké Cake base</div>
+            <div className="text-[10px] text-muted uppercase">Poké Snack base recipe</div>
           </div>
         </div>
       </aside>
@@ -360,7 +371,7 @@ export function CampfirePot() {
       <div className="space-y-6">
         <div>
           <h3 className="text-sm font-medium uppercase tracking-wide text-muted">
-            Pantry — seasonings
+            Pantry — bait seasonings
           </h3>
 
           <div className="mt-2 flex flex-wrap items-center gap-2">
@@ -385,6 +396,15 @@ export function CampfirePot() {
                 </button>
               ))}
             </div>
+            <label className="text-[10px] uppercase text-muted flex items-center gap-1 select-none">
+              <input
+                type="checkbox"
+                checked={validOnly}
+                onChange={(e) => setValidOnly(e.target.checked)}
+                className="accent-accent"
+              />
+              Bait-valid only
+            </label>
             <div className="flex flex-wrap gap-1">
               {FLAVOURS.map((f) => {
                 const active = activeFlavours.has(f);
@@ -399,7 +419,10 @@ export function CampfirePot() {
                     }`}
                     style={
                       active
-                        ? { background: `${FLAVOUR_COLORS[f]}33`, borderColor: FLAVOUR_COLORS[f] }
+                        ? {
+                            background: `${FLAVOUR_COLORS[f]}33`,
+                            borderColor: FLAVOUR_COLORS[f],
+                          }
                         : undefined
                     }
                   >
@@ -433,7 +456,7 @@ export function CampfirePot() {
                       key={s.slug}
                       seasoning={s}
                       onPick={() => {
-                        if (!s.cakeValid) return;
+                        if (!s.snackValid) return;
                         const idx = findEmptySlot();
                         if (idx >= 0) setSlot(idx, s);
                       }}
@@ -445,6 +468,67 @@ export function CampfirePot() {
             ))}
           </div>
         </div>
+
+        <div>
+          <h3 className="text-sm font-medium uppercase tracking-wide text-muted">
+            Snack bait effects {loading && "…"}
+          </h3>
+          <p className="mt-1 text-xs text-muted">
+            Effects carried by the bait seasonings in the snack. When the snack
+            is placed, it attracts Pokémon in an 8-block radius and applies
+            these modifiers (rarity, bite-time, shiny reroll, HA chance, type /
+            egg-group / nature biases…) to the spawn pool.
+          </p>
+          {snackBaitEffects.length === 0 ? (
+            <p className="mt-3 text-sm text-muted">
+              Drop a bait seasoning to see its effects.
+            </p>
+          ) : (
+            <ul className="mt-3 flex flex-wrap gap-2">
+              {snackBaitEffects.map((e, i) => (
+                <li
+                  key={`${e.kind}-${i}`}
+                  className={`rounded-lg px-3 py-2 text-xs ${EFFECT_TONE_STYLES[e.tone]}`}
+                  title={e.description}
+                >
+                  <div className="flex items-baseline gap-2">
+                    <span className="font-medium">{e.title}</span>
+                    {e.chance < 1 && (
+                      <span className="text-[10px] opacity-70">
+                        {Math.round(e.chance * 100)}%
+                      </span>
+                    )}
+                  </div>
+                  <div className="opacity-80 mt-0.5 max-w-xs">{e.description}</div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+
+        {holdEffects.length > 0 && (
+          <div>
+            <h3 className="text-sm font-medium uppercase tracking-wide text-muted">
+              Berry hold effects (battle)
+            </h3>
+            <p className="mt-1 text-xs text-muted">
+              What these berries do when held or eaten by a Pokémon (out of the
+              snack context).
+            </p>
+            <ul className="mt-3 flex flex-wrap gap-2">
+              {holdEffects.map((e) => (
+                <li
+                  key={e.tag}
+                  className={`rounded-lg px-3 py-2 text-xs ${EFFECT_TONE_STYLES[e.tone]}`}
+                  title={e.description}
+                >
+                  <div className="font-medium">{e.title}</div>
+                  <div className="opacity-80 mt-0.5 max-w-xs">{e.description}</div>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
 
         <div>
           <h3 className="text-sm font-medium uppercase tracking-wide text-muted">Filters</h3>
@@ -540,41 +624,11 @@ export function CampfirePot() {
 
         <div>
           <h3 className="text-sm font-medium uppercase tracking-wide text-muted">
-            Cake effects {loading && "…"}
-          </h3>
-          <p className="mt-1 text-xs text-muted">
-            Effects carried by the berries placed in the seasoning slot.
-            These describe what the berries do in-game when held or eaten.
-            The cake itself spawns Pokémon from the local pool in an 8-block
-            radius; it does not grant battle effects to the player.
-          </p>
-          {effects.length === 0 ? (
-            <p className="mt-3 text-sm text-muted">
-              Drop a berry to see its effect.
-            </p>
-          ) : (
-            <ul className="mt-3 flex flex-wrap gap-2">
-              {effects.map((e) => (
-                <li
-                  key={e.tag}
-                  className={`rounded-lg px-3 py-2 text-xs ${EFFECT_TONE_STYLES[e.tone]}`}
-                  title={e.description}
-                >
-                  <div className="font-medium">{e.title}</div>
-                  <div className="opacity-80 mt-0.5 max-w-xs">{e.description}</div>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-
-        <div>
-          <h3 className="text-sm font-medium uppercase tracking-wide text-muted">
             Attracted Pokémon {loading && "…"}
           </h3>
           <p className="mt-1 text-xs text-muted">
-            Pokémon who can spawn in the chosen conditions AND whose preferred flavour matches
-            the cake.
+            Pokémon who can spawn in the chosen conditions AND whose preferred
+            flavour matches the snack.
           </p>
           {attracted.length === 0 ? (
             <p className="mt-3 text-sm text-muted">No Pokémon match. Try removing filters.</p>
@@ -585,11 +639,7 @@ export function CampfirePot() {
                   key={p.slug}
                   className="rounded-lg border border-border bg-card p-2 flex items-center gap-2"
                 >
-                  <PokemonSprite
-                    dexNo={p.dexNo}
-                    name={p.name}
-                    size={44}
-                  />
+                  <PokemonSprite dexNo={p.dexNo} name={p.name} size={44} />
                   <div className="min-w-0">
                     <div className="text-xs font-mono text-muted">
                       #{String(p.dexNo).padStart(4, "0")}
@@ -632,20 +682,18 @@ function SeasoningChip({
     right?: number;
   }>({});
   const anchorRef = useRef<HTMLButtonElement>(null);
-  const tooltipRef = useRef<HTMLDivElement>(null);
   const flavourLabel = seasoning.dominantFlavour ?? seasoning.category;
+  const effectCount = seasoning.baitEffects?.length ?? 0;
 
   useLayoutEffect(() => {
     if (!hovered || !anchorRef.current) return;
     const rect = anchorRef.current.getBoundingClientRect();
-    const tooltipW = 260;
-    const tooltipH = 160;
+    const tooltipW = 280;
+    const tooltipH = Math.max(140, 60 + 40 * Math.max(1, effectCount));
     const vw = window.innerWidth;
     const vh = window.innerHeight;
 
-    // Flip above when too close to bottom
     const flipAbove = rect.bottom + tooltipH + 8 > vh;
-    // Clamp horizontally
     let left = rect.left + rect.width / 2 - tooltipW / 2;
     if (left < 8) left = 8;
     if (left + tooltipW > vw - 8) left = vw - 8 - tooltipW;
@@ -655,15 +703,15 @@ function SeasoningChip({
     } else {
       setPlacement({ top: rect.bottom + 4, left });
     }
-  }, [hovered]);
+  }, [hovered, effectCount]);
 
   return (
     <>
       <button
         ref={anchorRef}
-        draggable={seasoning.cakeValid}
+        draggable={seasoning.snackValid}
         onDragStart={(e) => {
-          if (!seasoning.cakeValid) {
+          if (!seasoning.snackValid) {
             e.preventDefault();
             return;
           }
@@ -674,29 +722,28 @@ function SeasoningChip({
         onMouseLeave={() => setHovered(false)}
         onFocus={() => setHovered(true)}
         onBlur={() => setHovered(false)}
-        title={`${seasoning.slug} · ${flavourLabel}${seasoning.cakeValid ? "" : " (not a cake seasoning)"}`}
+        title={`${seasoning.slug} · ${flavourLabel}${seasoning.snackValid ? "" : " (not a bait seasoning)"}`}
         className={`size-12 rounded border transition-colors flex items-center justify-center relative ${
           selected
             ? "border-accent ring-2 ring-ring/30 bg-subtle"
-            : seasoning.cakeValid
+            : seasoning.snackValid
               ? "border-border bg-card hover:border-accent cursor-pointer"
               : "border-border bg-card opacity-50 cursor-help"
         }`}
       >
         <ItemIcon id={seasoning.itemId} size={40} />
-        {!seasoning.cakeValid && (
+        {!seasoning.snackValid && (
           <span className="absolute -top-1 -right-1 size-3 rounded-full bg-muted/60 border border-border" />
+        )}
+        {seasoning.snackValid && effectCount > 0 && (
+          <span className="absolute -top-1 -right-1 size-4 rounded-full bg-accent text-accent-foreground text-[9px] leading-4 text-center font-mono">
+            {effectCount}
+          </span>
         )}
       </button>
       {hovered && (
         <div
-          ref={tooltipRef}
-          style={{
-            position: "fixed",
-            ...placement,
-            width: 260,
-            zIndex: 60,
-          }}
+          style={{ position: "fixed", ...placement, width: 280, zIndex: 60 }}
           className="p-3 rounded-lg border border-border bg-card shadow-lg pointer-events-none"
         >
           <div className="flex items-center gap-2">
@@ -706,27 +753,48 @@ function SeasoningChip({
             </div>
             <span
               className="ml-auto shrink-0 text-[10px] uppercase px-1.5 py-0.5 rounded-full"
-              style={{
-                background: `${FLAVOUR_COLORS[flavourLabel] ?? "#888"}33`,
-              }}
+              style={{ background: `${FLAVOUR_COLORS[flavourLabel] ?? "#888"}33` }}
             >
               {flavourLabel}
             </span>
           </div>
-          {seasoning.kind === "berry" && (
-            <div className="mt-1 text-[10px] text-muted font-mono">
-              {Object.entries(seasoning.flavours)
-                .filter(([, v]) => v > 0)
-                .map(([k, v]) => `${k.slice(0, 3)} ${v}`)
-                .join(" · ")}
-            </div>
-          )}
-          {!seasoning.cakeValid && (
+          {seasoning.kind === "berry" &&
+            Object.values(seasoning.flavours).some((v) => v > 0) && (
+              <div className="mt-1 text-[10px] text-muted font-mono">
+                {Object.entries(seasoning.flavours)
+                  .filter(([, v]) => v > 0)
+                  .map(([k, v]) => `${k.slice(0, 3)} ${v}`)
+                  .join(" · ")}
+              </div>
+            )}
+          {!seasoning.snackValid && (
             <div className="mt-1 text-[10px] uppercase text-amber-700 dark:text-amber-300">
-              ✗ not a Poké Cake seasoning
+              ✗ not a bait seasoning
             </div>
           )}
-          {seasoning.description && (
+          {seasoning.snackValid && effectCount === 0 && (
+            <div className="mt-1 text-[10px] uppercase text-muted">
+              Bait-valid, no documented effect
+            </div>
+          )}
+          {effectCount > 0 && (
+            <ul className="mt-2 space-y-1">
+              {seasoning.baitEffects.map((e, i) => (
+                <li
+                  key={`${e.kind}-${i}`}
+                  className={`rounded px-2 py-1 text-[10px] leading-tight ${EFFECT_TONE_STYLES[e.tone]}`}
+                >
+                  <span className="font-medium">{e.title}</span>
+                  {e.chance < 1 && (
+                    <span className="ml-1 opacity-70">
+                      {Math.round(e.chance * 100)}%
+                    </span>
+                  )}
+                </li>
+              ))}
+            </ul>
+          )}
+          {seasoning.description && effectCount === 0 && (
             <p className="mt-2 text-xs text-muted leading-snug">{seasoning.description}</p>
           )}
         </div>

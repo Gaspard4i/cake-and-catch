@@ -1,0 +1,268 @@
+/**
+ * Pure formatter for bait seasoning effects.
+ *
+ * Cobblemon stores effects as JSON objects like:
+ *   { "type": "cobblemon:iv", "value": 5, "chance": 1, "subcategory": "cobblemon:atk" }
+ * This module turns each effect into a short English sentence close to what
+ * the official wiki shows, and also exposes a computed tier tag so UIs can
+ * colour them consistently.
+ *
+ * Source of truth: `data/cobblemon/spawn_bait_effects/**.json` in the mod +
+ * the wiki page at https://wiki.cobblemon.com/index.php/Seasoning.
+ */
+
+export type RawBaitEffect = {
+  type?: string;
+  value?: number;
+  chance?: number;
+  subcategory?: string;
+  [k: string]: unknown;
+};
+
+export type BaitEffectKind =
+  | "bite_time"
+  | "rarity_bucket"
+  | "shiny_reroll"
+  | "ha_chance"
+  | "drops_reroll"
+  | "level_raise"
+  | "ev"
+  | "iv"
+  | "nature"
+  | "egg_group"
+  | "typing"
+  | "gender_chance"
+  | "friendship"
+  | "mark_chance"
+  | "unknown";
+
+export type FormattedBaitEffect = {
+  kind: BaitEffectKind;
+  title: string;
+  description: string;
+  chance: number;
+  tone: "healing" | "friendship" | "defense" | "buff" | "offense" | "utility";
+};
+
+function cleanSubcategory(sc: string | undefined): string {
+  if (!sc) return "";
+  return sc.replace(/^cobblemon:/, "");
+}
+
+const STAT_LABEL: Record<string, string> = {
+  hp: "HP",
+  atk: "Attack",
+  def: "Defence",
+  spa: "Special Attack",
+  spd: "Special Defence",
+  spe: "Speed",
+  speed: "Speed",
+};
+
+const EGG_GROUP_LABEL: Record<string, string> = {
+  monster: "Monster",
+  human_like: "Human-Like",
+  water_1: "Water 1",
+  water_2: "Water 2",
+  water_3: "Water 3",
+  bug: "Bug",
+  mineral: "Mineral",
+  flying: "Flying",
+  amorphous: "Amorphous",
+  field: "Field",
+  fairy: "Fairy",
+  grass: "Grass",
+  dragon: "Dragon",
+  ditto: "Ditto",
+  undiscovered: "Undiscovered",
+};
+
+function prettyStat(sub: string): string {
+  const key = cleanSubcategory(sub).toLowerCase();
+  return STAT_LABEL[key] ?? key;
+}
+
+function prettyEggGroup(sub: string): string {
+  const key = cleanSubcategory(sub).toLowerCase();
+  return EGG_GROUP_LABEL[key] ?? key.replace(/_/g, " ");
+}
+
+function prettyType(sub: string): string {
+  return cleanSubcategory(sub).toLowerCase();
+}
+
+function chancePct(chance: number | undefined): number {
+  return Math.round((chance ?? 0) * 100);
+}
+
+export function formatBaitEffect(raw: RawBaitEffect): FormattedBaitEffect {
+  const type = (raw.type ?? "").replace(/^cobblemon:/, "");
+  const value = raw.value ?? 0;
+  const chance = raw.chance ?? 0;
+  const sub = raw.subcategory ?? "";
+
+  switch (type) {
+    case "bite_time": {
+      const pct = Math.round(value * 100);
+      return {
+        kind: "bite_time",
+        title: `Bite Time −${pct}%`,
+        description: `Reduces bite time by ${pct}%.`,
+        chance,
+        tone: "utility",
+      };
+    }
+    case "rarity_bucket": {
+      return {
+        kind: "rarity_bucket",
+        title: `Rarity +${value} tier${value > 1 ? "s" : ""}`,
+        description: `Boosts rarity bucket by ${value} tier(s).`,
+        chance,
+        tone: "buff",
+      };
+    }
+    case "shiny_reroll": {
+      const v = value || 1;
+      return {
+        kind: "shiny_reroll",
+        title: `Shiny ×${v}`,
+        description: `Increases shiny chance by ${v}×.`,
+        chance,
+        tone: "buff",
+      };
+    }
+    case "ha_chance": {
+      return {
+        kind: "ha_chance",
+        title: "Hidden Ability",
+        description: "Attracts Pokémon with their hidden ability.",
+        chance,
+        tone: "buff",
+      };
+    }
+    case "drops_reroll": {
+      return {
+        kind: "drops_reroll",
+        title: `Drops reroll ×${value || 1}`,
+        description: "Rerolls drops once.",
+        chance,
+        tone: "utility",
+      };
+    }
+    case "level_raise": {
+      return {
+        kind: "level_raise",
+        title: `Level +${value}`,
+        description: `Boosts lured Pokémon level by ${value}.`,
+        chance,
+        tone: "buff",
+      };
+    }
+    case "ev": {
+      const stat = prettyStat(sub);
+      return {
+        kind: "ev",
+        title: `${stat} EV yield`,
+        description: `Attracts Pokémon with ${stat} EV yield.`,
+        chance,
+        tone: "offense",
+      };
+    }
+    case "iv": {
+      const stat = prettyStat(sub);
+      return {
+        kind: "iv",
+        title: `${stat} IV +${value}`,
+        description: `Boosts lured Pokémon ${stat} IV by ${value}.`,
+        chance,
+        tone: "offense",
+      };
+    }
+    case "nature": {
+      const stat = prettyStat(sub);
+      return {
+        kind: "nature",
+        title: `${stat}-nature`,
+        description: `Attracts Pokémon with ${stat}-boosting natures.`,
+        chance,
+        tone: "offense",
+      };
+    }
+    case "egg_group": {
+      const eg = prettyEggGroup(sub);
+      return {
+        kind: "egg_group",
+        title: `${eg} egg group ×10`,
+        description: `Increases chance of ${eg} Egg Group Pokémon by 10×.`,
+        chance,
+        tone: "utility",
+      };
+    }
+    case "typing": {
+      const t = prettyType(sub);
+      return {
+        kind: "typing",
+        title: `${t}-type ×10`,
+        description: `Increases chance of ${t}-type Pokémon by 10×.`,
+        chance,
+        tone: "offense",
+      };
+    }
+    case "gender_chance": {
+      const which = sub.toLowerCase() === "female" ? "female" : "male";
+      return {
+        kind: "gender_chance",
+        title: `${which} Pokémon`,
+        description: `Attracts ${which} Pokémon.`,
+        chance,
+        tone: "utility",
+      };
+    }
+    case "friendship": {
+      return {
+        kind: "friendship",
+        title: `Friendship +${value}`,
+        description: `Boosts lured Pokémon's friendship by ${value}.`,
+        chance,
+        tone: "friendship",
+      };
+    }
+    case "mark_chance": {
+      return {
+        kind: "mark_chance",
+        title: "Mark chance",
+        description: "Attracts Pokémon with special marks.",
+        chance,
+        tone: "utility",
+      };
+    }
+    default:
+      return {
+        kind: "unknown",
+        title: type || "unknown",
+        description: JSON.stringify(raw),
+        chance,
+        tone: "utility",
+      };
+  }
+}
+
+export function formatBaitEffects(effects: RawBaitEffect[]): FormattedBaitEffect[] {
+  return effects.map(formatBaitEffect);
+}
+
+/**
+ * IDs in the upstream `bait_seasoning` tag file. Source of truth is
+ * `data/cobblemon/tags/item/recipe_filters/bait_seasoning.json` (values =
+ * all of `#cobblemon:berries` plus these 7 vanilla items). Used client-side
+ * to filter the pantry to bait-only when needed.
+ */
+export const BAIT_VANILLA_ITEMS = new Set([
+  "minecraft:apple",
+  "minecraft:enchanted_golden_apple",
+  "minecraft:glistering_melon_slice",
+  "minecraft:glow_berries",
+  "minecraft:golden_apple",
+  "minecraft:golden_carrot",
+  "minecraft:sweet_berries",
+]);
