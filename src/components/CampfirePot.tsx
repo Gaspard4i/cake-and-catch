@@ -66,10 +66,13 @@ type AttractedEntry = {
   dexNo: number;
   primaryType: string;
   secondaryType: string | null;
-  matchedFlavour: string;
-  bestBucket: string;
-  bestWeight: number;
-  spawnCount: number;
+  bucket: "common" | "uncommon" | "rare" | "ultra-rare";
+  weight: number;
+  adjustedWeight: number;
+  probability: number;
+  reasons: string[];
+  levelMin: number;
+  levelMax: number;
 };
 
 /** Pretty group label shown in the multi-select dropdown per namespace. */
@@ -596,8 +599,11 @@ export function CampfirePot() {
             Attracted Pokémon {loading && "…"}
           </h3>
           <p className="mt-1 text-xs text-muted">
-            Pokémon who can spawn in the chosen conditions AND whose preferred
-            flavour matches the snack.
+            Reproduction of the real Poké Snack spawn pipeline: world pool
+            filtered by biome/time/Y, uncommon ×2.25 / rare ×5.5 bucket
+            multipliers applied inconditionally, then typing/egg-group bait
+            effects multiply matching entries&apos; weight, then rarity_bucket
+            softens inter-bucket ratios. Probability = P(bucket) × weight share.
           </p>
           {attracted.length === 0 ? (
             <p className="mt-3 text-sm text-muted">No Pokémon match. Try removing filters.</p>
@@ -610,16 +616,35 @@ export function CampfirePot() {
                 >
                   <PokemonSprite dexNo={p.dexNo} name={p.name} size={44} />
                   <div className="min-w-0">
-                    <div className="text-xs font-mono text-muted">
-                      #{String(p.dexNo).padStart(4, "0")}
+                    <div className="flex items-center gap-1">
+                      <span className="text-xs font-mono text-muted">
+                        #{String(p.dexNo).padStart(4, "0")}
+                      </span>
+                      <span
+                        className="ml-auto text-[10px] font-mono font-medium text-accent"
+                        title={`base weight ${p.weight} → adjusted ${p.adjustedWeight.toFixed(1)}`}
+                      >
+                        {(p.probability * 100).toFixed(
+                          p.probability >= 0.01 ? 2 : 3,
+                        )}
+                        %
+                      </span>
                     </div>
                     <div className="font-medium text-sm truncate">{p.name}</div>
-                    <div className="mt-0.5">
-                      <TypePair primary={p.primaryType} secondary={p.secondaryType} size={18} />
+                    <div className="mt-0.5 min-w-0 max-w-full overflow-hidden">
+                      <TypePair primary={p.primaryType} secondary={p.secondaryType} size={16} />
                     </div>
                     <div className="text-[10px] text-muted uppercase mt-0.5">
-                      {p.bestBucket} · w {p.bestWeight}
+                      {p.bucket}
                     </div>
+                    {p.reasons.length > 0 && (
+                      <div
+                        className="text-[9px] text-accent/80 truncate"
+                        title={p.reasons.join(" · ")}
+                      >
+                        {p.reasons.slice(0, 2).join(" · ")}
+                      </div>
+                    )}
                   </div>
                 </li>
               ))}

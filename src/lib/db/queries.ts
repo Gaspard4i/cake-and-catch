@@ -197,6 +197,7 @@ export async function listSpawnsWithSpecies(limit = 5000) {
           primaryType: schema.species.primaryType,
           secondaryType: schema.species.secondaryType,
           preferredFlavours: schema.species.preferredFlavours,
+          speciesRaw: schema.species.raw,
         })
         .from(schema.spawns)
         .innerJoin(schema.species, eq(schema.species.id, schema.spawns.speciesId))
@@ -218,6 +219,7 @@ export async function listSpawnsWithSpecies(limit = 5000) {
       primaryType: string;
       secondaryType: string | null;
       preferredFlavours: string[] | null;
+      speciesRaw: unknown;
     }>,
   );
 }

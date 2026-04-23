@@ -10,7 +10,6 @@ import {
   cakeEffectTags,
   EFFECT_TAG_LABELS,
   filterSpawns,
-  preferredFlavourFor,
   type CakeComposition,
   type SpawnFilter,
 } from "@/lib/recommend/snack";
@@ -20,6 +19,10 @@ import {
   type FormattedBaitEffect,
   type RawBaitEffect,
 } from "@/lib/recommend/bait-effects";
+import {
+  rankSnackAttractions,
+  type SnackSpawnCandidate,
+} from "@/lib/recommend/snack-spawn";
 import type { Berry } from "@/lib/db/schema";
 
 type IncomingFilter = Partial<SpawnFilter> & {
@@ -326,50 +329,78 @@ export async function POST(req: NextRequest) {
     }
   }
 
+  // Re-implement the actual Cobblemon Poké Snack attraction pipeline.
+  // Gather candidates from the world pool, filter by SpawnRules (biome /
+  // time / Y-range), then run them through `rankSnackAttractions` which
+  // applies the bucket multipliers and bait influences faithfully.
   const spawns = await listSpawnsWithSpecies(10000);
   const matchingSpawns = filterSpawns(spawns, filter);
 
-  type Candidate = (typeof matchingSpawns)[number];
-  const bySpecies = new Map<number, Candidate[]>();
-  for (const s of matchingSpawns) {
-    const arr = bySpecies.get(s.speciesId) ?? [];
-    arr.push(s);
-    bySpecies.set(s.speciesId, arr);
+  const combinedRawEffects: RawBaitEffect[] = [];
+  for (const slug of validSlugs) {
+    const itemId = itemIdBySlug.get(slug);
+    if (!itemId) continue;
+    combinedRawEffects.push(...(baitByItem.get(itemId) ?? []));
   }
 
-  const attracted: Array<{
-    speciesId: number;
-    slug: string;
-    name: string;
-    dexNo: number;
-    primaryType: string;
-    secondaryType: string | null;
-    matchedFlavour: string;
-    spawnCount: number;
-    bestBucket: string;
-    bestWeight: number;
-  }> = [];
+  const candidates: SnackSpawnCandidate[] = matchingSpawns.map((s) => {
+    const r = (s.speciesRaw ?? {}) as Record<string, unknown>;
+    const eggGroups = (r.eggGroups as string[] | undefined) ?? [];
+    return {
+      spawnId: s.spawnId,
+      speciesId: s.speciesId,
+      slug: s.slug,
+      name: s.name,
+      dexNo: s.dexNo,
+      primaryType: s.primaryType,
+      secondaryType: s.secondaryType,
+      eggGroups,
+      bucket: s.bucket,
+      weight: s.weight,
+      levelMin: s.levelMin,
+      levelMax: s.levelMax,
+    };
+  });
 
-  for (const [speciesId, entries] of bySpecies) {
-    const first = entries[0];
-    const targetFlavour = preferredFlavourFor(first);
-    if (dominant && dominant !== targetFlavour) continue;
-    const best = entries.reduce((a, b) => (b.weight > a.weight ? b : a));
-    attracted.push({
-      speciesId,
-      slug: first.slug,
-      name: first.name,
-      dexNo: first.dexNo,
-      primaryType: first.primaryType,
-      secondaryType: first.secondaryType,
-      matchedFlavour: dominant ?? targetFlavour,
-      spawnCount: entries.length,
-      bestBucket: best.bucket,
-      bestWeight: best.weight,
-    });
+  const ranked = rankSnackAttractions(
+    candidates,
+    {
+      biomes: filter.biomes,
+      timeRanges: filter.timeRanges,
+      minY: filter.minY,
+      maxY: filter.maxY,
+    },
+    combinedRawEffects,
+    { limit: 200 },
+  );
+
+  // Deduplicate by species (show the best-ranked spawn for each species).
+  const bestBySpecies = new Map<number, (typeof ranked)[number]>();
+  for (const r of ranked) {
+    const prev = bestBySpecies.get(r.speciesId);
+    if (!prev || r.finalProbability > prev.finalProbability) {
+      bestBySpecies.set(r.speciesId, r);
+    }
   }
+  const uniqueRanked = [...bestBySpecies.values()].sort(
+    (a, b) => b.finalProbability - a.finalProbability,
+  );
 
-  attracted.sort((a, b) => b.bestWeight - a.bestWeight);
+  const attracted = uniqueRanked.slice(0, 100).map((r) => ({
+    speciesId: r.speciesId,
+    slug: r.slug,
+    name: r.name,
+    dexNo: r.dexNo,
+    primaryType: r.primaryType,
+    secondaryType: r.secondaryType,
+    bucket: r.bucket,
+    weight: r.weight,
+    adjustedWeight: r.adjustedWeight,
+    probability: r.finalProbability,
+    reasons: r.reasons,
+    levelMin: r.levelMin,
+    levelMax: r.levelMax,
+  }));
 
   return ok({
     cake: {
@@ -384,7 +415,7 @@ export async function POST(req: NextRequest) {
       baitEffects: mergedBaitEffects,
     },
     filter,
-    count: attracted.length,
-    attracted: attracted.slice(0, 100),
+    count: uniqueRanked.length,
+    attracted,
   });
 }
