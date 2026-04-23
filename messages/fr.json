@@ -1,0 +1,66 @@
+{
+  "app": {
+    "title": "Cake & Catch",
+    "tagline": "Pour chaque Pokémon Cobblemon : quelle recette cuisiner, où aller spawner, dans quelles conditions.",
+    "indexedSpecies": "{count} espèces indexées."
+  },
+  "footer": {
+    "dataFrom": "Données issues de",
+    "modSource": "Cobblemon (MPL 2.0)",
+    "and": "et",
+    "wikiSource": "wiki Cobblemon (CC BY 4.0)"
+  },
+  "home": {
+    "pokedexPreview": "Aperçu du Pokédex"
+  },
+  "search": {
+    "placeholder": "Cherche un Pokémon (ex: pikachu, victini…)",
+    "submit": "Chercher",
+    "title": "Rechercher un Pokémon",
+    "noResults": "Aucun résultat pour « {q} ».",
+    "loading": "Chargement…"
+  },
+  "pokemon": {
+    "back": "← Retour",
+    "stats": "Stats",
+    "spawnsCount": "Spawns ({count})",
+    "noSpawn": "Aucun spawn naturel documenté pour cette espèce.",
+    "captureRate": "Capture rate {value}",
+    "friendship": "Friendship {value}",
+    "levelRange": "Niv. {min}–{max}",
+    "weight": "poids {value}",
+    "biomes": "Biomes : ",
+    "condition": {
+      "time": "Heure : {value}",
+      "moon": "Lune : {value}",
+      "raining": "Pluie",
+      "thundering": "Orage",
+      "y": "Y : {min} → {max}",
+      "skyLight": "Lumière ciel : {min}–{max}",
+      "structures": "Structures : {value}",
+      "blocks": "Blocs requis : {value}"
+    }
+  },
+  "theme": {
+    "label": "Changer de thème",
+    "system": "Système",
+    "light": "Light",
+    "dark": "Dark",
+    "pokecenter": "Poké Center",
+    "grass": "Bulbasaur",
+    "fire": "Charmander",
+    "water": "Squirtle"
+  },
+  "locale": {
+    "label": "Langue",
+    "fr": "Français",
+    "en": "English"
+  },
+  "source": {
+    "mod": "Mod source",
+    "wiki": "Wiki",
+    "derived": "Déduit",
+    "addon": "Addon",
+    "addonNamed": "Addon · {name}"
+  }
+}

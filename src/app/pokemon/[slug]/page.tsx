@@ -1,0 +1,152 @@
+import { notFound } from "next/navigation";
+import Link from "next/link";
+import { Suspense } from "react";
+import { getTranslations } from "next-intl/server";
+import { getSourcesFor, getSpeciesBySlug, listSpawnsForSpecies } from "@/lib/db/queries";
+import { SourceBadge } from "@/components/SourceBadge";
+import { TypePair } from "@/components/TypeBadge";
+
+function formatBiome(biome: string) {
+  return biome.replace(/^#?cobblemon:/, "").replace(/is_/, "").replace(/_/g, " ");
+}
+
+function formatCondition(
+  cond: unknown,
+  t: (key: string, values?: Record<string, string | number>) => string,
+): string[] {
+  if (!cond || typeof cond !== "object") return [];
+  const c = cond as Record<string, unknown>;
+  const parts: string[] = [];
+  if (typeof c.timeRange === "string") parts.push(t("condition.time", { value: c.timeRange }));
+  if (typeof c.moonPhase === "string") parts.push(t("condition.moon", { value: c.moonPhase }));
+  if (c.isRaining === true) parts.push(t("condition.raining"));
+  if (c.isThundering === true) parts.push(t("condition.thundering"));
+  if (typeof c.minY === "number" || typeof c.maxY === "number") {
+    parts.push(
+      t("condition.y", {
+        min: typeof c.minY === "number" ? c.minY : "-∞",
+        max: typeof c.maxY === "number" ? c.maxY : "+∞",
+      }),
+    );
+  }
+  if (typeof c.minSkyLight === "number" || typeof c.maxSkyLight === "number") {
+    parts.push(
+      t("condition.skyLight", {
+        min: typeof c.minSkyLight === "number" ? c.minSkyLight : 0,
+        max: typeof c.maxSkyLight === "number" ? c.maxSkyLight : 15,
+      }),
+    );
+  }
+  if (Array.isArray(c.structures) && c.structures.length > 0) {
+    parts.push(t("condition.structures", { value: (c.structures as string[]).join(", ") }));
+  }
+  if (Array.isArray(c.neededBaseBlocks) && c.neededBaseBlocks.length > 0) {
+    parts.push(t("condition.blocks", { value: (c.neededBaseBlocks as string[]).join(", ") }));
+  }
+  return parts;
+}
+
+async function SpeciesDetail({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params;
+  const species = await getSpeciesBySlug(slug);
+  if (!species) notFound();
+
+  const [spawns, sources, t] = await Promise.all([
+    listSpawnsForSpecies(species.id),
+    getSourcesFor("species", species.id),
+    getTranslations("pokemon"),
+  ]);
+
+  const primarySource = sources[0];
+
+  return (
+    <>
+      <Link href="/" className="text-sm text-muted hover:text-foreground transition-colors">
+        {t("back")}
+      </Link>
+
+      <header className="mt-4 flex items-baseline gap-4 flex-wrap">
+        <span className="text-muted font-mono">#{String(species.dexNo).padStart(4, "0")}</span>
+        <h1 className="text-3xl font-semibold tracking-tight">{species.name}</h1>
+        <SourceBadge kind="mod" href={primarySource?.url} />
+      </header>
+
+      <div className="mt-3 flex items-center gap-3 flex-wrap text-sm text-muted">
+        <TypePair primary={species.primaryType} secondary={species.secondaryType} size="md" />
+        <span>{t("captureRate", { value: species.catchRate })}</span>
+        {species.baseFriendship != null && (
+          <span>{t("friendship", { value: species.baseFriendship })}</span>
+        )}
+      </div>
+
+      <section className="mt-8">
+        <h2 className="text-sm font-medium uppercase tracking-wide text-muted">{t("stats")}</h2>
+        <dl className="mt-2 grid grid-cols-3 sm:grid-cols-6 gap-2">
+          {Object.entries(species.baseStats).map(([k, v]) => (
+            <div key={k} className="rounded-md border border-border bg-card px-3 py-2">
+              <dt className="text-[10px] uppercase text-muted">{k.replace("_", " ")}</dt>
+              <dd className="font-mono text-lg">{v as number}</dd>
+            </div>
+          ))}
+        </dl>
+      </section>
+
+      <section className="mt-10">
+        <h2 className="text-sm font-medium uppercase tracking-wide text-muted">
+          {t("spawnsCount", { count: spawns.length })}
+        </h2>
+        {spawns.length === 0 ? (
+          <p className="mt-2 text-sm text-muted">{t("noSpawn")}</p>
+        ) : (
+          <ul className="mt-3 space-y-3">
+            {spawns.map((s) => (
+              <li key={s.id} className="rounded-lg border border-border bg-card p-4">
+                <div className="flex items-center justify-between gap-2 flex-wrap">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-xs rounded bg-subtle px-1.5 py-0.5 capitalize">
+                      {s.bucket}
+                    </span>
+                    <span className="text-xs text-muted">
+                      {t("levelRange", { min: s.levelMin, max: s.levelMax })} ·{" "}
+                      {t("weight", { value: s.weight })}
+                    </span>
+                  </div>
+                  <SourceBadge
+                    kind={s.sourceKind === "addon" ? "addon" : "mod"}
+                    label={
+                      s.sourceKind === "addon"
+                        ? `Addon · ${s.sourceName}`
+                        : undefined
+                    }
+                    href={s.sourceUrl ?? undefined}
+                  />
+                </div>
+                {s.biomes.length > 0 && (
+                  <div className="mt-2 text-sm">
+                    <span className="text-muted">{t("biomes")}</span>
+                    {s.biomes.map(formatBiome).join(", ")}
+                  </div>
+                )}
+                {formatCondition(s.condition, t as never).map((line, i) => (
+                  <div key={i} className="text-xs text-muted mt-1">
+                    {line}
+                  </div>
+                ))}
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+    </>
+  );
+}
+
+export default function Page({ params }: { params: Promise<{ slug: string }> }) {
+  return (
+    <div className="mx-auto max-w-5xl px-6 py-10">
+      <Suspense fallback={<p className="text-sm text-muted">…</p>}>
+        <SpeciesDetail params={params} />
+      </Suspense>
+    </div>
+  );
+}

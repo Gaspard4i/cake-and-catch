@@ -1,36 +1,54 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Cake & Catch
 
-## Getting Started
+Assistant Cobblemon : recettes de cuisine + spots de spawn par Pokémon. Données extraites du [repo officiel Cobblemon](https://gitlab.com/cable-mc/cobblemon) (MPL 2.0) et du [wiki officiel](https://wiki.cobblemon.com) (CC BY 4.0).
 
-First, run the development server:
+## Stack
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+- Next.js 16 (App Router, Cache Components / PPR) + React 19
+- Tailwind CSS 4
+- PostgreSQL (local via Docker, Neon en prod)
+- Drizzle ORM + Zod
+- Vitest
+
+## Setup local
+
+```sh
+pnpm install
+docker compose up -d           # Postgres sur :5433
+pnpm db:migrate                # applique le schéma
+pnpm ingest                    # clone repo Cobblemon → DB (~30s, ~3000 spawns)
+pnpm dev                       # http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Scripts
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+- `pnpm dev` — Next dev (Turbopack)
+- `pnpm build` — build prod
+- `pnpm test` — Vitest
+- `pnpm db:generate` — génère migrations Drizzle depuis le schéma
+- `pnpm db:migrate` — applique migrations
+- `pnpm ingest` — pipeline d'ingestion des données Cobblemon
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Arborescence
 
-## Learn More
+```
+src/
+  app/                       routes App Router
+    pokemon/[slug]/          fiche Pokémon
+    search/                  recherche
+  components/                UI components
+  lib/
+    db/                      Drizzle client + schéma + queries
+    parsers/                 Zod pour JSON Cobblemon
+    sources/                 fetchers (GitLab, plus tard wiki)
+    recommend/               (Phase 2) moteur de recommandation
+ingest/
+  run.ts                     orchestrateur du pipeline
+tests/
+  fixtures/                  JSON réels pour tests parsers
+drizzle/                     migrations SQL
+```
 
-To learn more about Next.js, take a look at the following resources:
+## Phase actuelle
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Phase 1 — fondations : ingestion species + spawns, fiche Pokémon en lecture seule avec badges de source. ~1025 espèces, ~2827 spawns indexés.

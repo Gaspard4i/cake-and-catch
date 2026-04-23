@@ -1,26 +1,108 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+/* ---------- Theme tokens ---------- */
+
+:root,
+[data-theme="light"] {
+  --bg: #fafaf9;
+  --fg: #18181b;
+  --muted: #71717a;
+  --subtle: #f4f4f5;
+  --border: #e4e4e7;
+  --card: #ffffff;
+  --accent: #2563eb;
+  --accent-fg: #ffffff;
+  --ring: #3b82f6;
 }
 
+[data-theme="dark"] {
+  --bg: #0a0a0a;
+  --fg: #ededed;
+  --muted: #a1a1aa;
+  --subtle: #18181b;
+  --border: #27272a;
+  --card: #111113;
+  --accent: #60a5fa;
+  --accent-fg: #0a0a0a;
+  --ring: #3b82f6;
+}
+
+/* Poké Center — white base with classic red */
+[data-theme="pokecenter"] {
+  --bg: #fff8f8;
+  --fg: #2a0d0d;
+  --muted: #9a6b6b;
+  --subtle: #ffecec;
+  --border: #f5cfcf;
+  --card: #ffffff;
+  --accent: #e11d2a;
+  --accent-fg: #ffffff;
+  --ring: #f87171;
+}
+
+/* Bulbasaur — grass */
+[data-theme="grass"] {
+  --bg: #f2f9ef;
+  --fg: #132a14;
+  --muted: #5c7b5f;
+  --subtle: #e4f1db;
+  --border: #c9e0b8;
+  --card: #ffffff;
+  --accent: #2f8d3c;
+  --accent-fg: #ffffff;
+  --ring: #4ade80;
+}
+
+/* Charmander — fire */
+[data-theme="fire"] {
+  --bg: #fff6ee;
+  --fg: #2b130a;
+  --muted: #a07358;
+  --subtle: #ffe6d2;
+  --border: #f6caa8;
+  --card: #ffffff;
+  --accent: #e8591b;
+  --accent-fg: #ffffff;
+  --ring: #fb923c;
+}
+
+/* Squirtle — water */
+[data-theme="water"] {
+  --bg: #eef6fb;
+  --fg: #0b2030;
+  --muted: #5e7c91;
+  --subtle: #d9ebf6;
+  --border: #b6d7ea;
+  --card: #ffffff;
+  --accent: #1e6fb8;
+  --accent-fg: #ffffff;
+  --ring: #60a5fa;
+}
+
+/* ---------- Tailwind theme mapping ---------- */
+
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
+  --color-background: var(--bg);
+  --color-foreground: var(--fg);
+  --color-muted: var(--muted);
+  --color-subtle: var(--subtle);
+  --color-border: var(--border);
+  --color-card: var(--card);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-fg);
+  --color-ring: var(--ring);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  background: var(--bg);
+  color: var(--fg);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-sans), system-ui, sans-serif;
+  transition: background-color 150ms ease, color 150ms ease;
 }

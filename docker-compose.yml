@@ -1,0 +1,16 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: cake-and-catch-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: cake
+      POSTGRES_PASSWORD: cake
+      POSTGRES_DB: cake_and_catch
+    ports:
+      - "5433:5432"
+    volumes:
+      - cake-pg-data:/var/lib/postgresql/data
+
+volumes:
+  cake-pg-data:
