@@ -25,7 +25,6 @@ async function LandingShell() {
         indexedSpecies: t("indexedSpecies", { count: total }),
         ctaPokedex: tHome("ctaPokedex"),
         ctaCake: tHome("ctaCake"),
-        ctaRecipes: tHome("ctaRecipes"),
         recentlyIndexed: tHome("recentlyIndexed"),
       }}
     />

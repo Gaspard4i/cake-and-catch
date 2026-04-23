@@ -15,7 +15,6 @@ type Labels = {
   indexedSpecies: string;
   ctaPokedex: string;
   ctaCake: string;
-  ctaRecipes: string;
   recentlyIndexed: string;
 };
 
@@ -183,12 +182,6 @@ export function Landing({
               className="rounded-lg border border-border bg-card px-5 py-2.5 text-sm font-medium hover:bg-subtle transition"
             >
               {labels.ctaCake}
-            </Link>
-            <Link
-              href="/recipes"
-              className="rounded-lg border border-border bg-card px-5 py-2.5 text-sm font-medium hover:bg-subtle transition"
-            >
-              {labels.ctaRecipes}
             </Link>
           </div>
         </div>
