@@ -1,7 +1,7 @@
 {
   "app": {
-    "title": "Cake & Catch",
-    "tagline": "Pour chaque Pokémon Cobblemon : quelle recette cuisiner, où aller spawner, dans quelles conditions.",
+    "title": "Snack & Catch",
+    "tagline": "Pour chaque Pokémon Cobblemon : quel snack cuisiner pour l'attirer, où le spawner, dans quelles conditions.",
     "indexedSpecies": "{count} espèces indexées."
   },
   "footer": {
@@ -13,7 +13,7 @@
   "home": {
     "pokedexPreview": "Aperçu du Pokédex",
     "ctaPokedex": "Ouvrir le Pokédex",
-    "ctaCake": "Cake maker",
+    "ctaCake": "Snack maker",
     "ctaRecipes": "Recettes",
     "recentlyIndexed": "Extrait du Pokédex"
   },
@@ -24,19 +24,19 @@
   "nav": {
     "pokedex": "Pokédex",
     "recipes": "Recettes",
-    "cake": "Cake maker",
+    "cake": "Snack maker",
     "about": "À propos"
   },
   "cake": {
-    "title": "Cake maker",
-    "intro": "Compose un Poké Cake en faisant glisser une berry dans le slot seasoning. L'outil liste les Pokémon qui peuvent spawn dans les conditions choisies ET dont la saveur préférée correspond au cake. Le seasoning colore le cake et déclenche le flavour effect, mais le mod ne fait pas apparaître de Pokémon hors pool de spawn."
+    "title": "Poké Snack maker",
+    "intro": "Compose un Poké Snack en faisant glisser un bait seasoning dans un slot. Selon le seasoning absorbé, le Snack attire des Pokémon selon leur type, egg group, nature ou IV ; d'autres seasonings boostent le shiny, le talent caché, ou la rarity bucket. Place le Snack au sol pour attirer les Pokémon dans un rayon de 8 blocs."
   },
   "biome": {
     "spawnsHere": "Spawns répertoriés ({count})"
   },
   "about": {
     "title": "À propos",
-    "intro": "Cake & Catch référence les données publiées par le mod Cobblemon et ses addons populaires. Chaque donnée affichée est liée à sa source.",
+    "intro": "Snack & Catch référence les données publiées par le mod Cobblemon et ses addons populaires. Chaque donnée affichée est liée à sa source.",
     "sources": "Sources de données",
     "api": "API publique",
     "apiIntro": "Endpoint JSON read-only, cache 60s, rate limit 60 req/min/IP.",
@@ -56,10 +56,10 @@
       "aprijuice": "Aprijuice"
     },
     "kindsHelp": {
-      "cake": "Gâteau à partager qui influence la rencontre (couleur selon seasoning).",
-      "bait": "Appât de pêche — change la probabilité / nature / HA selon le seasoning utilisé.",
-      "snack": "Encas qui attire un Pokémon par type de saveur.",
-      "aprijuice": "Jus de baies Aprikoko pour booster les stats de monture."
+      "cake": "Gâteau partagé. Prend un flavour seasoning (berry) qui colore le résultat.",
+      "bait": "Appât de pêche. Prend un bait seasoning qui oriente la rencontre.",
+      "snack": "Encas posé au sol qui attire les Pokémon alentour. Prend un bait seasoning.",
+      "aprijuice": "Jus de baies Apricorn pour booster les stats de monture (flavour seasoning)."
     }
   },
   "search": {
@@ -73,10 +73,10 @@
     "back": "← Retour",
     "stats": "Stats",
     "notes": "Notes",
-    "cakeSection": "Gâteau optimal",
-    "cakeHelp": "Ces berries collent à la saveur préférée ({flavour}) de ce Pokémon. Pose une sur le seasoning slot pour booster l'attraction.",
-    "baitsTitle": "Appâts recommandés",
-    "baitsHelp": "Appâts de pêche qui affectent la rencontre (couleur, nature, HA, shiny).",
+    "cakeSection": "Snack optimal",
+    "cakeHelp": "Bait seasonings qui biaisent la rencontre vers ce Pokémon selon son type ({flavour}). Place un Snack avec un de ces seasonings.",
+    "baitsTitle": "Bait seasonings utiles",
+    "baitsHelp": "Effets de bait documentés par le mod (bite time, shiny reroll, HA, type bias).",
     "reason": {
       "shiny_reroll": "boost shiny",
       "hidden_ability": "talent caché",

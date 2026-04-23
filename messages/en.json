@@ -1,7 +1,7 @@
 {
   "app": {
-    "title": "Cake & Catch",
-    "tagline": "For every Cobblemon Pokémon: which recipe to cook, where to spawn, under what conditions.",
+    "title": "Snack & Catch",
+    "tagline": "For every Cobblemon Pokémon: which Poké Snack to cook to attract it, where it spawns, under what conditions.",
     "indexedSpecies": "{count} species indexed."
   },
   "footer": {
@@ -13,7 +13,7 @@
   "home": {
     "pokedexPreview": "Pokédex preview",
     "ctaPokedex": "Open the Pokédex",
-    "ctaCake": "Cake maker",
+    "ctaCake": "Snack maker",
     "ctaRecipes": "Recipes",
     "recentlyIndexed": "Sample of the Pokédex"
   },
@@ -24,19 +24,19 @@
   "nav": {
     "pokedex": "Pokédex",
     "recipes": "Recipes",
-    "cake": "Cake maker",
+    "cake": "Snack maker",
     "about": "About"
   },
   "cake": {
-    "title": "Cake maker",
-    "intro": "Drop a berry into the seasoning slot to bake a Poké Cake. The tool lists Pokémon that can spawn in the chosen conditions AND whose preferred flavour matches the cake. The seasoning colors the cake and triggers the flavour effect, but the mod does not spawn Pokémon outside the normal pool."
+    "title": "Poké Snack maker",
+    "intro": "Drop a bait seasoning into a slot. Depending on the seasoning, the Snack biases attraction by type, egg group, nature or IVs; some boost shiny odds, hidden ability or rarity bucket. Place the Snack on the ground to draw Pokémon within 8 blocks."
   },
   "biome": {
     "spawnsHere": "Spawns listed ({count})"
   },
   "about": {
     "title": "About",
-    "intro": "Cake & Catch references data published by the Cobblemon mod and popular community addons. Every displayed value is linked to its source.",
+    "intro": "Snack & Catch references data published by the Cobblemon mod and popular community addons. Every displayed value is linked to its source.",
     "sources": "Data sources",
     "api": "Public API",
     "apiIntro": "Read-only JSON endpoint, 60s cache, rate limit 60 req/min/IP.",
@@ -56,10 +56,10 @@
       "aprijuice": "Aprijuice"
     },
     "kindsHelp": {
-      "cake": "Shared cake that biases encounters (color depends on seasoning).",
-      "bait": "Fishing bait — tweaks rarity / nature / HA according to the seasoning used.",
-      "snack": "Snack that attracts a Pokémon by flavor type.",
-      "aprijuice": "Apricorn berry juice to boost mount stats."
+      "cake": "Shared cake. Takes a flavour seasoning (berry) that colours the result.",
+      "bait": "Fishing bait. Takes a bait seasoning that biases the encounter.",
+      "snack": "Placed on the ground, attracts nearby Pokémon. Takes a bait seasoning.",
+      "aprijuice": "Apricorn berry juice for mount stat boosts (flavour seasoning)."
     }
   },
   "search": {
@@ -73,10 +73,10 @@
     "back": "← Back",
     "stats": "Stats",
     "notes": "Notes",
-    "cakeSection": "Optimal cake",
-    "cakeHelp": "These berries match this Pokémon's preferred flavour ({flavour}). Place one in the seasoning slot to boost attraction.",
-    "baitsTitle": "Recommended baits",
-    "baitsHelp": "Fishing baits that affect the encounter (color, nature, HA, shiny).",
+    "cakeSection": "Optimal Snack",
+    "cakeHelp": "Bait seasonings that bias encounters toward this Pokémon via its type ({flavour}). Place one in a Snack slot.",
+    "baitsTitle": "Relevant bait seasonings",
+    "baitsHelp": "Documented bait effects (bite time, shiny reroll, HA, type bias).",
     "reason": {
       "shiny_reroll": "shiny boost",
       "hidden_ability": "hidden ability",

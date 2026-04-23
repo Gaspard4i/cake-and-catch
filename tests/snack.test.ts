@@ -5,7 +5,7 @@ import {
   preferredFlavourFor,
   rankCakeForSpecies,
   TYPE_TO_FLAVOUR,
-} from "@/lib/recommend/cake";
+} from "@/lib/recommend/snack";
 import type { Berry } from "@/lib/db/schema";
 
 function berry(slug: string, flavours: Record<string, number>, colour = "red"): Berry {

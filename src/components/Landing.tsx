@@ -4,7 +4,7 @@ import Link from "next/link";
 import dynamic from "next/dynamic";
 import { useEffect, useMemo, useState } from "react";
 
-const Cake3D = dynamic(() => import("./Cake3D").then((m) => m.Cake3D), {
+const Snack3D = dynamic(() => import("./Snack3D").then((m) => m.Snack3D), {
   ssr: false,
   loading: () => <div className="rounded-lg border border-border bg-subtle size-[280px]" />,
 });
@@ -123,7 +123,7 @@ export function Landing({
               {labels.ctaPokedex} →
             </Link>
             <Link
-              href="/cake"
+              href="/snack"
               className="rounded-lg border border-border bg-card px-5 py-2.5 text-sm font-medium hover:bg-subtle transition"
             >
               {labels.ctaCake}
@@ -137,7 +137,7 @@ export function Landing({
           </div>
         </div>
         <div className="flex-shrink-0">
-          <Cake3D flavour={flavour} size={280} />
+          <Snack3D flavour={flavour} size={280} />
           <p className="mt-2 text-center text-[10px] uppercase tracking-widest text-muted">
             {flavour.toLowerCase()}
           </p>

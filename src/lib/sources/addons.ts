@@ -44,7 +44,7 @@ export async function resolveLatestModrinthVersion(slug: string): Promise<{
   versionName: string;
 }> {
   const res = await fetch(`https://api.modrinth.com/v2/project/${slug}/version`, {
-    headers: { "User-Agent": "cake-and-catch/0.1 (contact: quatrei.gaspard@gmail.com)" },
+    headers: { "User-Agent": "snack-and-catch/0.1 (contact: quatrei.gaspard@gmail.com)" },
   });
   if (!res.ok) throw new Error(`modrinth api ${slug}: ${res.status}`);
   const versions = (await res.json()) as ModrinthVersion[];
@@ -55,13 +55,13 @@ export async function resolveLatestModrinthVersion(slug: string): Promise<{
 }
 
 export async function downloadAndExtract(source: AddonSource): Promise<AddonFetched> {
-  const base = join(tmpdir(), "cake-and-catch-addons", source.name);
+  const base = join(tmpdir(), "snack-and-catch-addons", source.name);
   if (await pathExists(base)) await rm(base, { recursive: true, force: true });
   await mkdir(base, { recursive: true });
 
   const zipPath = join(base, "pack.zip");
   const res = await fetch(source.versionZipUrl, {
-    headers: { "User-Agent": "cake-and-catch/0.1 (contact: quatrei.gaspard@gmail.com)" },
+    headers: { "User-Agent": "snack-and-catch/0.1 (contact: quatrei.gaspard@gmail.com)" },
   });
   if (!res.ok || !res.body) throw new Error(`download ${source.name}: ${res.status}`);
   await pipeline(res.body as unknown as NodeJS.ReadableStream, createWriteStream(zipPath));

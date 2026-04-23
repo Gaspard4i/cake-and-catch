@@ -4,7 +4,7 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { ItemIcon } from "./ItemIcon";
 import { PokemonSprite } from "./PokemonSprite";
 import { TypePair } from "./TypeBadge";
-import { Cake3D, type BerryPlacement } from "./Cake3D";
+import { Snack3D, type BerryPlacement } from "./Snack3D";
 
 type Seasoning = {
   slug: string;
@@ -40,7 +40,7 @@ const EFFECT_TONE_STYLES: Record<CakeEffect["tone"], string> = {
  * Cooking Pot variants that exist in-game (7 colours in CampfirePotColor.kt).
  * The hex values here are the PALE food-colour equivalents from
  * `FoodColourComponent.COLORS` — i.e. what the cake would look like if the
- * pot's colour were applied as an override (UI convenience; see Cake3D note).
+ * pot's colour were applied as an override (UI convenience; see Snack3D note).
  */
 const POT_COLOURS = [
   { slug: null, label: "Default", hex: "#c9b89e" },
@@ -119,7 +119,7 @@ export function CampfirePot() {
   const [kindFilter, setKindFilter] = useState<(typeof KINDS)[number]>("all");
 
   useEffect(() => {
-    fetch("/api/cake")
+    fetch("/api/snack")
       .then((r) => r.json())
       .then((d: { seasonings: Seasoning[] }) => setSeasonings(d.seasonings));
   }, []);
@@ -199,7 +199,7 @@ export function CampfirePot() {
             maxY: maxY ? Number.parseInt(maxY, 10) : undefined,
           },
         };
-        const res = await fetch("/api/cake", {
+        const res = await fetch("/api/snack", {
           method: "POST",
           headers: { "content-type": "application/json" },
           body: JSON.stringify(body),
@@ -309,7 +309,7 @@ export function CampfirePot() {
             </div>
 
             {/* 3D Cake, bound to slots and pot colour */}
-            <Cake3D
+            <Snack3D
               flavour={dominant}
               berries={cakeBerries}
               potColour={potColour.hex}

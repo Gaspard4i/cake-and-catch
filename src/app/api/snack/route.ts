@@ -12,7 +12,7 @@ import {
   preferredFlavourFor,
   type CakeComposition,
   type SpawnFilter,
-} from "@/lib/recommend/cake";
+} from "@/lib/recommend/snack";
 import type { Berry } from "@/lib/db/schema";
 
 type IncomingFilter = Partial<SpawnFilter> & {
@@ -42,10 +42,10 @@ type SeasoningDTO = {
   itemId: string;
   kind: "berry" | "other";
   /**
-   * Whether the item can actually sit in the flavour_seasoning slot of a Poké Cake.
+   * Whether the item can actually sit in the flavour_seasoning slot of a PokÃ© Cake.
    * Per upstream data tag `cobblemon:recipe_filters/flavour_seasoning`, only
    * `#cobblemon:berries` qualifies. Everything else in the seasonings/ folder is
-   * reserved for other Cooking Pot recipes (Poké Snack, stews, candies…).
+   * reserved for other Cooking Pot recipes (PokÃ© Snack, stews, candiesâ€¦).
    */
   cakeValid: boolean;
   category: string;
@@ -91,7 +91,7 @@ function classifySeasoning(
     if (names.length > 0)
       parts.push(`Grants potion effect${names.length > 1 ? "s" : ""}: ${names.join(", ")}.`);
   }
-  parts.push("Not a valid Poké Cake seasoning — used in other Cooking Pot recipes.");
+  parts.push("Not a valid PokÃ© Cake seasoning â€” used in other Cooking Pot recipes.");
 
   return { category, description: parts.join(" "), effects: mobEffects };
 }

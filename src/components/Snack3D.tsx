@@ -8,9 +8,9 @@ import * as THREE from "three";
 /**
  * This 3D preview faithfully reproduces cobblemon's block model
  * `poke_cake.json`:
- *   - Inner cube [1,0,1]→[15,7,15] = 14×7×14 MC units.
+ *   - Inner cube [1,0,1]â†’[15,7,15] = 14Ã—7Ã—14 MC units.
  *     faces (tintindex:0): north/east/south/west use `side` texture (UV 1,9,15,16),
- *     up uses `top` texture (which resolves to `poke_snack_top_overlay` — yes,
+ *     up uses `top` texture (which resolves to `poke_snack_top_overlay` â€” yes,
  *     the "top" slot in the model maps to the *_overlay asset), down uses
  *     `bottom` (UV 1,1,15,15) with cullface.
  *   - Outer cube (same extent): only the 4 side faces carry `side_overlay`
@@ -33,7 +33,7 @@ const FLAVOUR_TINT: Record<string, string> = {
 /**
  * Pale food colour palette used by Cobblemon's FoodColourComponent when
  * rendering a cooked item's tint. Source: `FoodColourComponent.kt` in the mod.
- * These are NOT the vibrant vanilla DyeColor values — they're pastel tints
+ * These are NOT the vibrant vanilla DyeColor values â€” they're pastel tints
  * designed to look good as cake tints.
  */
 const MC_COLOUR: Record<string, string> = {
@@ -65,7 +65,7 @@ export type BerryPlacement = {
 
 const TEX = {
   // Matches the model's literal slot names. Note: the model's "top" slot
-  // resolves to poke_snack_top_overlay.png — that's intentional upstream.
+  // resolves to poke_snack_top_overlay.png â€” that's intentional upstream.
   top: "/textures/cobblemon/block/food/poke_snack_top_overlay.png",
   bottom: "/textures/cobblemon/block/food/poke_snack_bottom.png",
   side: "/textures/cobblemon/block/food/poke_snack_side.png",
@@ -198,7 +198,7 @@ function CakeMesh({
 
   // Pot colour acts as an OVERRIDE for the cake tint (UI convenience).
   // In the mod itself, the cake tint is 100% derived from berry.colour via
-  // FoodColourSeasoningProcessor — the pot colour is purely cosmetic on the
+  // FoodColourSeasoningProcessor â€” the pot colour is purely cosmetic on the
   // pot sprite. We surface it as a manual override so the user can preview
   // any pale Cobblemon cake colour even without placing specific berries.
   const tintHex = useMemo(() => {
@@ -207,7 +207,7 @@ function CakeMesh({
   }, [berries, fallbackFlavour, potColour]);
   const tint = useMemo(() => new THREE.Color(tintHex), [tintHex]);
 
-  // Match the JSON: 14×7×14 MC units → three.js units (/16).
+  // Match the JSON: 14Ã—7Ã—14 MC units â†’ three.js units (/16).
   const W = 14 / 16;
   const H = 7 / 16;
 
@@ -292,7 +292,7 @@ function CakeMesh({
   );
 }
 
-export function Cake3D({
+export function Snack3D({
   flavour,
   berries = [],
   potColour,
@@ -303,7 +303,7 @@ export function Cake3D({
   /**
    * When set, forces this hex colour as the cake tint, overriding the
    * flavour/berry-derived mix. Represents the "cooking pot colour" picker
-   * in the UI — in the actual mod the pot colour is cosmetic only.
+   * in the UI â€” in the actual mod the pot colour is cosmetic only.
    */
   potColour?: string;
   size?: number;

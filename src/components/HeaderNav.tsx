@@ -13,7 +13,7 @@ export function HeaderNav() {
       <Link href="/recipes" className="hover:text-foreground transition-colors">
         {t("recipes")}
       </Link>
-      <Link href="/cake" className="hover:text-foreground transition-colors">
+      <Link href="/snack" className="hover:text-foreground transition-colors">
         {t("cake")}
       </Link>
       <Link href="/about" className="hover:text-foreground transition-colors">

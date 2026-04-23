@@ -10,7 +10,7 @@ const COBBLEMON_GH = (relPath: string) =>
   `https://gitlab.com/cable-mc/cobblemon/-/raw/main/common/src/main/resources/assets/cobblemon/textures/${relPath}`;
 
 const PUBLIC_DIR = join(process.cwd(), "public", "textures");
-const UA = "cake-and-catch/0.1";
+const UA = "snack-and-catch/0.1";
 
 async function ensureDir(p: string) {
   await mkdir(dirname(p), { recursive: true });

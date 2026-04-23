@@ -1,4 +1,4 @@
-# Cake & Catch
+# Snack & Catch
 
 Assistant Cobblemon : recettes de cuisine + spots de spawn par Pokémon. Données extraites du [repo officiel Cobblemon](https://gitlab.com/cable-mc/cobblemon) (MPL 2.0) et du [wiki officiel](https://wiki.cobblemon.com) (CC BY 4.0).
 

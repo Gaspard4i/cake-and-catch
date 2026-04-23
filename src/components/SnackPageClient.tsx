@@ -4,10 +4,10 @@ import dynamic from "next/dynamic";
 
 const CampfirePot = dynamic(() => import("./CampfirePot").then((m) => m.CampfirePot), {
   ssr: false,
-  loading: () => <div className="text-muted text-sm">…</div>,
+  loading: () => <div className="text-muted text-sm">â€¦</div>,
 });
 
-export function CakePageClient({
+export function SnackPageClient({
   title,
   intro,
 }: {

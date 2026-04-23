@@ -414,7 +414,7 @@ async function ingestBaitEffects(clone: RepoClone) {
 }
 
 async function main() {
-  const target = join(tmpdir(), "cake-and-catch-cobblemon");
+  const target = join(tmpdir(), "snack-and-catch-cobblemon");
   console.log(`[ingest] cloning Cobblemon into ${target}`);
   const clone = await cloneRepo(target);
   console.log(`[ingest] commit ${clone.commitSha}`);

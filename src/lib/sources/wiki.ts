@@ -1,5 +1,5 @@
 const BASE = "https://wiki.cobblemon.com";
-const UA = "cake-and-catch/0.1 (contact: quatrei.gaspard@gmail.com)";
+const UA = "snack-and-catch/0.1 (contact: quatrei.gaspard@gmail.com)";
 
 export interface WikiSummary {
   title: string;

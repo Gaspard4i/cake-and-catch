@@ -11,10 +11,10 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { slug } = await params;
   const species = await getSpeciesBySlug(slug);
-  if (!species) return { title: "Cake & Catch" };
+  if (!species) return { title: "Snack & Catch" };
   const types = [species.primaryType, species.secondaryType].filter(Boolean).join(" / ");
   return {
-    title: `${species.name} · Cake & Catch`,
+    title: `${species.name} · Snack & Catch`,
     description: `#${String(species.dexNo).padStart(4, "0")} ${species.name} — ${types}. Spawns, recettes et appâts pour Cobblemon.`,
   };
 }
@@ -32,7 +32,7 @@ import { BaitList } from "@/components/BaitList";
 import { PokemonSprite } from "@/components/PokemonSprite";
 import { ItemIcon } from "@/components/ItemIcon";
 import { topBaits } from "@/lib/recommend/bait";
-import { rankCakeForSpecies, preferredFlavourFor } from "@/lib/recommend/cake";
+import { rankCakeForSpecies, preferredFlavourFor } from "@/lib/recommend/snack";
 
 function formatBiome(biome: string) {
   return biome.replace(/^#?cobblemon:/, "").replace(/is_/, "").replace(/_/g, " ");
