@@ -32,6 +32,36 @@ type SeasoningDTO = BerryPlacement & {
   cakeValid: boolean;
 };
 
+/**
+ * Canonical fallback berries — a handful of Cobblemon berries with their real
+ * colour/flavour profile. Used when the API returns an empty list (typically
+ * because the prod DB has not been provisioned yet). Textures are already
+ * bundled under /textures/cobblemon/item/berries/ so they render immediately.
+ */
+const FALLBACK_BERRIES: BerryPlacement[] = [
+  { slug: "oran_berry", itemId: "cobblemon:oran_berry", colour: "light_blue",
+    flavours: { SOUR: 10 }, dominantFlavour: "SOUR" },
+  { slug: "cheri_berry", itemId: "cobblemon:cheri_berry", colour: "red",
+    flavours: { SPICY: 10 }, dominantFlavour: "SPICY" },
+  { slug: "pecha_berry", itemId: "cobblemon:pecha_berry", colour: "pink",
+    flavours: { SWEET: 10 }, dominantFlavour: "SWEET" },
+  { slug: "chesto_berry", itemId: "cobblemon:chesto_berry", colour: "purple",
+    flavours: { DRY: 10 }, dominantFlavour: "DRY" },
+  { slug: "rawst_berry", itemId: "cobblemon:rawst_berry", colour: "green",
+    flavours: { BITTER: 10 }, dominantFlavour: "BITTER" },
+  { slug: "aspear_berry", itemId: "cobblemon:aspear_berry", colour: "yellow",
+    flavours: { SOUR: 10 }, dominantFlavour: "SOUR" },
+  { slug: "leppa_berry", itemId: "cobblemon:leppa_berry", colour: "red",
+    flavours: { SPICY: 10 }, dominantFlavour: "SPICY" },
+  { slug: "sitrus_berry", itemId: "cobblemon:sitrus_berry", colour: "yellow",
+    flavours: { SWEET: 10, BITTER: 10 }, dominantFlavour: "SWEET" },
+  { slug: "liechi_berry", itemId: "cobblemon:liechi_berry", colour: "red",
+    flavours: { SPICY: 10 }, dominantFlavour: "SPICY" },
+  { slug: "starf_berry", itemId: "cobblemon:starf_berry", colour: "orange",
+    flavours: { SPICY: 10, DRY: 10, SWEET: 10, BITTER: 10, SOUR: 10 },
+    dominantFlavour: "SPICY" },
+];
+
 export function Landing({
   labels,
   total,
@@ -43,23 +73,29 @@ export function Landing({
 }) {
   const [berry, setBerry] = useState<BerryPlacement | null>(null);
 
-  // Fetch all berries on mount, cycle a random one every few seconds.
+  // Fetch berries from the API on mount; fall back to the canonical list when
+  // the response is empty (prod without DB) or fails.
   useEffect(() => {
     let cancelled = false;
     let timer: ReturnType<typeof setInterval> | null = null;
+
+    const start = (pool: BerryPlacement[]) => {
+      if (cancelled || pool.length === 0) return;
+      const pick = () => pool[Math.floor(Math.random() * pool.length)];
+      setBerry(pick());
+      timer = setInterval(() => setBerry(pick()), 4000);
+    };
+
     fetch("/api/snack")
       .then((r) => r.json())
       .then((data: { berries?: SeasoningDTO[] }) => {
-        if (cancelled) return;
-        const berries = data.berries ?? [];
-        if (berries.length === 0) return;
-        const pick = () => berries[Math.floor(Math.random() * berries.length)];
-        setBerry(pick());
-        timer = setInterval(() => setBerry(pick()), 4000);
+        const pool = (data.berries ?? []).length > 0
+          ? (data.berries as SeasoningDTO[])
+          : FALLBACK_BERRIES;
+        start(pool);
       })
-      .catch(() => {
-        /* API unavailable during prod-without-DB; Snack3D falls back to plain colour */
-      });
+      .catch(() => start(FALLBACK_BERRIES));
+
     return () => {
       cancelled = true;
       if (timer) clearInterval(timer);
