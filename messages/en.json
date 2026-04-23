@@ -73,6 +73,8 @@
     "back": "← Back",
     "stats": "Stats",
     "notes": "Notes",
+    "cakeSection": "Optimal cake",
+    "cakeHelp": "These berries match this Pokémon's preferred flavour ({flavour}). Place one in the seasoning slot to boost attraction.",
     "baitsTitle": "Recommended baits",
     "baitsHelp": "Fishing baits that affect the encounter (color, nature, HA, shiny).",
     "reason": {

@@ -9,10 +9,28 @@ import {
 } from "@/lib/recommend/cake";
 import type { Berry } from "@/lib/db/schema";
 
+type IncomingFilter = Partial<SpawnFilter> & {
+  // Back-compat: accept old single-value shape
+  biome?: string;
+  timeRange?: string;
+};
+
 type Body = {
   composition?: CakeComposition;
-  filter?: SpawnFilter;
+  filter?: IncomingFilter;
 };
+
+function normalizeFilter(raw: IncomingFilter | undefined): SpawnFilter {
+  const out: SpawnFilter = {};
+  if (raw?.biomes && raw.biomes.length > 0) out.biomes = raw.biomes;
+  else if (raw?.biome) out.biomes = [raw.biome];
+  if (raw?.timeRanges && raw.timeRanges.length > 0) out.timeRanges = raw.timeRanges;
+  else if (raw?.timeRange) out.timeRanges = [raw.timeRange];
+  if (typeof raw?.minY === "number") out.minY = raw.minY;
+  if (typeof raw?.maxY === "number") out.maxY = raw.maxY;
+  if (raw?.weather) out.weather = raw.weather;
+  return out;
+}
 
 export async function POST(req: NextRequest) {
   let body: Body = {};
@@ -22,8 +40,8 @@ export async function POST(req: NextRequest) {
     return Response.json({ error: "invalid json" }, { status: 400 });
   }
 
-  const seasoningSlugs = body.composition?.seasoningSlugs ?? [];
-  const filter: SpawnFilter = body.filter ?? {};
+  const seasoningSlugs = (body.composition?.seasoningSlugs ?? []).slice(0, 3);
+  const filter: SpawnFilter = normalizeFilter(body.filter);
 
   const berries = await listBerries();
   const byslug = new Map<string, Berry>(berries.map((b) => [b.slug, b]));
@@ -100,6 +118,7 @@ export async function GET() {
       colour: b.colour,
       flavours: b.flavours,
       dominantFlavour: b.dominantFlavour,
+      description: b.description,
     })),
   });
 }

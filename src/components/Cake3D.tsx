@@ -1,10 +1,17 @@
 "use client";
 
 import { Canvas, useFrame } from "@react-three/fiber";
-import { Suspense, useRef } from "react";
+import { Suspense, useMemo, useRef } from "react";
+import { TextureLoader, NearestFilter, type Texture } from "three";
+import { useLoader } from "@react-three/fiber";
 import * as THREE from "three";
 
-const FLAVOUR_COLORS: Record<string, string> = {
+/**
+ * Tints applied to `tintindex: 0` faces (top, bottom, sides) as defined in
+ * cobblemon's block model `poke_cake.json`. In-game the tint comes from the
+ * dominant seasoning colour. We reproduce that here with solid HTML colours.
+ */
+const FLAVOUR_TINT: Record<string, string> = {
   SWEET: "#f8b3d7",
   SPICY: "#e85a3a",
   DRY: "#7fb3d5",
@@ -12,33 +19,121 @@ const FLAVOUR_COLORS: Record<string, string> = {
   SOUR: "#f4d35e",
 };
 
-function CakeMesh({
-  color = "#f1e7c6",
-  accent = "#e85a3a",
-}: {
-  color?: string;
-  accent?: string;
-}) {
-  const ref = useRef<THREE.Group>(null);
+const TEX = {
+  top: "/textures/cobblemon/block/food/poke_snack_top.png",
+  topOverlay: "/textures/cobblemon/block/food/poke_snack_top_overlay.png",
+  bottom: "/textures/cobblemon/block/food/poke_snack_bottom.png",
+  side: "/textures/cobblemon/block/food/poke_snack_side.png",
+  sideOverlay: "/textures/cobblemon/block/food/poke_snack_side_overlay.png",
+};
+
+function pixelate(t: Texture) {
+  t.magFilter = NearestFilter;
+  t.minFilter = NearestFilter;
+  t.generateMipmaps = false;
+  return t;
+}
+
+/**
+ * Reproduces the Poké Cake block model from Cobblemon: a 14×7×14 box centered
+ * at origin (Minecraft units, scaled). Two concentric meshes — the inner one
+ * carries the tintable textures (top/bottom/side), the outer one carries the
+ * non-tinted overlay textures on top & sides.
+ */
+function CakeMesh({ flavour }: { flavour: string | null }) {
+  const group = useRef<THREE.Group>(null);
+
+  const [top, bottom, side, topOverlay, sideOverlay] = useLoader(TextureLoader, [
+    TEX.top,
+    TEX.bottom,
+    TEX.side,
+    TEX.topOverlay,
+    TEX.sideOverlay,
+  ]);
+  [top, bottom, side, topOverlay, sideOverlay].forEach(pixelate);
+
   useFrame((_state, delta) => {
-    if (ref.current) ref.current.rotation.y += delta * 0.3;
+    if (group.current) group.current.rotation.y += delta * 0.35;
   });
+
+  const tintHex = flavour ? FLAVOUR_TINT[flavour] ?? "#ffffff" : "#ffffff";
+  const tint = useMemo(() => new THREE.Color(tintHex), [tintHex]);
+
+  // Block is 14×7×14 Minecraft pixels → scale to 0.875 × 0.4375 × 0.875
+  const W = 14 / 16;
+  const H = 7 / 16;
+
+  // BoxGeometry face order: +X (east), -X (west), +Y (up), -Y (down), +Z (south), -Z (north)
+  const baseMats = useMemo(
+    () =>
+      [
+        new THREE.MeshStandardMaterial({ map: side, color: tint }),
+        new THREE.MeshStandardMaterial({ map: side, color: tint }),
+        new THREE.MeshStandardMaterial({ map: top, color: tint }),
+        new THREE.MeshStandardMaterial({ map: bottom, color: tint }),
+        new THREE.MeshStandardMaterial({ map: side, color: tint }),
+        new THREE.MeshStandardMaterial({ map: side, color: tint }),
+      ],
+    [side, top, bottom, tint],
+  );
+
+  const overlayMats = useMemo(
+    () =>
+      [
+        new THREE.MeshStandardMaterial({
+          map: sideOverlay,
+          transparent: true,
+          alphaTest: 0.1,
+          depthWrite: false,
+          polygonOffset: true,
+          polygonOffsetFactor: -1,
+        }),
+        new THREE.MeshStandardMaterial({
+          map: sideOverlay,
+          transparent: true,
+          alphaTest: 0.1,
+          depthWrite: false,
+          polygonOffset: true,
+          polygonOffsetFactor: -1,
+        }),
+        new THREE.MeshStandardMaterial({
+          map: topOverlay,
+          transparent: true,
+          alphaTest: 0.1,
+          depthWrite: false,
+          polygonOffset: true,
+          polygonOffsetFactor: -1,
+        }),
+        new THREE.MeshBasicMaterial({ transparent: true, opacity: 0 }), // no overlay on bottom
+        new THREE.MeshStandardMaterial({
+          map: sideOverlay,
+          transparent: true,
+          alphaTest: 0.1,
+          depthWrite: false,
+          polygonOffset: true,
+          polygonOffsetFactor: -1,
+        }),
+        new THREE.MeshStandardMaterial({
+          map: sideOverlay,
+          transparent: true,
+          alphaTest: 0.1,
+          depthWrite: false,
+          polygonOffset: true,
+          polygonOffsetFactor: -1,
+        }),
+      ],
+    [sideOverlay, topOverlay],
+  );
+
   return (
-    <group ref={ref}>
-      {/* Cake base — Minecraft cake proportions: 7x4x7 pixels → 0.875 × 0.5 × 0.875 */}
-      <mesh position={[0, 0.25, 0]} castShadow>
-        <boxGeometry args={[0.875, 0.5, 0.875]} />
-        <meshStandardMaterial color={color} />
+    <group ref={group}>
+      {/* Inner tinted layer */}
+      <mesh position={[0, H / 2, 0]} material={baseMats}>
+        <boxGeometry args={[W, H, W]} />
       </mesh>
-      {/* Top frosting */}
-      <mesh position={[0, 0.51, 0]}>
-        <boxGeometry args={[0.85, 0.02, 0.85]} />
-        <meshStandardMaterial color={accent} emissive={accent} emissiveIntensity={0.15} />
-      </mesh>
-      {/* Cherry */}
-      <mesh position={[0, 0.58, 0]}>
-        <sphereGeometry args={[0.08, 16, 16]} />
-        <meshStandardMaterial color={accent} />
+      {/* Outer overlay (white frosting + decorations) */}
+      <mesh position={[0, H / 2, 0]} material={overlayMats}>
+        <boxGeometry args={[W + 0.001, H + 0.001, W + 0.001]} />
       </mesh>
     </group>
   );
@@ -51,15 +146,16 @@ export function Cake3D({
   flavour?: string | null;
   size?: number;
 }) {
-  const accent = flavour ? FLAVOUR_COLORS[flavour] ?? "#e85a3a" : "#e85a3a";
-  const base = flavour === "SWEET" ? "#fff0f6" : flavour === "SPICY" ? "#ffe1d0" : "#f6ebc6";
   return (
-    <div className="rounded-lg border border-border bg-subtle overflow-hidden" style={{ width: size, height: size }}>
-      <Canvas camera={{ position: [1.6, 1.2, 1.6], fov: 35 }} shadows>
-        <ambientLight intensity={0.7} />
-        <directionalLight position={[3, 4, 2]} intensity={1.1} castShadow />
+    <div
+      className="rounded-lg border border-border bg-subtle overflow-hidden"
+      style={{ width: size, height: size }}
+    >
+      <Canvas camera={{ position: [1.4, 1.1, 1.4], fov: 30 }}>
+        <ambientLight intensity={0.75} />
+        <directionalLight position={[3, 4, 2]} intensity={1.1} />
         <Suspense fallback={null}>
-          <CakeMesh color={base} accent={accent} />
+          <CakeMesh flavour={flavour ?? null} />
         </Suspense>
       </Canvas>
     </div>

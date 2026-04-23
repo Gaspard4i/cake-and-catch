@@ -99,10 +99,12 @@ export type CakeComposition = {
 };
 
 export type SpawnFilter = {
-  biome?: string; // e.g. '#cobblemon:is_savanna'
+  /** If provided, spawn must match AT LEAST ONE biome (union). */
+  biomes?: string[];
   minY?: number;
   maxY?: number;
-  timeRange?: string; // 'day' | 'night' | 'morning' | ...
+  /** If provided, spawn must match AT LEAST ONE timeRange (union). */
+  timeRanges?: string[];
   weather?: "clear" | "rain" | "thunder";
 };
 
@@ -137,16 +139,25 @@ export function cakeDominantFlavour(
  * Filter a pool of spawns against a filter. `spawns` is a lightweight DTO joining
  * spawn + species so the caller can pre-load once.
  */
+function stripHash(s: string): string {
+  return s.replace(/^#/, "");
+}
+
 export function filterSpawns<
   T extends Pick<Spawn, "biomes" | "condition"> & { levelMin: number; levelMax: number },
 >(spawns: T[], filter: SpawnFilter): T[] {
+  const biomeSet =
+    filter.biomes && filter.biomes.length > 0
+      ? new Set(filter.biomes.map(stripHash))
+      : null;
+  const timeSet =
+    filter.timeRanges && filter.timeRanges.length > 0
+      ? new Set(filter.timeRanges)
+      : null;
+
   return spawns.filter((s) => {
-    if (filter.biome) {
-      const match = s.biomes.some(
-        (b) =>
-          b === filter.biome ||
-          b.replace(/^#/, "") === filter.biome!.replace(/^#/, ""),
-      );
+    if (biomeSet) {
+      const match = s.biomes.some((b) => biomeSet.has(stripHash(b)));
       if (!match) return false;
     }
     const cond = (s.condition ?? {}) as Record<string, unknown>;
@@ -156,8 +167,10 @@ export function filterSpawns<
     if (typeof filter.maxY === "number") {
       if (typeof cond.minY === "number" && cond.minY > filter.maxY) return false;
     }
-    if (filter.timeRange && typeof cond.timeRange === "string") {
-      if (cond.timeRange !== filter.timeRange && cond.timeRange !== "any") return false;
+    if (timeSet) {
+      const t = typeof cond.timeRange === "string" ? cond.timeRange : "any";
+      // spawn marked "any" is kept; otherwise it must be in the selected set
+      if (t !== "any" && !timeSet.has(t)) return false;
     }
     if (filter.weather) {
       if (filter.weather === "rain" && cond.isRaining === false) return false;

@@ -137,6 +137,7 @@ export const berries = pgTable(
     dominantFlavour: text("dominant_flavour"),
     colour: text("colour"),
     weight: real("weight"),
+    description: text("description"),
     raw: jsonb("raw").notNull(),
   },
   (t) => [uniqueIndex("berries_slug_idx").on(t.slug)],

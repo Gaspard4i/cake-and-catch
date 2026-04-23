@@ -43,6 +43,13 @@
       "when": 1776946371015,
       "tag": "0005_typical_magus",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1776947833507,
+      "tag": "0006_dry_sally_floyd",
+      "breakpoints": true
     }
   ]
 }

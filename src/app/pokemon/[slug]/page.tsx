@@ -23,13 +23,16 @@ import {
   getSpeciesBySlug,
   getWikiSummary,
   listBaitEffects,
+  listBerries,
   listSpawnsForSpecies,
 } from "@/lib/db/queries";
 import { SourceBadge } from "@/components/SourceBadge";
 import { TypePair } from "@/components/TypeBadge";
 import { BaitList } from "@/components/BaitList";
 import { PokemonSprite } from "@/components/PokemonSprite";
+import { ItemIcon } from "@/components/ItemIcon";
 import { topBaits } from "@/lib/recommend/bait";
+import { rankCakeForSpecies, preferredFlavourFor } from "@/lib/recommend/cake";
 
 function formatBiome(biome: string) {
   return biome.replace(/^#?cobblemon:/, "").replace(/is_/, "").replace(/_/g, " ");
@@ -76,10 +79,11 @@ async function SpeciesDetail({ params }: { params: Promise<{ slug: string }> }) 
   const species = await getSpeciesBySlug(slug);
   if (!species) notFound();
 
-  const [spawns, sources, baits, wiki, t] = await Promise.all([
+  const [spawns, sources, baits, berries, wiki, t] = await Promise.all([
     listSpawnsForSpecies(species.id),
     getSourcesFor("species", species.id),
     listBaitEffects(),
+    listBerries(),
     getWikiSummary(species.id),
     getTranslations("pokemon"),
   ]);
@@ -90,6 +94,8 @@ async function SpeciesDetail({ params }: { params: Promise<{ slug: string }> }) 
     preferredFlavours: species.preferredFlavours,
     limit: 6,
   });
+  const topBerries = rankCakeForSpecies(species, berries, { limit: 5 });
+  const preferredFlavour = preferredFlavourFor(species);
 
   return (
     <>
@@ -172,6 +178,35 @@ async function SpeciesDetail({ params }: { params: Promise<{ slug: string }> }) 
             ))}
           </div>
         )}
+      </section>
+
+      <section className="mt-10">
+        <h2 className="text-sm font-medium uppercase tracking-wide text-muted">
+          {t("cakeSection")}
+        </h2>
+        <p className="mt-1 text-xs text-muted">
+          {t("cakeHelp", { flavour: preferredFlavour.toLowerCase() })}
+        </p>
+        <ul className="mt-3 flex flex-wrap gap-3">
+          {topBerries.map((b) => (
+            <li
+              key={b.berrySlug}
+              className="rounded-lg border border-border bg-card p-3 flex flex-col items-center gap-1 w-24"
+              title={b.reason}
+            >
+              <ItemIcon id={b.berryItemId} size={48} />
+              <div className="text-xs font-medium capitalize text-center">
+                {b.berrySlug.replaceAll("_", " ")}
+              </div>
+              <div className="text-[10px] uppercase text-muted">{b.dominantFlavour}</div>
+              {b.reason === "type_derived" && (
+                <span className="text-[9px] uppercase px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-700 dark:text-amber-300">
+                  derived
+                </span>
+              )}
+            </li>
+          ))}
+        </ul>
       </section>
 
       <BaitList baits={recommendedBaits} />

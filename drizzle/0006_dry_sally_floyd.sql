@@ -1,0 +1,1 @@
+ALTER TABLE "berries" ADD COLUMN "description" text;

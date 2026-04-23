@@ -13,6 +13,7 @@
     "db:push": "drizzle-kit push",
     "ingest": "tsx --env-file=.env.local ingest/run.ts",
     "ingest:wiki": "tsx --env-file=.env.local ingest/wiki.ts",
+    "ingest:berries-wiki": "tsx --env-file=.env.local ingest/berries_wiki.ts",
     "ingest:textures": "tsx --env-file=.env.local ingest/textures.ts"
   },
   "dependencies": {

@@ -73,6 +73,8 @@
     "back": "← Retour",
     "stats": "Stats",
     "notes": "Notes",
+    "cakeSection": "Gâteau optimal",
+    "cakeHelp": "Ces berries collent à la saveur préférée ({flavour}) de ce Pokémon. Pose une sur le seasoning slot pour booster l'attraction.",
     "baitsTitle": "Appâts recommandés",
     "baitsHelp": "Appâts de pêche qui affectent la rencontre (couleur, nature, HA, shiny).",
     "reason": {

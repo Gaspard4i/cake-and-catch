@@ -115,18 +115,27 @@ describe("filterSpawns", () => {
     levelMax: 50,
   };
 
-  it("matches biome tag with or without leading #", () => {
-    expect(filterSpawns([base], { biome: "#cobblemon:is_savanna" })).toHaveLength(1);
-    expect(filterSpawns([base], { biome: "cobblemon:is_savanna" })).toHaveLength(1);
-    expect(filterSpawns([base], { biome: "minecraft:plains" })).toHaveLength(0);
+  it("matches biome tag with or without leading # (union)", () => {
+    expect(filterSpawns([base], { biomes: ["#cobblemon:is_savanna"] })).toHaveLength(1);
+    expect(filterSpawns([base], { biomes: ["cobblemon:is_savanna"] })).toHaveLength(1);
+    expect(filterSpawns([base], { biomes: ["minecraft:plains"] })).toHaveLength(0);
+    // union: matches if ANY biome in the list matches
+    expect(
+      filterSpawns([base], { biomes: ["minecraft:plains", "cobblemon:is_savanna"] }),
+    ).toHaveLength(1);
   });
   it("respects Y bounds", () => {
     expect(filterSpawns([base], { maxY: 50 })).toHaveLength(0);
     expect(filterSpawns([base], { minY: 80 })).toHaveLength(1);
     expect(filterSpawns([base], { minY: 200 })).toHaveLength(0);
   });
-  it("matches timeRange", () => {
-    expect(filterSpawns([base], { timeRange: "morning" })).toHaveLength(1);
-    expect(filterSpawns([base], { timeRange: "night" })).toHaveLength(0);
+  it("matches timeRanges (union)", () => {
+    expect(filterSpawns([base], { timeRanges: ["morning"] })).toHaveLength(1);
+    expect(filterSpawns([base], { timeRanges: ["night"] })).toHaveLength(0);
+    expect(filterSpawns([base], { timeRanges: ["night", "morning"] })).toHaveLength(1);
+  });
+  it("keeps spawns with timeRange=any even when time filter is set", () => {
+    const anyTime = { ...base, condition: { ...base.condition, timeRange: "any" } };
+    expect(filterSpawns([anyTime], { timeRanges: ["night"] })).toHaveLength(1);
   });
 });

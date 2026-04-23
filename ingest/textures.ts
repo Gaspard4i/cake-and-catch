@@ -57,6 +57,30 @@ async function fetchCobblemonItem(relativePath: string) {
   return fetchTo(url, out);
 }
 
+async function fetchCobblemonBlock(relativePath: string) {
+  const url = `https://gitlab.com/cable-mc/cobblemon/-/raw/main/common/src/main/resources/assets/cobblemon/textures/block/${relativePath}`;
+  const out = join(PUBLIC_DIR, "cobblemon", "block", relativePath);
+  return fetchTo(url, out);
+}
+
+async function fetchCobblemonBlocks(paths: string[]) {
+  console.log(`[textures:cobblemon/block] ${paths.length} items`);
+  let ok = 0;
+  let cached = 0;
+  let missing = 0;
+  for (const p of paths) {
+    try {
+      const res = await fetchCobblemonBlock(p);
+      if (res === "ok") ok++;
+      else if (res === "cached") cached++;
+      else missing++;
+    } catch (err) {
+      console.warn(`[textures:cobblemon/block] ${p}:`, err instanceof Error ? err.message : err);
+    }
+  }
+  console.log(`[textures:cobblemon/block] ok=${ok} cached=${cached} missing=${missing}`);
+}
+
 async function fetchCobblemonItems(paths: string[]) {
   console.log(`[textures:cobblemon] ${paths.length} items`);
   let ok = 0;
@@ -181,6 +205,16 @@ async function main() {
     cobblemonPaths.push(`${s.slug}.png`);
   }
   await fetchCobblemonItems(cobblemonPaths);
+
+  // Poké Cake block textures (used by 3D preview)
+  await fetchCobblemonBlocks([
+    "food/poke_snack_top.png",
+    "food/poke_snack_top_overlay.png",
+    "food/poke_snack_bottom.png",
+    "food/poke_snack_side.png",
+    "food/poke_snack_side_overlay.png",
+    "food/poke_snack_particle.png",
+  ]);
 
   // Type icons
   await fetchTypeIcons();
