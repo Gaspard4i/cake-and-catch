@@ -3,6 +3,7 @@
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import { useEffect, useMemo, useState } from "react";
+import type { BerryPlacement } from "./Snack3D";
 
 const Snack3D = dynamic(() => import("./Snack3D").then((m) => m.Snack3D), {
   ssr: false,
@@ -26,6 +27,11 @@ type PreviewMon = {
   secondaryType: string | null;
 };
 
+type SeasoningDTO = BerryPlacement & {
+  kind: "berry" | "other";
+  cakeValid: boolean;
+};
+
 export function Landing({
   labels,
   total,
@@ -35,24 +41,35 @@ export function Landing({
   total: number;
   preview: PreviewMon[];
 }) {
-  const [flavour, setFlavour] = useState<"SWEET" | "SPICY" | "DRY" | "BITTER" | "SOUR">(
-    "SWEET",
-  );
+  const [berry, setBerry] = useState<BerryPlacement | null>(null);
 
+  // Fetch all berries on mount, cycle a random one every few seconds.
   useEffect(() => {
-    const flavours: typeof flavour[] = ["SWEET", "SPICY", "DRY", "BITTER", "SOUR"];
-    let i = 0;
-    const id = setInterval(() => {
-      i = (i + 1) % flavours.length;
-      setFlavour(flavours[i]);
-    }, 4000);
-    return () => clearInterval(id);
+    let cancelled = false;
+    let timer: ReturnType<typeof setInterval> | null = null;
+    fetch("/api/snack")
+      .then((r) => r.json())
+      .then((data: { berries?: SeasoningDTO[] }) => {
+        if (cancelled) return;
+        const berries = data.berries ?? [];
+        if (berries.length === 0) return;
+        const pick = () => berries[Math.floor(Math.random() * berries.length)];
+        setBerry(pick());
+        timer = setInterval(() => setBerry(pick()), 4000);
+      })
+      .catch(() => {
+        /* API unavailable during prod-without-DB; Snack3D falls back to plain colour */
+      });
+    return () => {
+      cancelled = true;
+      if (timer) clearInterval(timer);
+    };
   }, []);
 
-  // Floating dex numbers for a parallax Pokéball-like backdrop
+  // Floating dex numbers for a parallax Pokéball-like backdrop.
   const floaters = useMemo(
     () =>
-      Array.from({ length: 14 }, (_, i) => {
+      Array.from({ length: 14 }, () => {
         const dex = Math.floor(Math.random() * 1025) + 1;
         const size = 40 + Math.random() * 80;
         return {
@@ -66,6 +83,9 @@ export function Landing({
       }),
     [],
   );
+
+  const snackBerries: BerryPlacement[] = berry ? [berry] : [];
+  const prettyBerry = berry?.slug?.replaceAll("_", " ") ?? "snack";
 
   return (
     <div className="relative overflow-hidden">
@@ -107,7 +127,7 @@ export function Landing({
             <span>Cobblemon companion</span>
           </div>
           <h1 className="mt-4 text-4xl sm:text-5xl font-semibold tracking-tight">
-            Bake the right cake.
+            Cook the right snack.
             <br />
             <span className="text-accent">Catch the right Pokémon.</span>
           </h1>
@@ -136,10 +156,10 @@ export function Landing({
             </Link>
           </div>
         </div>
-        <div className="flex-shrink-0">
-          <Snack3D flavour={flavour} size={280} />
-          <p className="mt-2 text-center text-[10px] uppercase tracking-widest text-muted">
-            {flavour.toLowerCase()}
+        <div className="flex-shrink-0 flex flex-col items-center">
+          <Snack3D berries={snackBerries} size={280} />
+          <p className="mt-2 text-[10px] uppercase tracking-widest text-muted text-center">
+            {berry ? `with ${prettyBerry}` : "no seasoning"}
           </p>
         </div>
       </section>

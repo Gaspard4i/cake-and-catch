@@ -56,10 +56,10 @@
       "aprijuice": "Aprijuice"
     },
     "kindsHelp": {
-      "cake": "Shared cake. Takes a flavour seasoning (berry) that colours the result.",
-      "bait": "Fishing bait. Takes a bait seasoning that biases the encounter.",
-      "snack": "Placed on the ground, attracts nearby Pokémon. Takes a bait seasoning.",
-      "aprijuice": "Apricorn berry juice for mount stat boosts (flavour seasoning)."
+      "cake": "Shared cake that biases encounters (color depends on seasoning).",
+      "bait": "Fishing bait — tweaks rarity / nature / HA according to the seasoning used.",
+      "snack": "Snack that attracts a Pokémon by flavor type.",
+      "aprijuice": "Apricorn berry juice to boost mount stats."
     }
   },
   "search": {
