@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Zap, Target, Wind, Shield, ArrowUp, X, type LucideIcon } from "lucide-react";
 import { ItemIcon } from "./ItemIcon";
+import { Spinner, TopProgress, Skeleton } from "./Loader";
 
 const MAX_JUICE_SEASONINGS = 3;
 const FLAVOURS_ALL: Flavour[] = ["SPICY", "DRY", "SWEET", "SOUR", "BITTER"];
@@ -69,6 +70,7 @@ const STAT_TONE: Record<RidingStat, string> = {
 
 export function JuiceMaker() {
   const [berries, setBerries] = useState<BerryDTO[]>([]);
+  const [berriesLoading, setBerriesLoading] = useState(true);
   const [apricorn, setApricorn] = useState<Apricorn>("RED");
   const [slugs, setSlugs] = useState<string[]>([]);
   const [result, setResult] = useState<JuiceResult | null>(null);
@@ -78,7 +80,8 @@ export function JuiceMaker() {
     fetch("/api/juice")
       .then((r) => r.json())
       .then((d: { berries?: BerryDTO[] }) => setBerries(d.berries ?? []))
-      .catch(() => setBerries([]));
+      .catch(() => setBerries([]))
+      .finally(() => setBerriesLoading(false));
   }, []);
 
   useEffect(() => {
@@ -159,6 +162,7 @@ export function JuiceMaker() {
 
   return (
     <div className="grid gap-8 lg:grid-cols-[auto_1fr]">
+      <TopProgress active={loading || berriesLoading} />
       <aside className="space-y-4">
         <div>
           <h3 className="text-sm font-medium uppercase tracking-wide text-muted">
@@ -327,6 +331,15 @@ export function JuiceMaker() {
           </div>
 
           <div className="mt-3 max-h-[320px] overflow-y-auto p-2 rounded-lg border border-border bg-subtle">
+            {berriesLoading && berries.length === 0 ? (
+              <ul className="grid grid-cols-[repeat(auto-fill,minmax(110px,1fr))] gap-2">
+                {Array.from({ length: 12 }).map((_, i) => (
+                  <li key={`sk-bp-${i}`}>
+                    <Skeleton className="h-[86px] w-full" />
+                  </li>
+                ))}
+              </ul>
+            ) : (
             <ul className="grid grid-cols-[repeat(auto-fill,minmax(110px,1fr))] gap-2">
               {visibleBerries.map((b) => {
                 const full = slugs.length >= MAX_JUICE_SEASONINGS;
@@ -370,12 +383,13 @@ export function JuiceMaker() {
                 </li>
               )}
             </ul>
+            )}
           </div>
         </div>
 
         <div>
           <h3 className="text-sm font-medium uppercase tracking-wide text-muted">
-            Flavour totals {loading && "…"}
+            Flavour totals {loading && <Spinner className="ml-2" />}
           </h3>
           <div className="mt-2 grid grid-cols-5 gap-2 text-xs">
             {(

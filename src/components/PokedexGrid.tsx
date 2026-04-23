@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Star } from "lucide-react";
+import { Spinner, TopProgress, PokedexCardSkeleton } from "./Loader";
 import { PokemonSprite } from "./PokemonSprite";
 import { TypePair } from "./TypeBadge";
 import { MultiSelect, type MultiSelectOption } from "./MultiSelect";
@@ -211,6 +212,7 @@ export function PokedexGrid() {
 
   return (
     <>
+      <TopProgress active={loading} />
       <div className="sticky top-[57px] z-30 -mx-6 px-6 py-3 bg-background/80 backdrop-blur border-b border-border">
         <div className="flex flex-wrap items-center gap-2">
           <input
@@ -285,10 +287,18 @@ export function PokedexGrid() {
               Clear all
             </button>
           )}
+          {loading && <Spinner label="loading" />}
         </div>
       </div>
 
       <ul className="mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+        {loading && results.length === 0
+          ? Array.from({ length: 8 }).map((_, i) => (
+              <li key={`sk-${i}`}>
+                <PokedexCardSkeleton />
+              </li>
+            ))
+          : null}
         {sorted.map((s) => {
           const total = totalStats(s.baseStats);
           const gen = (s.labels ?? []).find((l) => l.startsWith("gen"));
@@ -342,7 +352,7 @@ export function PokedexGrid() {
       </ul>
 
       <div ref={sentinel} className="h-20 flex items-center justify-center text-xs text-muted">
-        {loading ? "loading…" : done ? `${results.length} species` : ""}
+        {loading ? <Spinner label="loading" /> : done ? `${results.length} species` : ""}
       </div>
     </>
   );

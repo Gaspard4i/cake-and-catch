@@ -3,6 +3,7 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { Star } from "lucide-react";
+import { Spinner, TopProgress, AttractedCardSkeleton, Skeleton } from "./Loader";
 import { ItemIcon } from "./ItemIcon";
 import { PokemonSprite } from "./PokemonSprite";
 import { TypePair } from "./TypeBadge";
@@ -163,12 +164,15 @@ export function CampfirePot() {
   const [activeFlavours, setActiveFlavours] = useState<Set<string>>(new Set());
   const [kindFilter, setKindFilter] = useState<(typeof KINDS)[number]>("all");
   const [validOnly, setValidOnly] = useState(true);
+  const [pantryLoading, setPantryLoading] = useState(true);
 
   useEffect(() => {
+    setPantryLoading(true);
     fetch("/api/snack")
       .then((r) => r.json())
       .then((d: { seasonings: Seasoning[] }) => setSeasonings(d.seasonings ?? []))
-      .catch(() => setSeasonings([]));
+      .catch(() => setSeasonings([]))
+      .finally(() => setPantryLoading(false));
     fetch("/api/biomes")
       .then((r) => r.json())
       .then((d: { biomes: BiomeApiEntry[] }) => setBiomeCatalog(d.biomes ?? []))
@@ -400,6 +404,7 @@ export function CampfirePot() {
 
   return (
     <div className="space-y-8">
+      <TopProgress active={loading} />
     <div className="grid gap-8 lg:grid-cols-[auto_1fr]">
       <aside className="space-y-6">
         <div>
@@ -578,9 +583,15 @@ export function CampfirePot() {
           </div>
 
           <div className="mt-3 max-h-[420px] overflow-y-auto p-2 rounded-lg border border-border bg-subtle space-y-3">
-            {grouped.length === 0 && (
+            {pantryLoading && seasonings.length === 0 ? (
+              <div className="flex flex-wrap gap-2 p-2">
+                {Array.from({ length: 20 }).map((_, i) => (
+                  <Skeleton key={`sk-ps-${i}`} className="size-12 rounded-md" />
+                ))}
+              </div>
+            ) : grouped.length === 0 ? (
               <p className="text-xs text-muted p-3">No seasoning matches these filters.</p>
-            )}
+            ) : null}
             {grouped.map(([category, items]) => (
               <div key={category}>
                 <div className="text-[10px] uppercase tracking-wider text-muted px-1 mb-1">
@@ -607,7 +618,7 @@ export function CampfirePot() {
 
         <div>
           <h3 className="text-sm font-medium uppercase tracking-wide text-muted">
-            Snack bait effects {loading && "…"}
+            Snack bait effects {loading && <Spinner className="ml-2" />}
           </h3>
           <p className="mt-1 text-xs text-muted">
             Cumulated effects from every seasoning in the pot. Merged per
@@ -674,7 +685,7 @@ export function CampfirePot() {
       <div className="w-full">
         <div>
           <h3 className="text-sm font-medium uppercase tracking-wide text-muted">
-            Attracted Pokémon {loading && "…"}
+            Attracted Pokémon {loading && <Spinner className="ml-2" />}
           </h3>
           <p className="mt-1 text-xs text-muted">
             Reproduction of the real Poké Snack spawn pipeline: world pool
@@ -757,7 +768,17 @@ export function CampfirePot() {
           </div>
 
           {attractedView.length === 0 ? (
-            <p className="mt-3 text-sm text-muted">No Pokémon match. Try removing filters.</p>
+            loading && attracted.length === 0 ? (
+              <ul className="mt-3 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-2">
+                {Array.from({ length: 12 }).map((_, i) => (
+                  <li key={`sk-att-${i}`}>
+                    <AttractedCardSkeleton />
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="mt-3 text-sm text-muted">No Pokémon match. Try removing filters.</p>
+            )
           ) : (
             <ul className="mt-3 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-2">
               {attractedView.slice(0, attractedVisible).map((p) => (
@@ -822,9 +843,10 @@ export function CampfirePot() {
           {attractedView.length > attractedVisible && (
             <div
               ref={attractedSentinelRef}
-              className="mt-3 text-center text-xs text-muted py-4"
+              className="mt-3 flex items-center justify-center gap-2 text-xs text-muted py-4"
             >
-              Loading more… ({attractedView.length - attractedVisible} remaining)
+              <Spinner />
+              <span>{attractedView.length - attractedVisible} remaining</span>
             </div>
           )}
         </div>

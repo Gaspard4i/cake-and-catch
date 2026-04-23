@@ -164,9 +164,9 @@ export function Landing({ labels }: { labels: Labels }) {
           </div>
         </div>
 
-        <div className="shrink-0 flex flex-col items-center gap-2">
-          <Snack3D berries={berries} size={280} />
-          <div className="text-[10px] uppercase tracking-widest text-muted text-center max-w-[280px]">
+        <div className="shrink-0 flex flex-col items-center gap-3">
+          <Snack3D berries={berries} size={460} />
+          <div className="text-xs uppercase tracking-widest text-muted text-center max-w-[460px]">
             {berries.length === 0
               ? "no seasoning"
               : berries.map((b) => b.slug.replaceAll("_", " ")).join(" · ")}
