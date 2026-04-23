@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import { and, asc, eq, gt, ilike, or, sql } from "drizzle-orm";
-import { db, schema } from "@/lib/db/client";
+import { db, safe, schema } from "@/lib/db/client";
 
 const PAGE_SIZE = 48;
 
@@ -11,37 +11,50 @@ export async function GET(req: NextRequest) {
   const gen = params.get("gen")?.trim();
   const cursorDex = Number.parseInt(params.get("cursor") ?? "0", 10);
 
-  const where = [] as ReturnType<typeof eq>[];
-  if (cursorDex > 0) where.push(gt(schema.species.dexNo, cursorDex));
-  if (q) where.push(ilike(schema.species.name, `%${q}%`));
-  if (type)
-    where.push(
-      or(
-        eq(schema.species.primaryType, type),
-        eq(schema.species.secondaryType, type),
-      )!,
-    );
-  if (gen) {
-    where.push(sql`${schema.species.labels}::jsonb @> ${JSON.stringify([gen])}::jsonb`);
-  }
+  const rows = await safe(async () => {
+    const where = [] as ReturnType<typeof eq>[];
+    if (cursorDex > 0) where.push(gt(schema.species.dexNo, cursorDex));
+    if (q) where.push(ilike(schema.species.name, `%${q}%`));
+    if (type)
+      where.push(
+        or(
+          eq(schema.species.primaryType, type),
+          eq(schema.species.secondaryType, type),
+        )!,
+      );
+    if (gen) {
+      where.push(sql`${schema.species.labels}::jsonb @> ${JSON.stringify([gen])}::jsonb`);
+    }
 
-  const rows = await db
-    .select({
-      id: schema.species.id,
-      slug: schema.species.slug,
-      name: schema.species.name,
-      dexNo: schema.species.dexNo,
-      primaryType: schema.species.primaryType,
-      secondaryType: schema.species.secondaryType,
-      baseStats: schema.species.baseStats,
-      catchRate: schema.species.catchRate,
-      abilities: schema.species.abilities,
-      labels: schema.species.labels,
-    })
-    .from(schema.species)
-    .where(where.length > 0 ? and(...where) : undefined)
-    .orderBy(asc(schema.species.dexNo))
-    .limit(PAGE_SIZE);
+    return db
+      .select({
+        id: schema.species.id,
+        slug: schema.species.slug,
+        name: schema.species.name,
+        dexNo: schema.species.dexNo,
+        primaryType: schema.species.primaryType,
+        secondaryType: schema.species.secondaryType,
+        baseStats: schema.species.baseStats,
+        catchRate: schema.species.catchRate,
+        abilities: schema.species.abilities,
+        labels: schema.species.labels,
+      })
+      .from(schema.species)
+      .where(where.length > 0 ? and(...where) : undefined)
+      .orderBy(asc(schema.species.dexNo))
+      .limit(PAGE_SIZE);
+  }, [] as Array<{
+    id: number;
+    slug: string;
+    name: string;
+    dexNo: number;
+    primaryType: string;
+    secondaryType: string | null;
+    baseStats: Record<string, number>;
+    catchRate: number;
+    abilities: string[];
+    labels: string[];
+  }>);
 
   const nextCursor = rows.length === PAGE_SIZE ? rows[rows.length - 1].dexNo : null;
 
