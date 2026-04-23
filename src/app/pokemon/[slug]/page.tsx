@@ -136,7 +136,7 @@ async function SpeciesDetail({ params }: { params: Promise<{ slug: string }> }) 
       eggGroups,
       strongestStat: strongestStatOf(species.baseStats),
     },
-    { limit: 8 },
+    { limit: 24 },
   );
 
   return (
@@ -245,13 +245,18 @@ async function SpeciesDetail({ params }: { params: Promise<{ slug: string }> }) 
             {rankedSeasonings.map((r, i) => (
               <li
                 key={r.seasoning.slug}
-                className={`rounded-lg border p-3 flex flex-col items-center gap-1 w-28 text-center transition-transform ${
-                  i === 0
-                    ? "border-accent bg-accent/5 scale-105"
+                className={`relative rounded-lg border p-3 flex flex-col items-center gap-1 w-28 text-center transition-transform ${
+                  i < 3
+                    ? "border-2 border-accent bg-accent/5 shadow-sm"
                     : "border-border bg-card"
-                }`}
+                } ${i === 0 ? "scale-105" : ""}`}
                 title={r.reasons.join(" · ")}
               >
+                {i < 3 && (
+                  <span className="absolute -top-2 -left-2 size-5 rounded-full bg-accent text-accent-foreground text-[10px] font-mono font-bold flex items-center justify-center shadow">
+                    {i + 1}
+                  </span>
+                )}
                 <ItemIcon id={r.seasoning.itemId} size={48} />
                 <div className="text-xs font-medium capitalize leading-tight">
                   {r.seasoning.slug.replaceAll("_", " ")}

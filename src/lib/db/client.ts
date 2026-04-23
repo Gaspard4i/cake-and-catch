@@ -4,10 +4,20 @@ import * as schema from "./schema";
 
 type DB = ReturnType<typeof drizzle<typeof schema>>;
 
-let cached: DB | null = null;
-
 /** True when no DATABASE_URL is configured (build without connected DB). */
 export const isDbMissing = () => !process.env.DATABASE_URL;
+
+/**
+ * Cache the postgres client on globalThis so Next.js HMR reloads reuse the
+ * same pool. Otherwise each hot reload opens a fresh pool and the old ones
+ * linger until their idle_timeout, quickly hitting Neon's connection cap
+ * with "sorry, too many clients already".
+ */
+const GLOBAL_KEY = Symbol.for("snackAndCatch.db");
+type GlobalDb = { db?: DB; client?: postgres.Sql };
+const store = globalThis as unknown as Record<symbol, GlobalDb>;
+store[GLOBAL_KEY] ??= {};
+const holder = store[GLOBAL_KEY];
 
 function createDb(): DB {
   const url = process.env.DATABASE_URL;
@@ -16,7 +26,12 @@ function createDb(): DB {
       "DATABASE_URL is not set. Configure it in your environment (.env.local or Vercel project settings).",
     );
   }
-  const client = postgres(url, { max: 10 });
+  const client = postgres(url, {
+    max: process.env.NODE_ENV === "production" ? 10 : 3,
+    idle_timeout: 20,
+    max_lifetime: 60 * 10,
+  });
+  holder.client = client;
   return drizzle(client, { schema });
 }
 
@@ -26,9 +41,9 @@ function createDb(): DB {
  */
 export const db: DB = new Proxy({} as DB, {
   get(_t, prop, receiver) {
-    if (!cached) cached = createDb();
-    const value = Reflect.get(cached, prop, receiver);
-    return typeof value === "function" ? value.bind(cached) : value;
+    if (!holder.db) holder.db = createDb();
+    const value = Reflect.get(holder.db, prop, receiver);
+    return typeof value === "function" ? value.bind(holder.db) : value;
   },
 });
 

@@ -67,21 +67,29 @@ function scoreOneEffect(
   const eggGroups = (species.eggGroups ?? []).map((e) => e.toLowerCase());
 
   switch (type) {
+    // Affinity-class effects: the ONLY ones that actually bias the spawn pool
+    // toward this specific Pokémon. Scored 1000-3000 so they always rank
+    // above any generic buff (shiny/rarity/HA) that applies to every species.
     case "typing":
       if (types.includes(sub)) {
-        return { score: 100 + chance * 20, reason: `+10× ${sub}-type` };
+        return { score: 3000 + chance * 200, reason: `+10× ${sub}-type` };
       }
       return { score: 0, reason: null };
     case "egg_group":
       if (eggGroups.includes(sub)) {
-        return { score: 80 + chance * 15, reason: `+10× ${sub.replace("_", " ")} egg group` };
+        return { score: 2000 + chance * 150, reason: `+10× ${sub.replace("_", " ")} egg group` };
       }
       return { score: 0, reason: null };
     case "nature":
       if (species.strongestStat && species.strongestStat === sub) {
-        return { score: 60 + chance * 10, reason: `${sub}-boosting nature` };
+        return { score: 1000 + chance * 100, reason: `${sub}-boosting nature` };
       }
-      return { score: 5 + chance * 3, reason: null };
+      // Mismatched nature: not useful for THIS species.
+      return { score: 0, reason: null };
+
+    // Generic buffs: score < 100 so they are always behind affinity effects,
+    // but still rank them among themselves. Shown only when no affinity is
+    // available (fallback), or as a secondary reason on an affinity bait.
     case "rarity_bucket":
       return { score: 40 + (raw.value ?? 0) * 2, reason: `rarity +${raw.value ?? 0}` };
     case "shiny_reroll":
@@ -104,6 +112,21 @@ function scoreOneEffect(
     default:
       return { score: 0, reason: null };
   }
+}
+
+/** True when the effect actually biases spawn pool toward a given species. */
+function isAffinityEffect(raw: RawBaitEffect, species: SpeciesCtx): boolean {
+  const type = (raw.type ?? "").replace(/^cobblemon:/, "");
+  const sub = normSub(raw.subcategory);
+  if (type === "typing")
+    return [species.primaryType, species.secondaryType]
+      .filter((t): t is string => !!t)
+      .includes(sub);
+  if (type === "egg_group")
+    return (species.eggGroups ?? []).map((e) => e.toLowerCase()).includes(sub);
+  if (type === "nature")
+    return !!species.strongestStat && species.strongestStat === sub;
+  return false;
 }
 
 /**
@@ -137,8 +160,9 @@ export function rankBaitsForSpecies(
   species: SpeciesCtx,
   opts: { limit?: number } = {},
 ): RankedBait[] {
-  const limit = opts.limit ?? 6;
-  const ranked: RankedBait[] = [];
+  const limit = opts.limit ?? 12;
+  const affinityRanked: RankedBait[] = [];
+  const genericRanked: RankedBait[] = [];
 
   for (const s of seasonings) {
     const effects = s.rawBaitEffects ?? [];
@@ -146,16 +170,18 @@ export function rankBaitsForSpecies(
     let score = 0;
     const reasons: string[] = [];
     let primary = "";
+    let hasAffinity = false;
     for (const eff of effects) {
       const { score: sc, reason } = scoreOneEffect(eff, species);
       score += sc;
+      if (isAffinityEffect(eff, species)) hasAffinity = true;
       if (reason) {
         reasons.push(reason);
-        if (!primary && (sc >= 40)) primary = reason;
+        if (!primary && sc >= 1000) primary = reason;
       }
     }
     if (score <= 0) continue;
-    ranked.push({
+    const entry: RankedBait = {
       seasoning: s,
       score,
       reasons,
@@ -164,8 +190,16 @@ export function rankBaitsForSpecies(
         reasons[0] ||
         (s.baitEffects && s.baitEffects[0]?.title) ||
         "utility",
-    });
+    };
+    if (hasAffinity) affinityRanked.push(entry);
+    else genericRanked.push(entry);
   }
 
-  return ranked.sort((a, b) => b.score - a.score).slice(0, limit);
+  affinityRanked.sort((a, b) => b.score - a.score);
+  genericRanked.sort((a, b) => b.score - a.score);
+
+  // Only surface generics when we have no affinity bait for this species.
+  // Prevents golden/enchanted golden apple from polluting every page.
+  const out = affinityRanked.length > 0 ? affinityRanked : genericRanked;
+  return out.slice(0, limit);
 }
