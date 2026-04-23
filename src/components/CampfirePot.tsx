@@ -344,9 +344,9 @@ export function CampfirePot() {
 
             <div className="mt-2 grid grid-cols-3 gap-1 p-2 rounded-lg bg-subtle">
               {[
-                "c:drinks/milk",
-                "c:drinks/milk",
-                "c:drinks/milk",
+                "cobblemon:moomoo_milk",
+                "cobblemon:moomoo_milk",
+                "cobblemon:moomoo_milk",
                 "minecraft:honey_bottle",
                 "cobblemon:vivichoke",
                 "minecraft:honey_bottle",
