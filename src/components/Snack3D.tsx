@@ -292,15 +292,22 @@ function BerryOnTop({
   let ryDeg = 0;
   let rzDeg = 0;
 
-  // pokeSnackPositionings.{x,y,z} are in Minecraft pixels (0..16) inside
-  // the block. The Blockbench .geo.json uses the same y-up convention as
-  // Three.js, so no axis flip is needed — the JSON pivot and rotations
-  // already produce berries that sit "on top" of the cake, where the
-  // mod renders them.
+  // Minecraft ModelPart coords are y-down inside the block: pos.y is
+  // "pixels below the block top". We convert to Three.js y-up with
+  //   world_y = (16 - pos.y) / 16
+  // The geometry is also rendered with scale.y = -1/16 so cubes with
+  // negative local y (the pivot-is-on-top convention all Cobblemon
+  // berry models use) end up ABOVE the pivot, where the berry body
+  // actually belongs. The combo of flipped geometry and flipped
+  // position Y makes the mod-provided rotations work without extra
+  // sign changes: a pos.y of 9.45 with rot.x=155° lands the berry
+  // body resting on the snack top face (y=7/16), for every berry.
+  const yFromMod = (y: number) => (16 - y) / 16;
+
   if (base) {
     if (totalCount === 1) {
       px = 8 / 16 - 0.5; // = 0
-      py = base.position.y / 16;
+      py = yFromMod(base.position.y);
       pz = 8 / 16 - 0.5; // = 0
       rxDeg = 180;
       ryDeg = 0;
@@ -308,7 +315,7 @@ function BerryOnTop({
     } else if (totalCount === 2) {
       const p = base;
       px = p.position.x / 16 - 0.5;
-      py = p.position.y / 16;
+      py = yFromMod(p.position.y);
       pz =
         (index === 0 ? p.position.z : 16 - p.position.z) / 16 - 0.5;
       rxDeg = index === 0 ? p.rotation.x : 360 - p.rotation.x;
@@ -317,7 +324,7 @@ function BerryOnTop({
     } else {
       const p = positionings[Math.min(index, positionings.length - 1)] ?? base;
       px = p.position.x / 16 - 0.5;
-      py = p.position.y / 16;
+      py = yFromMod(p.position.y);
       pz = p.position.z / 16 - 0.5;
       rxDeg = p.rotation.x;
       ryDeg = p.rotation.y;
@@ -334,12 +341,14 @@ function BerryOnTop({
   const rx = THREE.MathUtils.degToRad(rxDeg + (d.rotOffsetX ?? 0));
   const ry = THREE.MathUtils.degToRad(ryDeg + (d.rotOffsetY ?? 0));
   const rz = THREE.MathUtils.degToRad(rzDeg + (d.rotOffsetZ ?? 0));
-  const scaleY = (d.scaleFactorY ?? 1) / 16;
+  const scaleY = (d.scaleFactorY ?? -1) / 16;
 
   if (geometry) {
-    // Scale 1/16 converts pixel units to block units. Y uses +1/16 by
-    // default — the .geo.json is already in y-up (Blockbench), same as
-    // Three.js. The debug viewer can still flip to test.
+    // Scale 1/16 on X/Z converts pixel units to block units. Y uses
+    // -1/16 so the Minecraft ModelPart y-down convention is flipped
+    // into Three.js y-up (matches the `world_y = (16 - pos.y) / 16`
+    // position remap above). DoubleSide material absorbs the inverted
+    // winding caused by the negative scale.
     return (
       <group
         position={[finalX, finalY, finalZ]}

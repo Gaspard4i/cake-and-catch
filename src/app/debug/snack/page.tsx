@@ -11,7 +11,7 @@ const ZERO_OVERRIDES: BerryDebugOverrides = {
   rotOffsetX: 0,
   rotOffsetY: 0,
   rotOffsetZ: 0,
-  scaleFactorY: 1,
+  scaleFactorY: -1,
 };
 
 const DebugViewer = dynamic(
@@ -236,7 +236,7 @@ export default function SnackDebugPage() {
             />
             <DebugSlider
               label="scale Y factor"
-              value={overrides.scaleFactorY ?? 1}
+              value={overrides.scaleFactorY ?? -1}
               min={-2}
               max={2}
               step={0.1}
