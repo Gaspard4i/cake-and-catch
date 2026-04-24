@@ -16,6 +16,9 @@ export function HeaderNav() {
       <Link href="/juice" className="hover:text-foreground transition-colors">
         Juice
       </Link>
+      <Link href="/docs/api" className="hover:text-foreground transition-colors">
+        API
+      </Link>
       <Link href="/about" className="hover:text-foreground transition-colors">
         {t("about")}
       </Link>

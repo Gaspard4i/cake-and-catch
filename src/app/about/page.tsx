@@ -160,6 +160,13 @@ async function AboutContent() {
         <pre className="mt-3 rounded-lg border border-border bg-card p-4 overflow-x-auto text-xs font-mono">
           GET /api/recommend?pokemon=victini&amp;intent=spawn
         </pre>
+        <p className="mt-3 text-sm">
+          Full reference with every endpoint, parameters and example payloads is on the{" "}
+          <a href="/docs/api" className="underline hover:text-foreground font-medium">
+            API documentation page
+          </a>
+          .
+        </p>
       </section>
 
       <section className="mt-10">
