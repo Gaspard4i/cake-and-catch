@@ -68,6 +68,13 @@ const STAT_TONE: Record<RidingStat, string> = {
   JUMP: "text-purple-600 dark:text-purple-400",
 };
 
+type Suggestion = {
+  apricorn: Apricorn;
+  berrySlugs: string[];
+  result: JuiceResult;
+  score: number;
+};
+
 export function JuiceMaker() {
   const [berries, setBerries] = useState<BerryDTO[]>([]);
   const [berriesLoading, setBerriesLoading] = useState(true);
@@ -75,6 +82,10 @@ export function JuiceMaker() {
   const [slugs, setSlugs] = useState<string[]>([]);
   const [result, setResult] = useState<JuiceResult | null>(null);
   const [loading, setLoading] = useState(false);
+  const [mode, setMode] = useState<"cook" | "suggest">("cook");
+  const [targetStats, setTargetStats] = useState<Set<RidingStat>>(new Set());
+  const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
+  const [suggestLoading, setSuggestLoading] = useState(false);
 
   useEffect(() => {
     fetch("/api/juice")
@@ -107,6 +118,52 @@ export function JuiceMaker() {
       ctrl.abort();
     };
   }, [apricorn, slugs]);
+
+  // Reverse solver: whenever the target stat set changes in suggest mode,
+  // fetch the top combos from the server.
+  useEffect(() => {
+    if (mode !== "suggest") return;
+    if (targetStats.size === 0) {
+      setSuggestions([]);
+      return;
+    }
+    const ctrl = new AbortController();
+    const timer = setTimeout(async () => {
+      setSuggestLoading(true);
+      try {
+        const res = await fetch("/api/juice/suggest", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ stats: [...targetStats], limit: 6 }),
+          signal: ctrl.signal,
+        });
+        const data = (await res.json()) as { suggestions: Suggestion[] };
+        setSuggestions(data.suggestions ?? []);
+      } catch (err) {
+        if ((err as Error).name !== "AbortError") setSuggestions([]);
+      } finally {
+        setSuggestLoading(false);
+      }
+    }, 150);
+    return () => {
+      clearTimeout(timer);
+      ctrl.abort();
+    };
+  }, [mode, targetStats]);
+
+  const toggleTargetStat = (s: RidingStat) =>
+    setTargetStats((prev) => {
+      const next = new Set(prev);
+      if (next.has(s)) next.delete(s);
+      else next.add(s);
+      return next;
+    });
+
+  const applySuggestion = (s: Suggestion) => {
+    setMode("cook");
+    setApricorn(s.apricorn);
+    setSlugs(s.berrySlugs.slice(0, MAX_JUICE_SEASONINGS));
+  };
 
   const [query, setQuery] = useState("");
   const [activeFlavours, setActiveFlavours] = useState<Set<Flavour>>(new Set());
@@ -161,8 +218,183 @@ export function JuiceMaker() {
   const apricornDeltas = APRICORN_EFFECTS[apricorn];
 
   return (
+    <div className="space-y-6">
+      <TopProgress active={loading || berriesLoading || suggestLoading} />
+
+      <div className="inline-flex rounded-lg border border-border bg-card p-1">
+        <button
+          type="button"
+          onClick={() => setMode("cook")}
+          aria-pressed={mode === "cook"}
+          className={`px-3 py-1.5 text-xs rounded-md transition-colors ${
+            mode === "cook"
+              ? "bg-accent text-accent-foreground"
+              : "text-muted hover:text-foreground"
+          }`}
+        >
+          Cook a juice
+        </button>
+        <button
+          type="button"
+          onClick={() => setMode("suggest")}
+          aria-pressed={mode === "suggest"}
+          className={`px-3 py-1.5 text-xs rounded-md transition-colors ${
+            mode === "suggest"
+              ? "bg-accent text-accent-foreground"
+              : "text-muted hover:text-foreground"
+          }`}
+        >
+          I want a stat → suggest
+        </button>
+      </div>
+
+      {mode === "suggest" && (
+        <section className="space-y-4">
+          <div>
+            <h3 className="text-sm font-medium uppercase tracking-wide text-muted">
+              Which ride stats do you want to boost?
+            </h3>
+            <p className="mt-1 text-xs text-muted">
+              Pick one or several. We&apos;ll rank apricorn + berry combos that
+              push those stats the most, respecting the Cobblemon 3-seasoning
+              cap and the flavour → stat mapping.
+            </p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              {(["ACCELERATION", "SKILL", "SPEED", "STAMINA", "JUMP"] as RidingStat[]).map(
+                (s) => {
+                  const active = targetStats.has(s);
+                  const Icon = STAT_ICON[s];
+                  return (
+                    <button
+                      key={s}
+                      onClick={() => toggleTargetStat(s)}
+                      className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs transition-colors ${
+                        active
+                          ? "border-accent bg-accent/10"
+                          : "border-border bg-card text-muted hover:text-foreground"
+                      }`}
+                    >
+                      <Icon className={`h-3.5 w-3.5 ${STAT_TONE[s]}`} />
+                      <span className="uppercase tracking-wide">
+                        {s.toLowerCase()}
+                      </span>
+                    </button>
+                  );
+                },
+              )}
+              {targetStats.size > 0 && (
+                <button
+                  onClick={() => setTargetStats(new Set())}
+                  className="text-xs px-2 py-1 rounded-md border border-border text-muted hover:text-foreground"
+                >
+                  Clear
+                </button>
+              )}
+            </div>
+          </div>
+
+          <div>
+            <h3 className="text-sm font-medium uppercase tracking-wide text-muted">
+              Top combinations {suggestLoading && <Spinner className="ml-2" />}
+            </h3>
+            {targetStats.size === 0 ? (
+              <p className="mt-3 text-sm text-muted">
+                Pick at least one stat above.
+              </p>
+            ) : suggestions.length === 0 && !suggestLoading ? (
+              <p className="mt-3 text-sm text-muted">No combination scores positive. Try fewer stats.</p>
+            ) : (
+              <ul className="mt-3 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+                {suggestions.map((s, i) => (
+                  <li
+                    key={`${s.apricorn}-${s.berrySlugs.join(",")}`}
+                    className={`rounded-xl border bg-card p-3 space-y-2 ${
+                      i === 0 ? "border-accent ring-1 ring-accent/40" : "border-border"
+                    }`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <span
+                        className="size-6 rounded-full border border-border shrink-0"
+                        style={{ background: APRICORN_HEX[s.apricorn] }}
+                        title={`${s.apricorn} apricorn`}
+                      />
+                      <span className="text-xs uppercase font-medium">
+                        {s.apricorn} aprijuice
+                      </span>
+                      {i < 3 && (
+                        <span className="ml-auto text-[10px] font-mono bg-accent text-accent-foreground rounded-full px-1.5 py-0.5">
+                          #{i + 1}
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="flex flex-wrap gap-1 min-h-[2.5rem]">
+                      {s.berrySlugs.length === 0 ? (
+                        <span className="text-[10px] text-muted italic">
+                          no seasoning
+                        </span>
+                      ) : (
+                        s.berrySlugs.map((slug, j) => {
+                          const b = berries.find((x) => x.slug === slug);
+                          return (
+                            <span
+                              key={`${slug}-${j}`}
+                              className="inline-flex items-center gap-1 rounded-md border border-border bg-subtle px-1.5 py-1"
+                              title={slug}
+                            >
+                              {b && <ItemIcon id={b.itemId} size={20} />}
+                              <span className="text-[10px] capitalize">
+                                {slug.replaceAll("_", " ")}
+                              </span>
+                            </span>
+                          );
+                        })
+                      )}
+                    </div>
+
+                    <ul className="grid grid-cols-5 gap-1 text-[10px]">
+                      {(["ACCELERATION", "SKILL", "SPEED", "STAMINA", "JUMP"] as RidingStat[]).map(
+                        (stat) => {
+                          const delta = s.result.statBoosts[stat] ?? 0;
+                          const Icon = STAT_ICON[stat];
+                          return (
+                            <div
+                              key={stat}
+                              className={`rounded-md border p-1 flex flex-col items-center gap-0.5 ${
+                                delta > 0
+                                  ? "border-emerald-500/40 bg-emerald-500/5"
+                                  : delta < 0
+                                    ? "border-red-500/40 bg-red-500/5"
+                                    : "border-border"
+                              }`}
+                            >
+                              <Icon className={`h-3 w-3 ${STAT_TONE[stat]}`} />
+                              <span className="font-mono">
+                                {delta > 0 ? "+" : ""}
+                                {delta}
+                              </span>
+                            </div>
+                          );
+                        },
+                      )}
+                    </ul>
+
+                    <button
+                      onClick={() => applySuggestion(s)}
+                      className="w-full text-xs px-2 py-1.5 rounded-md border border-border hover:border-accent/60 hover:bg-subtle transition-colors"
+                    >
+                      Load into cook
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </section>
+      )}
+
+      {mode === "cook" && (
     <div className="grid gap-8 lg:grid-cols-[auto_1fr]">
-      <TopProgress active={loading || berriesLoading} />
       <aside className="space-y-4">
         <div>
           <h3 className="text-sm font-medium uppercase tracking-wide text-muted">
@@ -494,6 +726,8 @@ export function JuiceMaker() {
           )}
         </div>
       </div>
+    </div>
+      )}
     </div>
   );
 }

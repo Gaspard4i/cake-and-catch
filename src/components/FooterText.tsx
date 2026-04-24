@@ -34,15 +34,6 @@ export function FooterText() {
       >
         Gaspard4i
       </a>
-      {" · "}
-      <a
-        href="https://github.com/Gaspard4i/snack-and-catch"
-        className="underline hover:text-foreground"
-        target="_blank"
-        rel="noreferrer"
-      >
-        source
-      </a>
       .
     </>
   );

@@ -121,15 +121,6 @@ async function AboutContent() {
               className="font-medium underline hover:text-foreground"
             >
               Gaspard4i
-            </a>{" "}
-            · source on{" "}
-            <a
-              href="https://github.com/Gaspard4i/snack-and-catch"
-              target="_blank"
-              rel="noreferrer"
-              className="underline hover:text-foreground"
-            >
-              github.com/Gaspard4i/snack-and-catch
             </a>
             .
           </p>
