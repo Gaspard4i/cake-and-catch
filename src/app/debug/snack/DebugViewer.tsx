@@ -4,7 +4,11 @@ import { Canvas } from "@react-three/fiber";
 import { Grid, OrbitControls } from "@react-three/drei";
 import { Suspense, useMemo } from "react";
 import * as THREE from "three";
-import { SnackMesh, type BerryPlacement } from "@/components/Snack3D";
+import {
+  SnackMesh,
+  type BerryDebugOverrides,
+  type BerryPlacement,
+} from "@/components/Snack3D";
 
 type Props = {
   berries: BerryPlacement[];
@@ -12,6 +16,7 @@ type Props = {
   showGrid: boolean;
   wireSnack: boolean;
   potColour: string;
+  overrides?: BerryDebugOverrides;
 };
 
 /**
@@ -25,6 +30,7 @@ export function DebugViewer({
   showGrid,
   wireSnack,
   potColour,
+  overrides,
 }: Props) {
   return (
     <div className="rounded-lg border border-border bg-subtle overflow-hidden h-[70vh] min-h-[500px] relative">
@@ -62,6 +68,7 @@ export function DebugViewer({
             potColour={potColour}
             wireframe={wireSnack}
             spin={false}
+            berryDebug={overrides}
           />
         </Suspense>
 

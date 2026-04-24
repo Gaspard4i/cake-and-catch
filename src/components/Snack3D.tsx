@@ -188,14 +188,32 @@ function resolveSeasoningTexture(berry: BerryPlacement): string {
   return `/textures/cobblemon/item/${raw}.png`;
 }
 
+/**
+ * DebugOverrides — optional extra transform applied on top of the
+ * mod-derived placement. Used only by /debug/snack to tune the numbers
+ * live. Everything defaults to zero so production renders are unchanged.
+ */
+export type BerryDebugOverrides = {
+  offsetX?: number;    // world units, added to px
+  offsetY?: number;    // world units, added to py
+  offsetZ?: number;    // world units, added to pz
+  rotOffsetX?: number; // degrees, added to rxDeg
+  rotOffsetY?: number; // degrees, added to ryDeg
+  rotOffsetZ?: number; // degrees, added to rzDeg
+  /** Multiplier on the 1/16 base scale. Sign of Y lets the debugger flip. */
+  scaleFactorY?: number; // default -1 (flip on for mod parity)
+};
+
 function BerryOnTop({
   berry,
   index,
   totalCount,
+  debug,
 }: {
   berry: BerryPlacement;
   index: number;
   totalCount: number;
+  debug?: BerryDebugOverrides;
 }) {
   const texUrl = resolveSeasoningTexture(berry);
   // Wrap useLoader in an error boundary via a lazy fallback: Three's
@@ -314,21 +332,32 @@ function BerryOnTop({
     }
   }
 
-  const rx = THREE.MathUtils.degToRad(rxDeg);
-  const ry = THREE.MathUtils.degToRad(ryDeg);
-  const rz = THREE.MathUtils.degToRad(rzDeg);
+  // Apply debug overrides (world units + degrees) on top of the
+  // mod-derived transform.
+  const d = debug ?? {};
+  const finalX = px + (d.offsetX ?? 0);
+  const finalY = py + (d.offsetY ?? 0);
+  const finalZ = pz + (d.offsetZ ?? 0);
+  const rx = THREE.MathUtils.degToRad(rxDeg + (d.rotOffsetX ?? 0));
+  const ry = THREE.MathUtils.degToRad(ryDeg + (d.rotOffsetY ?? 0));
+  const rz = THREE.MathUtils.degToRad(rzDeg + (d.rotOffsetZ ?? 0));
+  const scaleY = (d.scaleFactorY ?? -1) / 16;
 
   if (geometry) {
-    // Scale 1/16 on X/Z converts pixel units to block units. Y is
-    // negated to flip the Minecraft model y-axis into Three.js y-up.
-    // DoubleSide material on the berry (see `material` construction
-    // above) masks the inverted winding that the negative scale causes.
+    // Scale 1/16 on X/Z converts pixel units to block units. Y scale's
+    // sign defaults to -1 to flip the Minecraft model y-axis into
+    // Three.js y-up; the debug viewer can override that. DoubleSide
+    // material on the berry masks the inverted winding a negative Y
+    // scale causes.
     return (
-      <group position={[px, py, pz]} rotation={[rx, ry, rz]}>
+      <group
+        position={[finalX, finalY, finalZ]}
+        rotation={[rx, ry, rz]}
+      >
         <mesh
           geometry={geometry}
           material={material}
-          scale={[1 / 16, -1 / 16, 1 / 16]}
+          scale={[1 / 16, scaleY, 1 / 16]}
         />
       </group>
     );
@@ -376,6 +405,7 @@ export function SnackMesh({
   potColour,
   wireframe = false,
   spin = true,
+  berryDebug,
 }: {
   berries: BerryPlacement[];
   fallbackFlavour: string | null;
@@ -384,6 +414,8 @@ export function SnackMesh({
   wireframe?: boolean;
   /** Idle rotation. Disable for the debug viewer so OrbitControls owns the scene. */
   spin?: boolean;
+  /** Debug-only: extra offsets/rotations applied to every berry. */
+  berryDebug?: BerryDebugOverrides;
 }) {
   const group = useRef<THREE.Group>(null);
 
@@ -445,6 +477,7 @@ export function SnackMesh({
           berry={b}
           index={i}
           totalCount={berries.length}
+          debug={berryDebug}
         />
       ))}
     </group>

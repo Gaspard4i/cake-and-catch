@@ -2,7 +2,17 @@
 
 import dynamic from "next/dynamic";
 import { useEffect, useMemo, useState } from "react";
-import type { BerryPlacement } from "@/components/Snack3D";
+import type { BerryDebugOverrides, BerryPlacement } from "@/components/Snack3D";
+
+const ZERO_OVERRIDES: BerryDebugOverrides = {
+  offsetX: 0,
+  offsetY: 0,
+  offsetZ: 0,
+  rotOffsetX: 0,
+  rotOffsetY: 0,
+  rotOffsetZ: 0,
+  scaleFactorY: -1,
+};
 
 const DebugViewer = dynamic(
   () => import("./DebugViewer").then((m) => m.DebugViewer),
@@ -32,6 +42,12 @@ export default function SnackDebugPage() {
   const [showGrid, setShowGrid] = useState(true);
   const [wireSnack, setWireSnack] = useState(false);
   const [potColour, setPotColour] = useState<string>("#c9b89e");
+  const [overrides, setOverrides] = useState<BerryDebugOverrides>(ZERO_OVERRIDES);
+
+  const setOv = <K extends keyof BerryDebugOverrides>(
+    k: K,
+    v: BerryDebugOverrides[K],
+  ) => setOverrides((prev) => ({ ...prev, [k]: v }));
 
   useEffect(() => {
     fetch("/api/snack")
@@ -82,6 +98,7 @@ export default function SnackDebugPage() {
           showGrid={showGrid}
           wireSnack={wireSnack}
           potColour={potColour}
+          overrides={overrides}
         />
 
         <aside className="space-y-4">
@@ -171,6 +188,87 @@ export default function SnackDebugPage() {
           </section>
 
           <section className="rounded-lg border border-border bg-card p-3 space-y-2">
+            <div className="flex items-center justify-between">
+              <h2 className="text-xs uppercase tracking-wide text-muted">
+                Live overrides
+              </h2>
+              <button
+                onClick={() => setOverrides(ZERO_OVERRIDES)}
+                className="text-[10px] uppercase text-muted hover:text-foreground"
+              >
+                Reset
+              </button>
+            </div>
+            <p className="text-[10px] text-muted leading-relaxed">
+              Tune every berry live. Offsets in world units (1 = 1 block = 16 MC
+              pixels). Rotations in degrees, added on top of the JSON rotation.
+              Y scale sign flips the berry (-1 = mod default, +1 = raw).
+            </p>
+            <DebugSlider
+              label="offset X"
+              value={overrides.offsetX ?? 0}
+              min={-0.5}
+              max={0.5}
+              step={1 / 32}
+              onChange={(v) => setOv("offsetX", v)}
+            />
+            <DebugSlider
+              label="offset Y"
+              value={overrides.offsetY ?? 0}
+              min={-0.5}
+              max={0.5}
+              step={1 / 32}
+              onChange={(v) => setOv("offsetY", v)}
+            />
+            <DebugSlider
+              label="offset Z"
+              value={overrides.offsetZ ?? 0}
+              min={-0.5}
+              max={0.5}
+              step={1 / 32}
+              onChange={(v) => setOv("offsetZ", v)}
+            />
+            <DebugSlider
+              label="rot X"
+              value={overrides.rotOffsetX ?? 0}
+              min={-180}
+              max={180}
+              step={5}
+              unit="°"
+              onChange={(v) => setOv("rotOffsetX", v)}
+            />
+            <DebugSlider
+              label="rot Y"
+              value={overrides.rotOffsetY ?? 0}
+              min={-180}
+              max={180}
+              step={5}
+              unit="°"
+              onChange={(v) => setOv("rotOffsetY", v)}
+            />
+            <DebugSlider
+              label="rot Z"
+              value={overrides.rotOffsetZ ?? 0}
+              min={-180}
+              max={180}
+              step={5}
+              unit="°"
+              onChange={(v) => setOv("rotOffsetZ", v)}
+            />
+            <DebugSlider
+              label="scale Y factor"
+              value={overrides.scaleFactorY ?? -1}
+              min={-2}
+              max={2}
+              step={0.1}
+              onChange={(v) => setOv("scaleFactorY", v)}
+            />
+            <pre className="text-[9px] text-muted bg-subtle p-1.5 rounded overflow-x-auto">
+{JSON.stringify(overrides, null, 2)}
+            </pre>
+          </section>
+
+          <section className="rounded-lg border border-border bg-card p-3 space-y-2">
             <h2 className="text-xs uppercase tracking-wide text-muted">
               Helpers
             </h2>
@@ -212,6 +310,45 @@ export default function SnackDebugPage() {
         </aside>
       </div>
     </div>
+  );
+}
+
+function DebugSlider({
+  label,
+  value,
+  min,
+  max,
+  step,
+  unit = "",
+  onChange,
+}: {
+  label: string;
+  value: number;
+  min: number;
+  max: number;
+  step: number;
+  unit?: string;
+  onChange: (v: number) => void;
+}) {
+  return (
+    <label className="block">
+      <div className="flex items-center justify-between text-[10px] text-muted">
+        <span>{label}</span>
+        <span className="font-mono tabular-nums">
+          {value.toFixed(3)}
+          {unit}
+        </span>
+      </div>
+      <input
+        type="range"
+        min={min}
+        max={max}
+        step={step}
+        value={value}
+        onChange={(e) => onChange(Number(e.target.value))}
+        className="w-full accent-accent"
+      />
+    </label>
   );
 }
 
