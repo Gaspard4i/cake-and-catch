@@ -48,9 +48,11 @@ function randomBerries(pool: Seasoning[]): Seasoning[] {
 
 /**
  * Single hero snack: rolls a fresh composition of 1-3 berries every 4.5s.
+ * Initial state is empty so SSR and the first client render produce the
+ * same markup; the first roll lands in useEffect, after hydration.
  */
 function useRandomSnack(pool: Seasoning[]): Seasoning[] {
-  const [roll, setRoll] = useState<Seasoning[]>(() => randomBerries(pool));
+  const [roll, setRoll] = useState<Seasoning[]>([]);
   useEffect(() => {
     if (pool.length === 0) return;
     setRoll(randomBerries(pool));
@@ -84,8 +86,15 @@ export function Landing({ labels }: { labels: Labels }) {
 
   const berries = useRandomSnack(pool);
 
-  const floaters = useMemo(
-    () =>
+  // Background Pokémon floaters are generated client-side only. Using
+  // Math.random() during render would produce different values on SSR vs
+  // hydration, causing a hydration mismatch. We defer to useEffect so
+  // both SSR and the first client render produce an empty set.
+  const [floaters, setFloaters] = useState<
+    Array<{ dex: number; size: number; left: number; top: number; delay: number; duration: number }>
+  >([]);
+  useEffect(() => {
+    setFloaters(
       Array.from({ length: 14 }, () => ({
         dex: Math.floor(Math.random() * 1025) + 1,
         size: 40 + Math.random() * 80,
@@ -94,8 +103,8 @@ export function Landing({ labels }: { labels: Labels }) {
         delay: Math.random() * 10,
         duration: 15 + Math.random() * 20,
       })),
-    [],
-  );
+    );
+  }, []);
 
   return (
     <div className="relative overflow-hidden">
