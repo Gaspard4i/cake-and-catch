@@ -130,6 +130,32 @@
     "ja": "日本語",
     "zh": "中文"
   },
+  "satisfaction": {
+    "title": "体验如何?",
+    "subtitle": "一个快速评分能帮我决定接下来做什么。",
+    "rateLabel": "1 到 5 星评分",
+    "commentPlaceholder": "哪里好用?哪里出问题?缺什么?(可选)",
+    "feedbackIntro": "有具体要修复或新增的内容?在 GitHub 提交 issue 或私信我:",
+    "submit": "发送",
+    "submitting": "发送中…",
+    "dontShowAgain": "不再显示",
+    "close": "关闭",
+    "thanks": "感谢反馈!"
+  },
+  "siteStats": {
+    "visits": "访问",
+    "ratingVotes": "{count} 票",
+    "ratingTitle": "{count} 次评分 · 平均 {avg}/5"
+  },
+  "feedback": {
+    "title": "反馈或报告 bug?",
+    "body": "本项目由一人业余维护。欢迎任何反馈、想法或意见 — 在 GitHub 提交 issue 或在 Discord 私信我。",
+    "bodyShort": "在 GitHub 提交 issue 或 Discord 私信我。",
+    "ctaGithub": "提交 GitHub issue",
+    "buttonLabel": "反馈",
+    "open": "打开反馈菜单",
+    "close": "关闭"
+  },
   "source": {
     "mod": "Mod 源",
     "wiki": "Wiki",

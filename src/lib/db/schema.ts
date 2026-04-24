@@ -186,6 +186,38 @@ export const speciesWiki = pgTable(
   (t) => [uniqueIndex("species_wiki_species_idx").on(t.speciesId)],
 );
 
+/**
+ * Aggregated site-wide counters and rating sum. Single-row table
+ * (id=1). Kept as a row instead of Redis/KV to avoid adding an
+ * infrastructure dependency. Updates are UPSERTs with atomic SQL
+ * increments (`col = col + 1`) so concurrent visits don't clobber.
+ */
+export const siteStats = pgTable("site_stats", {
+  id: integer("id").primaryKey().default(1),
+  visits: integer("visits").notNull().default(0),
+  ratingCount: integer("rating_count").notNull().default(0),
+  ratingSum: integer("rating_sum").notNull().default(0),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+/**
+ * Individual rating submissions. We keep them so we can moderate,
+ * deduplicate abuse (same IP hash), and change aggregation rules later
+ * without losing data. `ipHash` is sha256(ip + secret) — never the raw IP.
+ */
+export const siteRatings = pgTable(
+  "site_ratings",
+  {
+    id: serial("id").primaryKey(),
+    stars: integer("stars").notNull(),
+    comment: text("comment"),
+    locale: text("locale"),
+    ipHash: text("ip_hash"),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [index("site_ratings_created_idx").on(t.createdAt)],
+);
+
 export type Species = typeof species.$inferSelect;
 export type NewSpecies = typeof species.$inferInsert;
 export type Spawn = typeof spawns.$inferSelect;

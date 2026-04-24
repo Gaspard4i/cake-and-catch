@@ -5,6 +5,7 @@ import dynamic from "next/dynamic";
 import { useEffect, useMemo, useState } from "react";
 import type { BerryPlacement } from "./Snack3D";
 import { HomeSearch } from "./HomeSearch";
+import { SiteStatsBadge } from "./SiteStatsBadge";
 
 const Snack3D = dynamic(() => import("./Snack3D").then((m) => m.Snack3D), {
   ssr: false,
@@ -145,6 +146,10 @@ export function Landing({ labels }: { labels: Labels }) {
           <p className="mt-2 text-xs sm:text-sm text-muted">
             <span className="text-foreground font-medium">{labels.indexedSpecies}</span>
           </p>
+
+          <div className="mt-3">
+            <SiteStatsBadge />
+          </div>
 
           {/* On mobile, show the 3D snack between the intro and the search so
               the main CTA (search + buttons) stays near the fold. */}

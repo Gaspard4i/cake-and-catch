@@ -130,6 +130,32 @@
     "ja": "日本語",
     "zh": "中文"
   },
+  "satisfaction": {
+    "title": "使い心地はどうですか?",
+    "subtitle": "評価をいただけると、次に何を作るかの優先順位づけに役立ちます。",
+    "rateLabel": "1 から 5 で評価",
+    "commentPlaceholder": "良かった点?壊れている点?足りない点?(任意)",
+    "feedbackIntro": "具体的な修正や追加の要望は? GitHub issue または DM で:",
+    "submit": "送信",
+    "submitting": "送信中…",
+    "dontShowAgain": "今後表示しない",
+    "close": "閉じる",
+    "thanks": "フィードバックありがとうございます!"
+  },
+  "siteStats": {
+    "visits": "訪問",
+    "ratingVotes": "{count} 票",
+    "ratingTitle": "{count} 件の評価 · 平均 {avg}/5"
+  },
+  "feedback": {
+    "title": "フィードバックやバグ報告",
+    "body": "このプロジェクトは一人で片手間に運営しています。報告・アイデア・不満などご自由にどうぞ — GitHub で issue を作成するか、Discord で連絡してください。",
+    "bodyShort": "GitHub issue を開くか Discord で DM をください。",
+    "ctaGithub": "GitHub issue を作成",
+    "buttonLabel": "フィードバック",
+    "open": "フィードバックメニューを開く",
+    "close": "閉じる"
+  },
   "source": {
     "mod": "Mod ソース",
     "wiki": "Wiki",

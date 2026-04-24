@@ -11,6 +11,8 @@ import { LocaleSwitcher } from "@/components/LocaleSwitcher";
 import { FooterText } from "@/components/FooterText";
 import { HeaderNav } from "@/components/HeaderNav";
 import { MobileBottomNav } from "@/components/MobileBottomNav";
+import { FloatingFeedback } from "@/components/FloatingFeedback";
+import { SatisfactionModal } from "@/components/SatisfactionModal";
 
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
@@ -75,6 +77,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 </div>
               </footer>
               <MobileBottomNav />
+              <FloatingFeedback />
+              <SatisfactionModal />
             </IntlShell>
           </Suspense>
         </ThemeProvider>

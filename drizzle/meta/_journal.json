@@ -64,6 +64,13 @@
       "when": 1776968681622,
       "tag": "0008_quiet_strong_guy",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1777022380741,
+      "tag": "0009_easy_lady_mastermind",
+      "breakpoints": true
     }
   ]
 }

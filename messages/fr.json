@@ -130,6 +130,32 @@
     "ja": "日本語",
     "zh": "中文"
   },
+  "satisfaction": {
+    "title": "Comment se passe ton expérience ?",
+    "subtitle": "Une note rapide m'aide à prioriser quoi construire ensuite.",
+    "rateLabel": "Note de 1 à 5 étoiles",
+    "commentPlaceholder": "Qu'est-ce qui marche ? Qu'est-ce qui est cassé ? Qu'est-ce qui manque ? (optionnel)",
+    "feedbackIntro": "Quelque chose de précis à corriger ou ajouter ? Ouvre une issue GitHub ou écris-moi :",
+    "submit": "Envoyer",
+    "submitting": "Envoi…",
+    "dontShowAgain": "Ne plus afficher",
+    "close": "Fermer",
+    "thanks": "Merci pour ton retour !"
+  },
+  "siteStats": {
+    "visits": "{count, plural, one {visite} other {visites}}",
+    "ratingVotes": "{count, plural, one {# vote} other {# votes}}",
+    "ratingTitle": "{count} votes · moyenne {avg}/5"
+  },
+  "feedback": {
+    "title": "Un feedback ou un bug ?",
+    "body": "Projet maintenu par une seule personne à côté. Tout retour, idée ou remarque est bienvenu — ouvre une issue GitHub ou envoie-moi un message Discord.",
+    "bodyShort": "Ouvre une issue GitHub ou DM-moi sur Discord.",
+    "ctaGithub": "Ouvrir une issue GitHub",
+    "buttonLabel": "Feedback",
+    "open": "Ouvrir le menu feedback",
+    "close": "Fermer"
+  },
   "source": {
     "mod": "Mod source",
     "wiki": "Wiki",
