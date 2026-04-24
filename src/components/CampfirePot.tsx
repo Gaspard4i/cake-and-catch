@@ -482,6 +482,9 @@ export function CampfirePot() {
               potColour={potColour.hex}
               size={220}
             />
+            <p className="text-[10px] text-muted italic text-center max-w-[220px] leading-snug">
+              {t("previewDisclaimer")}
+            </p>
 
             <div className="flex items-center gap-2 text-xs text-muted">
               <span>{t("dominant")}</span>

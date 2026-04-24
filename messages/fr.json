@@ -202,7 +202,8 @@
     "sortNameDesc": "Nom (Z→A)",
     "shiny": "Shiny",
     "noAttracted": "Aucun Pokémon ne correspond. Retire des filtres.",
-    "dropHint": "Dépose un bait seasoning ici"
+    "dropHint": "Dépose un bait seasoning ici",
+    "previewDisclaimer": "Prévisu indicative — le snack en jeu peut être différent."
   },
   "pokedexUi": {
     "searchPlaceholder": "Rechercher un Pokémon…",

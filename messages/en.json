@@ -202,7 +202,8 @@
     "sortNameDesc": "Name (Z→A)",
     "shiny": "Shiny",
     "noAttracted": "No Pokémon match. Try removing filters.",
-    "dropHint": "Drop a bait seasoning here"
+    "dropHint": "Drop a bait seasoning here",
+    "previewDisclaimer": "Preview only — the in-game snack may look different."
   },
   "pokedexUi": {
     "searchPlaceholder": "Search Pokémon by name…",
