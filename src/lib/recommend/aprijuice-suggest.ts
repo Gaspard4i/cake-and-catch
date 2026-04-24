@@ -1,19 +1,29 @@
 /**
- * Reverse aprijuice solver. Given one or more target RidingStats the user
- * wants to boost, enumerate promising apricorn + berry combinations and rank
- * them by how well they push those stats.
+ * Reverse aprijuice solver — v2.
  *
- * The forward cook() function is deterministic and cheap (<1ms), so we just
- * try every apricorn × small berry selection and keep the top N.
+ * The earlier version asked users to rank stats. That was too blunt: a
+ * player might want Speed + Stamina equal and higher than Accel/Skill.
+ * Ranks can't express that. So instead we let the user:
  *
- * Berry selection is capped at MAX_SEASONINGS (3 — Cobblemon campfire pot
- * hard cap). We do NOT brute-force every 3-combination over ~70 berries
- * (~55k combos) because many are equivalent in flavour contribution. Instead:
- *   - For each target flavour (derived from target stats), pick the top 3
- *     berries whose dominant flavour matches. This yields a pool of ≤ 15
- *     "useful" berries; combinations over that pool are cheap.
- *   - Multiple copies of the same berry slug are allowed (Cobblemon accepts
- *     duplicate seasonings as long as slots are distinct).
+ *   1. Tell us which berries and apricorns they own in-game.
+ *   2. Spend a budget of points across the 5 ride stats however they like.
+ *   3. Get the closest achievable aprijuice (apricorn + up to 3 berries drawn
+ *      from what they own).
+ *
+ * Algorithm:
+ *   - The cook() function is pure and <1 ms. We brute-force every
+ *     (owned apricorn × multiset of ≤3 owned berries) combination.
+ *   - The pool is capped per-flavour to keep the search space small: for
+ *     each of the 5 flavours we keep the user's top-3 berries by that
+ *     flavour's magnitude. Gives ≤ 15 candidate berries → ≤ ~680
+ *     multiset-of-3 combos × 7 apricorns = ~5k cook() calls. Fast.
+ *   - Score = -L2 distance between the desired `targetBoosts` vector and
+ *     the produced `statBoosts` vector, with a small penalty for net-
+ *     negative stats the user did not request (prevents WHITE apricorn
+ *     from winning just because the ones the user asked for happen to
+ *     align).
+ *   - The budget is whatever the user assigned; we never cap it server-
+ *     side. The UI is responsible for enforcing `sum(target) ≤ budget`.
  */
 
 import {
@@ -27,7 +37,7 @@ import {
   type RidingStat,
 } from "./aprijuice";
 
-const APRICORNS: Apricorn[] = [
+const DEFAULT_APRICORNS: Apricorn[] = [
   "RED",
   "YELLOW",
   "GREEN",
@@ -38,21 +48,23 @@ const APRICORNS: Apricorn[] = [
 ];
 const MAX_SEASONINGS = 3;
 
-export type TargetWeights = Partial<Record<RidingStat, number>>;
+export const RIDE_STATS: RidingStat[] = [
+  "ACCELERATION",
+  "SKILL",
+  "SPEED",
+  "STAMINA",
+  "JUMP",
+];
+
+export type TargetBoosts = Partial<Record<RidingStat, number>>;
 
 export type Suggestion = {
   apricorn: Apricorn;
   berrySlugs: string[];
   result: JuiceResult;
-  score: number;
+  /** L2 distance from the target vector (lower is better). */
+  distance: number;
 };
-
-/** Stats reverse-map from flavour: for a desired stat, which flavour to chase. */
-const STAT_TO_FLAVOUR: Record<RidingStat, Flavour> = Object.fromEntries(
-  (Object.entries(FLAVOUR_TO_STAT) as Array<[Flavour, RidingStat]>).map(
-    ([f, s]) => [s, f],
-  ),
-) as Record<RidingStat, Flavour>;
 
 /** Pick the dominant flavour of a berry. */
 function dominantFlavour(b: BerrySeasoning): Flavour | null {
@@ -68,9 +80,9 @@ function dominantFlavour(b: BerrySeasoning): Flavour | null {
 }
 
 /**
- * Generate all multiset combinations of size ≤ maxSize from a pool. A multiset
- * because Cobblemon lets you stack the same seasoning slug across distinct
- * slots. Returns the empty selection too.
+ * Generate all multiset combinations of size ≤ maxSize from a pool.
+ * Multiset because Cobblemon lets you stack the same seasoning slug
+ * across distinct slots. Includes the empty selection.
  */
 function* multisetCombos<T>(
   pool: T[],
@@ -88,93 +100,150 @@ function* multisetCombos<T>(
   yield* rec(0, []);
 }
 
-function scoreResult(result: JuiceResult, weights: TargetWeights): number {
-  let s = 0;
-  for (const [stat, w] of Object.entries(weights) as Array<
-    [RidingStat, number]
-  >) {
-    const got = result.statBoosts[stat] ?? 0;
-    s += got * w;
-  }
-  // Tiny penalty for net-negative stats the user didn't ask for; keeps
-  // WHITE apricorn (−2 everywhere) from winning with a lucky alignment.
-  for (const [stat, delta] of Object.entries(result.statBoosts) as Array<
-    [RidingStat, number]
-  >) {
-    if (delta < 0 && !(stat in weights)) s += delta * 0.25;
-  }
-  return s;
-}
-
-/**
- * Build the candidate berry pool. For every target flavour we keep the top
- * berries by that flavour's magnitude. A shared cross-flavour pool is
- * returned so the solver can still pick a high-flavour berry even if the
- * user has multiple target stats.
- */
+/** Clamp a berry pool to the top K per-flavour to keep the search small. */
 function buildBerryPool(
   berries: BerrySeasoning[],
-  targetFlavours: Set<Flavour>,
-  perFlavour = 4,
+  perFlavour = 3,
 ): BerrySeasoning[] {
   const picks = new Map<string, BerrySeasoning>();
-  for (const f of targetFlavours) {
+  for (const f of Object.keys(FLAVOUR_TO_STAT) as Flavour[]) {
     const ranked = berries
       .filter((b) => (b.flavours[f] ?? 0) > 0)
       .sort((a, c) => (c.flavours[f] ?? 0) - (a.flavours[f] ?? 0))
       .slice(0, perFlavour);
     for (const b of ranked) picks.set(b.slug, b);
   }
-  // Always include a "neutral" high-flavour berry from each flavour as filler,
-  // but only if the user hasn't targeted anything (edge case).
-  if (targetFlavours.size === 0) {
-    for (const f of Object.keys(FLAVOUR_TO_STAT) as Flavour[]) {
-      const top = berries
-        .filter((b) => dominantFlavour(b) === f)
-        .sort((a, c) => (c.flavours[f] ?? 0) - (a.flavours[f] ?? 0))[0];
-      if (top) picks.set(top.slug, top);
-    }
-  }
   return [...picks.values()];
+}
+
+/** L2 distance between target and actual stat vector. */
+function distance(
+  target: TargetBoosts,
+  actual: Partial<Record<RidingStat, number>>,
+): number {
+  let sum = 0;
+  for (const stat of RIDE_STATS) {
+    const t = target[stat] ?? 0;
+    const a = actual[stat] ?? 0;
+    sum += (t - a) ** 2;
+  }
+  // Gentle penalty for NEGATIVE stats (typical WHITE or −1 apricorns on
+  // off-stats) even when the user didn't target them. Keeps recipes honest.
+  for (const stat of RIDE_STATS) {
+    const a = actual[stat] ?? 0;
+    if (a < 0 && !(stat in target)) sum += a * a * 0.25;
+  }
+  return Math.sqrt(sum);
+}
+
+/**
+ * Estimate the *achievable* ceiling per stat given a berry pool + apricorn
+ * list. Used by the UI to build a reasonable budget without hitting a wall
+ * that's impossible to reach. Derivation:
+ *   - For each stat, the flavour threshold max is 6 pts (105 flavour units).
+ *     Reaching that requires stacking ≥105 of that flavour across up to 3
+ *     berries. We check whether the user's owned berries can get there.
+ *   - Apricorn contribution: +2 on one stat (the positive one) for every
+ *     apricorn variant except WHITE/BLACK, −1 on another.
+ *   - This is conservative: we take the best per-stat reachable points
+ *     (0..6) from the user's berries assuming the 3 strongest go into that
+ *     flavour, plus the best apricorn delta for that stat (+2 if any
+ *     apricorn boosts it).
+ */
+export function achievableMaxPerStat(
+  berries: BerrySeasoning[],
+  apricorns: Apricorn[],
+): Record<RidingStat, number> {
+  const THRESHOLDS: Array<[number, number]> = [
+    [15, 1], [35, 2], [45, 3], [55, 4], [75, 5], [105, 6],
+  ];
+  const ptsForFlavourTotal = (total: number) => {
+    let pts = 0;
+    for (const [min, v] of THRESHOLDS) {
+      if (total >= min) pts = v;
+      else break;
+    }
+    return pts;
+  };
+
+  const out: Record<RidingStat, number> = {
+    ACCELERATION: 0, SKILL: 0, SPEED: 0, STAMINA: 0, JUMP: 0,
+  };
+
+  const flavourToStat = FLAVOUR_TO_STAT;
+  for (const f of Object.keys(flavourToStat) as Flavour[]) {
+    const stat = flavourToStat[f];
+    // Stack the 3 best berries' flavour magnitude for flavour `f`.
+    const top3 = berries
+      .map((b) => b.flavours[f] ?? 0)
+      .filter((v) => v > 0)
+      .sort((a, b) => b - a)
+      .slice(0, MAX_SEASONINGS)
+      .reduce((s, v) => s + v, 0);
+    const berryPts = ptsForFlavourTotal(top3);
+
+    // Best apricorn contribution on this stat.
+    let bestApricorn = 0;
+    for (const ap of apricorns) {
+      const delta = APRICORN_EFFECTS[ap]?.[stat] ?? 0;
+      if (delta > bestApricorn) bestApricorn = delta;
+    }
+
+    out[stat] = berryPts + bestApricorn;
+  }
+  return out;
+}
+
+/**
+ * Sum of all per-stat max points. Used to size a default budget the user
+ * can distribute. Inflated by 0 — we intentionally expose the full
+ * theoretical sum so the UI can clamp it back if desired.
+ */
+export function totalAchievableBudget(
+  berries: BerrySeasoning[],
+  apricorns: Apricorn[],
+): number {
+  const caps = achievableMaxPerStat(berries, apricorns);
+  return Object.values(caps).reduce((s, v) => s + v, 0);
 }
 
 export function suggestAprijuice(
   berries: BerrySeasoning[],
-  weights: TargetWeights,
-  opts: { limit?: number } = {},
+  target: TargetBoosts,
+  opts: { limit?: number; apricorns?: Apricorn[] } = {},
 ): Suggestion[] {
   const limit = opts.limit ?? 6;
-  const targetFlavours = new Set<Flavour>();
-  for (const stat of Object.keys(weights) as RidingStat[]) {
-    const f = STAT_TO_FLAVOUR[stat];
-    if (f) targetFlavours.add(f);
-  }
-  const pool = buildBerryPool(berries, targetFlavours);
+  const apricorns = opts.apricorns ?? DEFAULT_APRICORNS;
+  if (apricorns.length === 0) return [];
+
+  const pool = buildBerryPool(berries);
 
   const bySignature = new Map<string, Suggestion>();
 
-  for (const apricorn of APRICORNS) {
+  for (const apricorn of apricorns) {
     for (const combo of multisetCombos(pool, MAX_SEASONINGS)) {
       const result = cookAprijuice({ apricorn, berries: combo });
-      const score = scoreResult(result, weights);
-      if (score <= 0) continue;
+      const d = distance(target, result.statBoosts);
       const sig = `${apricorn}|${[...combo]
         .map((b) => b.slug)
         .sort()
         .join(",")}`;
       const prev = bySignature.get(sig);
-      if (!prev || prev.score < score) {
+      if (!prev || prev.distance > d) {
         bySignature.set(sig, {
           apricorn,
           berrySlugs: combo.map((b) => b.slug),
           result,
-          score,
+          distance: d,
         });
       }
     }
   }
 
   return [...bySignature.values()]
-    .sort((a, b) => b.score - a.score)
+    .sort((a, b) => a.distance - b.distance)
     .slice(0, limit);
 }
+
+// Re-export for external typing convenience.
+export type { TargetBoosts as TargetWeights };

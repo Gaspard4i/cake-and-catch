@@ -84,7 +84,8 @@ type Suggestion = {
   apricorn: Apricorn;
   berrySlugs: string[];
   result: JuiceResult;
-  score: number;
+  /** L2 distance from the user's target vector — lower is better. */
+  distance: number;
 };
 
 /**
@@ -131,18 +132,36 @@ export function JuiceMaker() {
   const [loading, setLoading] = useState(false);
   const [mode, setMode] = useState<"cook" | "suggest">("cook");
   /**
-   * Ordered priority list of ride stats the user cares about. A stat earlier
-   * in the list weighs more than a later one (rank 1 = most important,
-   * rank 5 = least important). Not listed = not wanted at all.
+   * Points the user wants on each ride stat. The UI enforces the cap
+   * (sum ≤ budget). Stats not present default to 0.
    */
-  const [targetOrder, setTargetOrder] = useState<RidingStat[]>([]);
+  const [targetPoints, setTargetPoints] = useState<Record<RidingStat, number>>({
+    ACCELERATION: 0, SKILL: 0, SPEED: 0, STAMINA: 0, JUMP: 0,
+  });
+  /**
+   * What the player owns. Starts all-checked; user unchecks what they
+   * don't have so the solver only proposes realistic recipes.
+   */
+  const [ownedBerries, setOwnedBerries] = useState<Set<string>>(new Set());
+  const [ownedApricorns, setOwnedApricorns] = useState<Set<Apricorn>>(
+    new Set(APRICORNS),
+  );
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [suggestLoading, setSuggestLoading] = useState(false);
+  const [budget, setBudget] = useState(0);
+  const [caps, setCaps] = useState<Record<RidingStat, number>>({
+    ACCELERATION: 0, SKILL: 0, SPEED: 0, STAMINA: 0, JUMP: 0,
+  });
 
   useEffect(() => {
     fetch("/api/juice")
       .then((r) => r.json())
-      .then((d: { berries?: BerryDTO[] }) => setBerries(d.berries ?? []))
+      .then((d: { berries?: BerryDTO[] }) => {
+        const list = d.berries ?? [];
+        setBerries(list);
+        // Default to owning every berry — user unchecks what they don't have.
+        setOwnedBerries(new Set(list.map((b) => b.slug)));
+      })
       .catch(() => setBerries([]))
       .finally(() => setBerriesLoading(false));
   }, []);
@@ -171,23 +190,16 @@ export function JuiceMaker() {
     };
   }, [apricorn, slugs]);
 
-  /**
-   * Convert the ranked list into continuous weights the scorer understands.
-   * Rank 1 → 5, rank 2 → 4, … rank 5 → 1. An unranked stat stays at 0.
-   */
-  const targetWeights = useMemo(() => {
-    const w: Partial<Record<RidingStat, number>> = {};
-    targetOrder.forEach((stat, i) => {
-      w[stat] = targetOrder.length - i;
-    });
-    return w;
-  }, [targetOrder]);
+  const spentPoints = useMemo(
+    () => Object.values(targetPoints).reduce((s, v) => s + v, 0),
+    [targetPoints],
+  );
 
-  // Reverse solver: whenever the ranking changes in suggest mode, fetch the
-  // top combos from the server.
+  // Reverse solver: whenever the target allocation or the owned pool
+  // changes in suggest mode, fetch the closest achievable combos.
   useEffect(() => {
     if (mode !== "suggest") return;
-    if (targetOrder.length === 0) {
+    if (spentPoints === 0) {
       setSuggestions([]);
       return;
     }
@@ -198,37 +210,96 @@ export function JuiceMaker() {
         const res = await fetch("/api/juice/suggest", {
           method: "POST",
           headers: { "content-type": "application/json" },
-          body: JSON.stringify({ weights: targetWeights, limit: 6 }),
+          body: JSON.stringify({
+            target: targetPoints,
+            ownedBerrySlugs: [...ownedBerries],
+            ownedApricorns: [...ownedApricorns],
+            limit: 6,
+          }),
           signal: ctrl.signal,
         });
-        const data = (await res.json()) as { suggestions: Suggestion[] };
+        const data = (await res.json()) as {
+          suggestions: Suggestion[];
+          budget: number;
+          caps: Record<RidingStat, number>;
+        };
         setSuggestions(data.suggestions ?? []);
+        setBudget(data.budget ?? 0);
+        if (data.caps) setCaps(data.caps);
       } catch (err) {
         if ((err as Error).name !== "AbortError") setSuggestions([]);
       } finally {
         setSuggestLoading(false);
       }
-    }, 150);
+    }, 180);
     return () => {
       clearTimeout(timer);
       ctrl.abort();
     };
-  }, [mode, targetOrder, targetWeights]);
+  }, [mode, targetPoints, ownedBerries, ownedApricorns, spentPoints]);
 
-  const toggleTargetStat = (s: RidingStat) =>
-    setTargetOrder((prev) =>
-      prev.includes(s) ? prev.filter((x) => x !== s) : [...prev, s],
+  // Budget probe: fetch once when ownership changes so sliders know the cap.
+  useEffect(() => {
+    if (mode !== "suggest") return;
+    const ctrl = new AbortController();
+    fetch("/api/juice/suggest", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        target: { SPEED: 1 }, // dummy target so server returns caps
+        ownedBerrySlugs: [...ownedBerries],
+        ownedApricorns: [...ownedApricorns],
+        limit: 0,
+      }),
+      signal: ctrl.signal,
+    })
+      .then((r) => r.json())
+      .then((d: { budget: number; caps: Record<RidingStat, number> }) => {
+        setBudget(d.budget ?? 0);
+        if (d.caps) setCaps(d.caps);
+      })
+      .catch(() => {});
+    return () => ctrl.abort();
+  }, [mode, ownedBerries, ownedApricorns]);
+
+  const setStatPoints = (stat: RidingStat, raw: number) => {
+    setTargetPoints((prev) => {
+      // Clamp to [0, cap] and to the remaining budget.
+      const cap = caps[stat] ?? 0;
+      const currentOther = Object.entries(prev)
+        .filter(([s]) => s !== stat)
+        .reduce((s, [, v]) => s + v, 0);
+      const remaining = Math.max(0, budget - currentOther);
+      const next = Math.max(0, Math.min(raw, cap, remaining));
+      return { ...prev, [stat]: next };
+    });
+  };
+
+  const resetPoints = () =>
+    setTargetPoints({
+      ACCELERATION: 0, SKILL: 0, SPEED: 0, STAMINA: 0, JUMP: 0,
+    });
+
+  const toggleOwnedBerry = (slug: string) =>
+    setOwnedBerries((prev) => {
+      const n = new Set(prev);
+      if (n.has(slug)) n.delete(slug);
+      else n.add(slug);
+      return n;
+    });
+  const toggleAllBerries = () =>
+    setOwnedBerries((prev) =>
+      prev.size === berries.length
+        ? new Set()
+        : new Set(berries.map((b) => b.slug)),
     );
 
-  const moveTargetStat = (s: RidingStat, delta: -1 | 1) =>
-    setTargetOrder((prev) => {
-      const i = prev.indexOf(s);
-      if (i === -1) return prev;
-      const j = i + delta;
-      if (j < 0 || j >= prev.length) return prev;
-      const next = prev.slice();
-      [next[i], next[j]] = [next[j], next[i]];
-      return next;
+  const toggleOwnedApricorn = (a: Apricorn) =>
+    setOwnedApricorns((prev) => {
+      const n = new Set(prev);
+      if (n.has(a)) n.delete(a);
+      else n.add(a);
+      return n;
     });
 
   const applySuggestion = (s: Suggestion) => {
@@ -322,94 +393,148 @@ export function JuiceMaker() {
 
       {mode === "suggest" && (
         <section className="space-y-4">
-          <div>
-            <h3 className="text-sm font-medium uppercase tracking-wide text-muted">
-              {t("targetTitle")}
-            </h3>
-            <p className="mt-1 text-xs text-muted">{t("targetHelp")}</p>
-
-            {targetOrder.length > 0 && (
-              <ol className="mt-3 space-y-1">
-                {targetOrder.map((s, i) => {
-                  const Icon = STAT_ICON[s];
-                  return (
-                    <li
-                      key={s}
-                      className="flex items-center gap-2 rounded-lg border border-accent bg-accent/5 px-2 py-1.5"
-                    >
-                      <span className="size-6 rounded-full bg-accent text-accent-foreground text-[10px] font-mono font-bold flex items-center justify-center shrink-0">
-                        {i + 1}
-                      </span>
-                      <Icon className={`h-4 w-4 ${STAT_TONE[s]} shrink-0`} />
-                      <span className="text-xs uppercase tracking-wide flex-1">
-                        {s.toLowerCase()}
-                      </span>
-                      <span className="text-[10px] font-mono text-muted tabular-nums">
-                        ×{targetOrder.length - i}
-                      </span>
-                      <button
-                        onClick={() => moveTargetStat(s, -1)}
-                        disabled={i === 0}
-                        aria-label={t("moveUp")}
-                        className="size-6 rounded border border-border bg-card text-muted hover:text-foreground disabled:opacity-30"
-                      >
-                        ↑
-                      </button>
-                      <button
-                        onClick={() => moveTargetStat(s, 1)}
-                        disabled={i === targetOrder.length - 1}
-                        aria-label={t("moveDown")}
-                        className="size-6 rounded border border-border bg-card text-muted hover:text-foreground disabled:opacity-30"
-                      >
-                        ↓
-                      </button>
-                      <button
-                        onClick={() => toggleTargetStat(s)}
-                        aria-label={t("remove")}
-                        className="size-6 rounded border border-border bg-card text-muted hover:text-red-500"
-                      >
-                        <X className="h-3 w-3 mx-auto" />
-                      </button>
-                    </li>
-                  );
-                })}
-              </ol>
-            )}
-
-            <div className="mt-3 flex flex-wrap gap-2">
-              {(["ACCELERATION", "SKILL", "SPEED", "STAMINA", "JUMP"] as RidingStat[])
-                .filter((s) => !targetOrder.includes(s))
-                .map((s) => {
-                  const Icon = STAT_ICON[s];
+          <section className="rounded-xl border border-border bg-card p-4 space-y-3">
+            <div>
+              <h3 className="text-sm font-medium uppercase tracking-wide text-muted">
+                {t("ownedApricorns")}
+              </h3>
+              <div className="mt-2 flex flex-wrap gap-2">
+                {APRICORNS.map((a) => {
+                  const active = ownedApricorns.has(a);
                   return (
                     <button
-                      key={s}
-                      onClick={() => toggleTargetStat(s)}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border bg-card text-muted hover:text-foreground text-xs transition-colors"
-                    >
-                      <Icon className={`h-3.5 w-3.5 ${STAT_TONE[s]}`} />
-                      <span className="uppercase tracking-wide">
-                        {s.toLowerCase()}
-                      </span>
-                    </button>
+                      key={a}
+                      onClick={() => toggleOwnedApricorn(a)}
+                      aria-pressed={active}
+                      className={`size-9 rounded-full border-2 transition-all ${
+                        active
+                          ? "border-accent scale-105"
+                          : "border-border opacity-40 hover:opacity-70"
+                      }`}
+                      style={{ background: APRICORN_HEX[a] }}
+                      title={a}
+                    />
                   );
                 })}
-              {targetOrder.length > 0 && (
-                <button
-                  onClick={() => setTargetOrder([])}
-                  className="text-xs px-2 py-1 rounded-md border border-border text-muted hover:text-foreground"
-                >
-                  {tc("clear")}
-                </button>
-              )}
+              </div>
             </div>
-          </div>
+
+            <div>
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-medium uppercase tracking-wide text-muted">
+                  {t("ownedBerries")}{" "}
+                  <span className="ml-1 text-[10px] normal-case text-muted">
+                    ({ownedBerries.size}/{berries.length})
+                  </span>
+                </h3>
+                <button
+                  onClick={toggleAllBerries}
+                  className="text-[10px] uppercase tracking-wide text-muted hover:text-foreground"
+                >
+                  {ownedBerries.size === berries.length
+                    ? tc("clear")
+                    : t("selectAll")}
+                </button>
+              </div>
+              <div className="mt-2 max-h-44 overflow-y-auto rounded-md border border-border p-2">
+                <ul className="grid grid-cols-[repeat(auto-fill,minmax(90px,1fr))] gap-1">
+                  {berries.map((b) => {
+                    const active = ownedBerries.has(b.slug);
+                    return (
+                      <li key={b.slug}>
+                        <button
+                          onClick={() => toggleOwnedBerry(b.slug)}
+                          aria-pressed={active}
+                          className={`w-full flex items-center gap-1 rounded px-1.5 py-1 text-left transition-colors ${
+                            active
+                              ? "bg-subtle"
+                              : "opacity-40 hover:opacity-70"
+                          }`}
+                          title={b.slug}
+                        >
+                          <ItemIcon id={b.itemId} size={18} />
+                          <span className="text-[10px] truncate capitalize flex-1">
+                            {b.slug.replaceAll("_", " ")}
+                          </span>
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            </div>
+          </section>
+
+          <section className="rounded-xl border border-border bg-card p-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-medium uppercase tracking-wide text-muted">
+                {t("distribute")}
+              </h3>
+              <div className="text-xs font-mono">
+                <span className={spentPoints > budget ? "text-red-500" : "text-foreground"}>
+                  {spentPoints}
+                </span>
+                <span className="text-muted"> / {budget}</span>
+              </div>
+            </div>
+            <p className="text-xs text-muted">{t("distributeHelp")}</p>
+
+            <ul className="space-y-2">
+              {(["ACCELERATION", "SKILL", "SPEED", "STAMINA", "JUMP"] as RidingStat[]).map(
+                (stat) => {
+                  const Icon = STAT_ICON[stat];
+                  const cap = caps[stat] ?? 0;
+                  const value = targetPoints[stat];
+                  const currentOther = spentPoints - value;
+                  const remaining = Math.max(0, budget - currentOther);
+                  const maxForThis = Math.min(cap, remaining);
+                  return (
+                    <li
+                      key={stat}
+                      className="flex items-center gap-2"
+                    >
+                      <Icon className={`h-4 w-4 ${STAT_TONE[stat]} shrink-0`} />
+                      <span className="text-[11px] uppercase tracking-wide w-14 shrink-0">
+                        {stat.toLowerCase()}
+                      </span>
+                      <input
+                        type="range"
+                        min={0}
+                        max={Math.max(cap, 1)}
+                        value={value}
+                        onChange={(e) =>
+                          setStatPoints(stat, Number(e.target.value))
+                        }
+                        disabled={cap === 0}
+                        className="flex-1 accent-accent disabled:opacity-30"
+                      />
+                      <span className="w-10 text-right text-xs font-mono tabular-nums">
+                        +{value}
+                      </span>
+                      <span className="text-[10px] text-muted font-mono tabular-nums w-8">
+                        /{maxForThis}
+                      </span>
+                    </li>
+                  );
+                },
+              )}
+            </ul>
+
+            {spentPoints > 0 && (
+              <button
+                onClick={resetPoints}
+                className="text-xs px-2 py-1 rounded-md border border-border text-muted hover:text-foreground"
+              >
+                {tc("clear")}
+              </button>
+            )}
+          </section>
 
           <div>
             <h3 className="text-sm font-medium uppercase tracking-wide text-muted">
               {t("topCombos")} {suggestLoading && <Spinner className="ml-2" />}
             </h3>
-            {targetOrder.length === 0 ? (
+            {spentPoints === 0 ? (
               <p className="mt-3 text-sm text-muted">{t("pickStat")}</p>
             ) : suggestions.length === 0 && !suggestLoading ? (
               <p className="mt-3 text-sm text-muted">{t("noCombo")}</p>
