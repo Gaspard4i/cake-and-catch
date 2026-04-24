@@ -120,71 +120,53 @@ export default async function JuiceRecipePage({
         <p className="mt-2 text-sm text-muted">{t("recipeIntro")}</p>
       </header>
 
-      {/* Crafting interface — 3x3 grid + arrow + result, mirroring the
-          in-game Cooking Pot. */}
+      {/* Minecraft-style Cooking Pot interface: 3×3 crafting grid + arrow
+          + result slot, with 3 seasoning slots stacked on the right.
+          Matches the wiki GIF — beveled grey panel with sunken slots. */}
       <section className="rounded-xl border border-border bg-card p-4 sm:p-6">
         <h2 className="text-sm font-medium uppercase tracking-wide text-muted mb-3">
           {t("craftingInterface")}
         </h2>
-        <div className="flex items-center justify-center gap-3 sm:gap-6 flex-wrap">
-          {/* Ingredient grid: row 0 = apricorn + Pep-Up Flower + Energy Root. */}
-          <div className="grid grid-cols-3 gap-1 p-2 rounded-lg bg-subtle border border-border">
-            {[
-              APRICORN_ITEM[apricorn],
-              "cobblemon:pep_up_flower",
-              "cobblemon:energy_root",
-              null, null, null,
-              null, null, null,
-            ].map((id, i) => (
-              <div
-                key={i}
-                className="size-12 sm:size-14 rounded bg-card border border-border flex items-center justify-center"
-                title={id ?? ""}
-              >
-                {id && <ItemIcon id={id} size={36} />}
+        <div className="flex justify-center">
+          <div className="mc-panel inline-flex items-center gap-4 p-3">
+            {/* 3×3 ingredient grid */}
+            <div className="grid grid-cols-3 gap-1">
+              {[
+                APRICORN_ITEM[apricorn],
+                "cobblemon:pep_up_flower",
+                "cobblemon:energy_root",
+                null, null, null,
+                null, null, null,
+              ].map((id, i) => (
+                <Slot key={i} title={id ?? ""}>
+                  {id && <ItemIcon id={id} size={30} />}
+                </Slot>
+              ))}
+            </div>
+
+            <div className="mc-arrow" aria-hidden>
+              <ArrowRight className="h-6 w-6 text-black/70" />
+            </div>
+
+            {/* Result slot */}
+            <Slot large title={APRICORN_JUICE_ITEM[apricorn]}>
+              <ItemIcon id={APRICORN_JUICE_ITEM[apricorn]} size={38} />
+            </Slot>
+
+            {/* Vertical seasoning column (side of the pot) */}
+            <div className="flex flex-col gap-1 ml-2 pl-3 border-l-2 border-[rgba(0,0,0,0.15)]">
+              <div className="text-[8px] uppercase tracking-wider text-black/60 text-center font-mono">
+                {t("seasoningSlots")}
               </div>
-            ))}
-          </div>
-
-          <ArrowRight className="h-6 w-6 sm:h-8 sm:w-8 text-muted" aria-hidden />
-
-          {/* Result slot. */}
-          <div
-            className="size-14 sm:size-16 rounded bg-subtle border-2 border-accent/50 flex items-center justify-center"
-            title={APRICORN_JUICE_ITEM[apricorn]}
-          >
-            <ItemIcon id={APRICORN_JUICE_ITEM[apricorn]} size={44} />
-          </div>
-        </div>
-
-        {/* Seasoning slots (Cobblemon campfire pot exposes 3 side slots). */}
-        <div className="mt-4">
-          <div className="text-[10px] uppercase tracking-wide text-muted text-center mb-2">
-            {t("seasoningSlots")}
-          </div>
-          <div className="flex items-center justify-center gap-2">
-            {Array.from({ length: 3 }).map((_, i) => {
-              const b = berries[i];
-              return (
-                <div
-                  key={i}
-                  className={`size-12 sm:size-14 rounded-lg border-2 flex items-center justify-center ${
-                    b
-                      ? "border-accent bg-subtle"
-                      : "border-dashed border-border bg-subtle/40"
-                  }`}
-                  title={b?.slug ?? ""}
-                >
-                  {b ? (
-                    <ItemIcon id={b.itemId} size={36} />
-                  ) : (
-                    <span className="text-[9px] text-muted uppercase">
-                      S{i + 1}
-                    </span>
-                  )}
-                </div>
-              );
-            })}
+              {Array.from({ length: 3 }).map((_, i) => {
+                const b = berries[i];
+                return (
+                  <Slot key={i} title={b?.slug ?? ""}>
+                    {b && <ItemIcon id={b.itemId} size={30} />}
+                  </Slot>
+                );
+              })}
+            </div>
           </div>
         </div>
       </section>
@@ -239,6 +221,32 @@ export default async function JuiceRecipePage({
           <p className="mt-3 text-sm text-muted">{t("noNetBoost")}</p>
         )}
       </section>
+    </div>
+  );
+}
+
+/**
+ * Minecraft-style inventory slot: sunken square with beveled borders
+ * (top-left dark, bottom-right light), dark inner background. Size is
+ * 40px by default, 48px when `large`. Matches the wiki's Cooking Pot GUI.
+ */
+function Slot({
+  children,
+  title,
+  large = false,
+}: {
+  children?: React.ReactNode;
+  title?: string;
+  large?: boolean;
+}) {
+  const dim = large ? 48 : 40;
+  return (
+    <div
+      title={title}
+      className="mc-slot flex items-center justify-center shrink-0"
+      style={{ width: dim, height: dim }}
+    >
+      {children}
     </div>
   );
 }

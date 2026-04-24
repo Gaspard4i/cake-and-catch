@@ -124,3 +124,48 @@ body {
 .animate-floaty {
   animation: floaty ease-in-out infinite;
 }
+
+/* ---------- Minecraft-style Cooking Pot GUI ---------- */
+/* Authored to mirror the Cobblemon wiki's cooking interface GIF. The
+ * panel is a flat grey with outer bevel (top/left light, bottom/right
+ * dark). Slots are sunken — darker fill, inverted bevel (top/left dark,
+ * bottom/right light). Colours match vanilla Minecraft container
+ * inventories so it feels in-game. Same look in every app theme. */
+.mc-panel {
+  background: #c6c6c6;
+  border-style: solid;
+  border-width: 2px;
+  border-top-color: #fefefe;
+  border-left-color: #fefefe;
+  border-right-color: #555555;
+  border-bottom-color: #555555;
+  border-radius: 2px;
+  box-shadow:
+    inset 1px 1px 0 #ffffff,
+    inset -1px -1px 0 #8b8b8b;
+  color: #1e1e1e;
+}
+
+.mc-slot {
+  background: #8b8b8b;
+  border-style: solid;
+  border-width: 2px;
+  border-top-color: #373737;
+  border-left-color: #373737;
+  border-right-color: #ffffff;
+  border-bottom-color: #ffffff;
+  box-shadow: inset 1px 1px 0 #555555;
+  image-rendering: pixelated;
+}
+
+.mc-slot img {
+  image-rendering: pixelated;
+}
+
+.mc-arrow {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
