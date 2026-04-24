@@ -162,25 +162,6 @@ export function Landing({ labels }: { labels: Labels }) {
               Snack maker
             </Link>
           </div>
-
-          {process.env.NODE_ENV === "development" && (
-            <div className="mt-10 flex items-end gap-4 select-none pointer-events-none">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src="https://starlightskins.lunareclipse.studio/render/walking/Gaz4i/full"
-                alt="Gaz4i"
-                className="h-48 w-auto drop-shadow-sm"
-                style={{ imageRendering: "pixelated" }}
-              />
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src="https://cdn.jsdelivr.net/gh/PokeAPI/sprites@master/sprites/pokemon/285.png"
-                alt="Shroomish"
-                className="h-24 w-auto drop-shadow-sm"
-                style={{ imageRendering: "pixelated" }}
-              />
-            </div>
-          )}
         </div>
 
         <div className="shrink-0 flex flex-col items-center gap-3">
