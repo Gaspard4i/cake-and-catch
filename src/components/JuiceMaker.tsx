@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import {
   ArrowUp,
   Shield,
@@ -596,15 +597,22 @@ export function JuiceMaker() {
           <p className="mt-4 text-sm text-muted">{t("noCombo")}</p>
         ) : (
           <ul className="mt-4 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
-            {suggestions.map((s, i) => (
+            {suggestions.map((s, i) => {
+              const href = `/juice/recipe?apricorn=${s.apricorn}&berries=${encodeURIComponent(s.berrySlugs.join(","))}`;
+              return (
               <li
                 key={`${s.apricorn}-${s.berrySlugs.join(",")}`}
-                className={`rounded-xl border bg-card p-3 space-y-2 ${
+                className={`rounded-xl border bg-card transition-colors hover:border-accent/80 ${
                   i === 0
                     ? "border-accent ring-1 ring-accent/40"
                     : "border-border"
                 }`}
               >
+                <Link
+                  href={href}
+                  className="block p-3 space-y-2"
+                  aria-label={t("openRecipe", { kind: s.apricorn })}
+                >
                 <div className="flex items-center gap-2">
                   <span
                     className="size-6 rounded-full border border-border shrink-0"
@@ -680,8 +688,10 @@ export function JuiceMaker() {
                     },
                   )}
                 </ul>
+                </Link>
               </li>
-            ))}
+              );
+            })}
           </ul>
         )}
       </section>
