@@ -417,25 +417,68 @@ export function Snack3D({
   size?: number;
 }) {
   /**
-   * Gate the Canvas behind a post-mount flag. On client-side navigation the
-   * wrapping <div> may render with a 0×0 layout for a frame before Cache
-   * Components settles; R3F's ResizeObserver latches onto that zero size and
-   * never recovers, giving a blank canvas until a hard refresh. Waiting one
-   * tick guarantees Canvas mounts against a real size.
+   * Gate the Canvas behind a post-mount flag. On client-side navigation
+   * the wrapping <div> may render with a 0×0 layout for a frame before
+   * Cache Components settles; R3F's ResizeObserver latches onto that
+   * zero size and never recovers, giving a blank canvas until a hard
+   * refresh.
+   *
+   * `canvasKey` is bumped to force a full remount when:
+   *   - the WebGL context is lost (browser reclaims GPU memory after a
+   *     background tab, after navigation, etc.)
+   *   - the page becomes visible again after being hidden (some browsers
+   *     dispose contexts when backgrounded and silently restore a blank
+   *     framebuffer).
    */
   const [mounted, setMounted] = useState(false);
+  const [canvasKey, setCanvasKey] = useState(0);
+  const wrapperRef = useRef<HTMLDivElement | null>(null);
+
   useLayoutEffect(() => {
     setMounted(true);
   }, []);
+
+  useEffect(() => {
+    const onVisible = () => {
+      if (document.visibilityState === "visible") {
+        setCanvasKey((k) => k + 1);
+      }
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => document.removeEventListener("visibilitychange", onVisible);
+  }, []);
+
+  // Attach a context-lost listener to the actual WebGL canvas the first
+  // time it renders. If the GPU context is dropped we remount.
+  useEffect(() => {
+    const host = wrapperRef.current;
+    if (!host) return;
+    const canvas = host.querySelector("canvas");
+    if (!canvas) return;
+    const onLost = (e: Event) => {
+      e.preventDefault();
+      setCanvasKey((k) => k + 1);
+    };
+    canvas.addEventListener("webglcontextlost", onLost);
+    return () => canvas.removeEventListener("webglcontextlost", onLost);
+  }, [canvasKey]);
+
   return (
     <div
+      ref={wrapperRef}
       className="rounded-lg border border-border bg-subtle overflow-hidden"
       style={{ width: size, height: size }}
     >
       {mounted && (
         <Canvas
-          camera={{ position: [1.4, 1.1, 1.4], fov: 30 }}
+          key={canvasKey}
+          // Camera moved slightly higher (y 1.1 → 1.35) so the snack sits
+          // lower in the framed preview with a bit more headroom on top.
+          camera={{ position: [1.4, 1.35, 1.4], fov: 30 }}
           resize={{ scroll: false, debounce: { scroll: 0, resize: 0 } }}
+          // Preserve drawing buffer = longer retention after a tab switch
+          // on some mobile GPUs. Slight perf cost, invisible here.
+          gl={{ preserveDrawingBuffer: true, powerPreference: "default" }}
         >
           <ambientLight intensity={0.8} />
           <directionalLight position={[3, 4, 2]} intensity={1.1} />
