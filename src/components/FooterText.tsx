@@ -24,6 +24,25 @@ export function FooterText() {
       >
         {t("wikiSource")}
       </a>
+      {" · "}
+      {t("builtBy")}{" "}
+      <a
+        href="https://github.com/Gaspard4i"
+        className="underline hover:text-foreground"
+        target="_blank"
+        rel="noreferrer"
+      >
+        Gaspard4i
+      </a>
+      {" · "}
+      <a
+        href="https://github.com/Gaspard4i/snack-and-catch"
+        className="underline hover:text-foreground"
+        target="_blank"
+        rel="noreferrer"
+      >
+        source
+      </a>
       .
     </>
   );
