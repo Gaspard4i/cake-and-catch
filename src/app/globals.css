@@ -125,47 +125,57 @@ body {
   animation: floaty ease-in-out infinite;
 }
 
-/* ---------- Minecraft-style Cooking Pot GUI ---------- */
-/* Authored to mirror the Cobblemon wiki's cooking interface GIF. The
- * panel is a flat grey with outer bevel (top/left light, bottom/right
- * dark). Slots are sunken — darker fill, inverted bevel (top/left dark,
- * bottom/right light). Colours match vanilla Minecraft container
- * inventories so it feels in-game. Same look in every app theme. */
-.mc-panel {
-  background: #c6c6c6;
-  border-style: solid;
-  border-width: 2px;
-  border-top-color: #fefefe;
-  border-left-color: #fefefe;
-  border-right-color: #555555;
-  border-bottom-color: #555555;
-  border-radius: 2px;
-  box-shadow:
-    inset 1px 1px 0 #ffffff,
-    inset -1px -1px 0 #8b8b8b;
-  color: #1e1e1e;
-}
+/* ---------- Cobblemon cooking-pot interface ---------- */
+/* Copy of the wiki's `.interface.cooking-interface` styling. The GIF
+ * served from /textures/ui/cooking_interface.gif draws the slot borders.
+ * We overlay items in flexbox rows that match the slot grid exactly
+ * (8×8 tiles, upscaled 2× → 16px per tile, same as the wiki).
+ * Same look in every app theme (no theme vars used). */
 
-.mc-slot {
-  background: #8b8b8b;
-  border-style: solid;
-  border-width: 2px;
-  border-top-color: #373737;
-  border-left-color: #373737;
-  border-right-color: #ffffff;
-  border-bottom-color: #ffffff;
-  box-shadow: inset 1px 1px 0 #555555;
+.interface {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: #c6c6c6;
+  border: 2px solid;
+  border-color: #ffffff #555555 #555555 #ffffff;
+  outline: 2px solid #000000;
+  padding: 8px;
+  image-rendering: pixelated;
+  position: relative;
+}
+.interface * {
   image-rendering: pixelated;
 }
 
-.mc-slot img {
-  image-rendering: pixelated;
+.cooking-interface {
+  width: 320px;
+  height: 146px;
+  background-image: url(/textures/ui/cooking_interface.gif);
+  background-repeat: no-repeat;
+  background-position: 14px 14px;
 }
 
-.mc-arrow {
-  width: 28px;
-  height: 28px;
+/* Slot grid is part of the background GIF (250×118 px); we overlay the
+ * item icons at absolute coordinates measured off the GIF. Each slot is
+ * 18×18 in the GIF (stride = 18, first slot's inner padding = 1 px).
+ * With background-position = 14px 14px inside the 8px-padded panel, the
+ * first slot's top-left at the PANEL coordinate system is (22, 22). */
+
+.cooking-interface {
+  position: relative;
+}
+
+.cooking-slot {
+  position: absolute;
+  width: 16px;
+  height: 16px;
   display: flex;
   align-items: center;
   justify-content: center;
+}
+.cooking-slot img {
+  width: 16px;
+  height: 16px;
+  image-rendering: pixelated;
 }

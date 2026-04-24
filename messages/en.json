@@ -182,6 +182,7 @@
     "howtoStep4NoSeasoning": "Leave the side seasoning slots empty — this recipe uses no berries.",
     "howtoStep5": "Right-click the pot with a Glass Bottle to collect the finished aprijuice.",
     "apricornColour": "{kind}",
+    "qualityLabel": "Quality",
     "topCombos": "Top combinations",
     "pickStat": "Pick at least one stat above.",
     "noCombo": "No combination scores positive. Try fewer stats.",

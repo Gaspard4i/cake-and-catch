@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
-import { ArrowLeft, ArrowRight } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { listBerries } from "@/lib/db/queries";
 import { ItemIcon } from "@/components/ItemIcon";
 import type { Apricorn, Flavour } from "@/lib/recommend/aprijuice";
@@ -23,15 +23,21 @@ const APRICORN_ITEM: Record<Apricorn, string> = {
   WHITE: "cobblemon:white_apricorn",
 };
 
-const APRICORN_JUICE_ITEM: Record<Apricorn, string> = {
-  RED: "cobblemon:red_aprijuice",
-  YELLOW: "cobblemon:yellow_aprijuice",
-  GREEN: "cobblemon:green_aprijuice",
-  BLUE: "cobblemon:blue_aprijuice",
-  PINK: "cobblemon:pink_aprijuice",
-  BLACK: "cobblemon:black_aprijuice",
-  WHITE: "cobblemon:white_aprijuice",
-};
+/**
+ * Aprijuice visual quality tier. Per the wiki:
+ *   <4 boost points → Plain
+ *   4-7             → Tasty
+ *   8+              → Delicious
+ * Sprites live in /textures/aprijuice/<tier>_<colour>_aprijuice.png.
+ */
+function juiceTier(totalPositive: number): "plain" | "tasty" | "delicious" {
+  if (totalPositive >= 8) return "delicious";
+  if (totalPositive >= 4) return "tasty";
+  return "plain";
+}
+function aprijuiceSpriteSrc(apricorn: Apricorn, tier: "plain" | "tasty" | "delicious"): string {
+  return `/textures/aprijuice/${tier}_${apricorn.toLowerCase()}_aprijuice.png`;
+}
 
 const APRICORNS: Apricorn[] = [
   "RED",
@@ -92,6 +98,15 @@ export default async function JuiceRecipePage({
     })),
   });
 
+  // Quality tier (Plain / Tasty / Delicious) = sum of positive stat
+  // boosts from the produced juice.
+  const totalPositive = (Object.values(result.statBoosts) as number[]).reduce(
+    (s, v) => s + (v > 0 ? v : 0),
+    0,
+  );
+  const tier = juiceTier(totalPositive);
+  const juiceSprite = aprijuiceSpriteSrc(apricorn, tier);
+
   // Shopping list: dedup ingredients with counts.
   const counts = new Map<string, { itemId: string; slug: string; count: number }>();
   for (const b of berries) {
@@ -120,54 +135,40 @@ export default async function JuiceRecipePage({
         <p className="mt-2 text-sm text-muted">{t("recipeIntro")}</p>
       </header>
 
-      {/* Minecraft-style Cooking Pot interface: 3×3 crafting grid + arrow
-          + result slot, with 3 seasoning slots stacked on the right.
-          Matches the wiki GIF — beveled grey panel with sunken slots. */}
+      {/* Cobblemon cooking-pot interface — 1:1 copy of the wiki layout.
+          The GIF at /textures/ui/cooking_interface.gif draws every slot
+          border; our job is to overlay the right items in the right
+          positions using the same .interface .cooking-interface classes
+          as the wiki. */}
       <section className="rounded-xl border border-border bg-card p-4 sm:p-6">
         <h2 className="text-sm font-medium uppercase tracking-wide text-muted mb-3">
           {t("craftingInterface")}
         </h2>
         <div className="flex justify-center">
-          <div className="mc-panel inline-flex items-center gap-4 p-3">
-            {/* 3×3 ingredient grid */}
-            <div className="grid grid-cols-3 gap-1">
-              {[
-                APRICORN_ITEM[apricorn],
-                "cobblemon:pep_up_flower",
-                "cobblemon:energy_root",
-                null, null, null,
-                null, null, null,
-              ].map((id, i) => (
-                <Slot key={i} title={id ?? ""}>
-                  {id && <ItemIcon id={id} size={30} />}
-                </Slot>
-              ))}
-            </div>
+          <CookingInterface
+            apricornItem={APRICORN_ITEM[apricorn]}
+            berries={berries}
+            juiceSprite={juiceSprite}
+            tier={tier}
+          />
+        </div>
 
-            <div className="mc-arrow" aria-hidden>
-              <ArrowRight className="h-6 w-6 text-black/70" />
-            </div>
-
-            {/* Result slot */}
-            <Slot large title={APRICORN_JUICE_ITEM[apricorn]}>
-              <ItemIcon id={APRICORN_JUICE_ITEM[apricorn]} size={38} />
-            </Slot>
-
-            {/* Vertical seasoning column (side of the pot) */}
-            <div className="flex flex-col gap-1 ml-2 pl-3 border-l-2 border-[rgba(0,0,0,0.15)]">
-              <div className="text-[8px] uppercase tracking-wider text-black/60 text-center font-mono">
-                {t("seasoningSlots")}
-              </div>
-              {Array.from({ length: 3 }).map((_, i) => {
-                const b = berries[i];
-                return (
-                  <Slot key={i} title={b?.slug ?? ""}>
-                    {b && <ItemIcon id={b.itemId} size={30} />}
-                  </Slot>
-                );
-              })}
-            </div>
-          </div>
+        {/* Tier label below the panel so the user knows what quality
+            comes out of this recipe. */}
+        <div className="mt-3 text-center text-xs">
+          <span className="text-muted">{t("qualityLabel")}: </span>
+          <span
+            className={`font-mono uppercase tracking-wide ${
+              tier === "delicious"
+                ? "text-amber-600 dark:text-amber-400"
+                : tier === "tasty"
+                  ? "text-emerald-600 dark:text-emerald-400"
+                  : "text-muted"
+            }`}
+          >
+            {tier}
+          </span>
+          <span className="text-muted"> · {totalPositive} pts</span>
         </div>
       </section>
 
@@ -226,27 +227,93 @@ export default async function JuiceRecipePage({
 }
 
 /**
- * Minecraft-style inventory slot: sunken square with beveled borders
- * (top-left dark, bottom-right light), dark inner background. Size is
- * 40px by default, 48px when `large`. Matches the wiki's Cooking Pot GUI.
+ * Overlay of item icons on top of the cooking-interface GIF background.
+ *
+ * Coordinate system is the outer panel (the `.interface.cooking-interface`
+ * box), top-left = (0,0). Measurements relative to the Cobblemon wiki GIF:
+ *   - Panel: 320×146, border 2, padding 8 → content box starts at (10,10)
+ *   - GIF rendered at background-position 14,14 inside padding box →
+ *     GIF top-left at panel coord (10+14, 10+14) = (24, 24)
+ *   - Each slot in the GIF is 18×18, with a 1 px inner padding, so a
+ *     16×16 icon sits at slot-corner + (1, 1)
+ *   - Left 3×3 grid starts at GIF (4, 4) → panel (28, 28) stride 18
+ *   - Seasoning column: 3 slots stacked at GIF (x, 4), (x, 22), (x, 40)
+ *     where x ≈ 148 → panel 172
+ *   - Result slot (aprijuice): GIF (x, 22) where x ≈ 216 → panel 240
  */
-function Slot({
-  children,
-  title,
-  large = false,
+type BerryRow = { slug: string; itemId: string };
+
+function CookingInterface({
+  apricornItem,
+  berries,
+  juiceSprite,
+  tier,
 }: {
-  children?: React.ReactNode;
-  title?: string;
-  large?: boolean;
+  apricornItem: string;
+  berries: BerryRow[];
+  juiceSprite: string;
+  tier: "plain" | "tasty" | "delicious";
 }) {
-  const dim = large ? 48 : 40;
+  // Left 3×3 grid: only the top row is used by the aprijuice recipe.
+  const gridX = 28;
+  const gridY = 28;
+  // Seasoning column (3 vertical slots).
+  const seasoningX = 172;
+  const seasoningY = 28;
+  // Result slot (finished aprijuice).
+  const resultX = 240;
+  const resultY = 46;
+
   return (
-    <div
-      title={title}
-      className="mc-slot flex items-center justify-center shrink-0"
-      style={{ width: dim, height: dim }}
-    >
-      {children}
+    <div className="interface cooking-interface">
+      {/* Left 3×3 grid, top row populated. */}
+      <div
+        className="cooking-slot"
+        style={{ left: gridX, top: gridY }}
+        title={apricornItem}
+      >
+        <ItemIcon id={apricornItem} size={16} />
+      </div>
+      <div
+        className="cooking-slot"
+        style={{ left: gridX + 18, top: gridY }}
+        title="cobblemon:pep_up_flower"
+      >
+        <ItemIcon id="cobblemon:pep_up_flower" size={16} />
+      </div>
+      <div
+        className="cooking-slot"
+        style={{ left: gridX + 36, top: gridY }}
+        title="cobblemon:energy_root"
+      >
+        <ItemIcon id="cobblemon:energy_root" size={16} />
+      </div>
+
+      {/* Seasoning column. */}
+      {Array.from({ length: 3 }).map((_, i) => {
+        const b = berries[i];
+        return (
+          <div
+            key={i}
+            className="cooking-slot"
+            style={{ left: seasoningX, top: seasoningY + i * 18 }}
+            title={b?.slug ?? ""}
+          >
+            {b && <ItemIcon id={b.itemId} size={16} />}
+          </div>
+        );
+      })}
+
+      {/* Result slot. */}
+      <div
+        className="cooking-slot"
+        style={{ left: resultX, top: resultY }}
+        title={`${tier} aprijuice`}
+      >
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={juiceSprite} alt={`${tier} aprijuice`} />
+      </div>
     </div>
   );
 }
+
