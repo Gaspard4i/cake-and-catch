@@ -274,10 +274,22 @@ function BerryOnTop({
   let ryDeg = 0;
   let rzDeg = 0;
 
+  // Minecraft ModelPart coords: y grows downward, so the mod's
+  // pokeSnackPositionings.y is "pixels below the block top". Our
+  // Three.js scene has y up with the snack base at y=0, so:
+  //   world_y = (16 - pos.y) / 16
+  // Same for the geometry itself — cubes with negative y in the
+  // .geo.json (e.g. oran has cubes at y ∈ [-2.75, -0.5]) should render
+  // ABOVE the pivot, not below. We flip the mesh on Y (scale y = -1/16).
+  // Flipping Y inverts winding, so we also flip the material's side to
+  // DoubleSide (already the case) and force normals recompute in the
+  // geometry path.
+  const yFromMod = (y: number) => (16 - y) / 16;
+
   if (base) {
     if (totalCount === 1) {
       px = 8 / 16 - 0.5; // = 0
-      py = base.position.y / 16;
+      py = yFromMod(base.position.y);
       pz = 8 / 16 - 0.5; // = 0
       rxDeg = 180;
       ryDeg = 0;
@@ -285,17 +297,16 @@ function BerryOnTop({
     } else if (totalCount === 2) {
       const p = base;
       px = p.position.x / 16 - 0.5;
-      py = p.position.y / 16;
+      py = yFromMod(p.position.y);
       pz =
         (index === 0 ? p.position.z : 16 - p.position.z) / 16 - 0.5;
       rxDeg = index === 0 ? p.rotation.x : 360 - p.rotation.x;
       ryDeg = p.rotation.y;
       rzDeg = p.rotation.z;
     } else {
-      // 3 or more → 1-to-1 indexing, clamped on the last entry
       const p = positionings[Math.min(index, positionings.length - 1)] ?? base;
       px = p.position.x / 16 - 0.5;
-      py = p.position.y / 16;
+      py = yFromMod(p.position.y);
       pz = p.position.z / 16 - 0.5;
       rxDeg = p.rotation.x;
       ryDeg = p.rotation.y;
@@ -303,25 +314,21 @@ function BerryOnTop({
     }
   }
 
-  // Our snack mesh sits in the y range [0, 7/16] (base at y=0). The mod
-  // uses the block's absolute y (0..16 pixels). So a positioning y=9.45
-  // lands at 9.45/16 ≈ 0.59 world units — already above the top face.
-  // Note: SnackMesh translates its cube up by H/2 to put the base at y=0,
-  // so no extra offset is needed here.
-
   const rx = THREE.MathUtils.degToRad(rxDeg);
   const ry = THREE.MathUtils.degToRad(ryDeg);
   const rz = THREE.MathUtils.degToRad(rzDeg);
 
   if (geometry) {
-    // The .geo.json cubes are in pixel units; scaling the mesh by 1/16
-    // converts them to block units so 1 pixel = 1/16 world unit.
+    // Scale 1/16 on X/Z converts pixel units to block units. Y is
+    // negated to flip the Minecraft model y-axis into Three.js y-up.
+    // DoubleSide material on the berry (see `material` construction
+    // above) masks the inverted winding that the negative scale causes.
     return (
       <group position={[px, py, pz]} rotation={[rx, ry, rz]}>
         <mesh
           geometry={geometry}
           material={material}
-          scale={[1 / 16, 1 / 16, 1 / 16]}
+          scale={[1 / 16, -1 / 16, 1 / 16]}
         />
       </group>
     );
