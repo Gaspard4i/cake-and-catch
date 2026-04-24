@@ -148,6 +148,22 @@ export function Landing({ labels }: { labels: Labels }) {
             <HomeSearch />
           </div>
 
+          {/* Dev-only: author's Minecraft skin chilling under the search bar. */}
+          {process.env.NODE_ENV === "development" && (
+            <div className="mt-6 flex items-center gap-3">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="https://starlightskins.lunareclipse.studio/render/relaxing/Gaz4i/full"
+                alt="Gaz4i resting"
+                className="h-24 w-auto pixel"
+                style={{ imageRendering: "pixelated" }}
+              />
+              <span className="text-[10px] uppercase tracking-widest text-muted">
+                dev mode · Gaz4i zzz
+              </span>
+            </div>
+          )}
+
           <div className="mt-6 flex flex-wrap gap-3">
             <Link
               href="/pokedex"
