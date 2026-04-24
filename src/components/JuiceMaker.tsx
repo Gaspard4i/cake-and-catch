@@ -83,7 +83,12 @@ export function JuiceMaker() {
   const [result, setResult] = useState<JuiceResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [mode, setMode] = useState<"cook" | "suggest">("cook");
-  const [targetStats, setTargetStats] = useState<Set<RidingStat>>(new Set());
+  /**
+   * Ordered priority list of ride stats the user cares about. A stat earlier
+   * in the list weighs more than a later one (rank 1 = most important,
+   * rank 5 = least important). Not listed = not wanted at all.
+   */
+  const [targetOrder, setTargetOrder] = useState<RidingStat[]>([]);
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [suggestLoading, setSuggestLoading] = useState(false);
 
@@ -119,11 +124,23 @@ export function JuiceMaker() {
     };
   }, [apricorn, slugs]);
 
-  // Reverse solver: whenever the target stat set changes in suggest mode,
-  // fetch the top combos from the server.
+  /**
+   * Convert the ranked list into continuous weights the scorer understands.
+   * Rank 1 → 5, rank 2 → 4, … rank 5 → 1. An unranked stat stays at 0.
+   */
+  const targetWeights = useMemo(() => {
+    const w: Partial<Record<RidingStat, number>> = {};
+    targetOrder.forEach((stat, i) => {
+      w[stat] = targetOrder.length - i;
+    });
+    return w;
+  }, [targetOrder]);
+
+  // Reverse solver: whenever the ranking changes in suggest mode, fetch the
+  // top combos from the server.
   useEffect(() => {
     if (mode !== "suggest") return;
-    if (targetStats.size === 0) {
+    if (targetOrder.length === 0) {
       setSuggestions([]);
       return;
     }
@@ -134,7 +151,7 @@ export function JuiceMaker() {
         const res = await fetch("/api/juice/suggest", {
           method: "POST",
           headers: { "content-type": "application/json" },
-          body: JSON.stringify({ stats: [...targetStats], limit: 6 }),
+          body: JSON.stringify({ weights: targetWeights, limit: 6 }),
           signal: ctrl.signal,
         });
         const data = (await res.json()) as { suggestions: Suggestion[] };
@@ -149,13 +166,21 @@ export function JuiceMaker() {
       clearTimeout(timer);
       ctrl.abort();
     };
-  }, [mode, targetStats]);
+  }, [mode, targetOrder, targetWeights]);
 
   const toggleTargetStat = (s: RidingStat) =>
-    setTargetStats((prev) => {
-      const next = new Set(prev);
-      if (next.has(s)) next.delete(s);
-      else next.add(s);
+    setTargetOrder((prev) =>
+      prev.includes(s) ? prev.filter((x) => x !== s) : [...prev, s],
+    );
+
+  const moveTargetStat = (s: RidingStat, delta: -1 | 1) =>
+    setTargetOrder((prev) => {
+      const i = prev.indexOf(s);
+      if (i === -1) return prev;
+      const j = i + delta;
+      if (j < 0 || j >= prev.length) return prev;
+      const next = prev.slice();
+      [next[i], next[j]] = [next[j], next[i]];
       return next;
     });
 
@@ -252,27 +277,72 @@ export function JuiceMaker() {
         <section className="space-y-4">
           <div>
             <h3 className="text-sm font-medium uppercase tracking-wide text-muted">
-              Which ride stats do you want to boost?
+              Rank ride stats by priority
             </h3>
             <p className="mt-1 text-xs text-muted">
-              Pick one or several. We&apos;ll rank apricorn + berry combos that
-              push those stats the most, respecting the Cobblemon 3-seasoning
-              cap and the flavour → stat mapping.
+              Click a stat to add it to your priority list. Use the arrows to
+              reorder — rank 1 weighs the most, rank 5 the least. Unranked
+              stats are ignored by the solver.
             </p>
+
+            {targetOrder.length > 0 && (
+              <ol className="mt-3 space-y-1">
+                {targetOrder.map((s, i) => {
+                  const Icon = STAT_ICON[s];
+                  return (
+                    <li
+                      key={s}
+                      className="flex items-center gap-2 rounded-lg border border-accent bg-accent/5 px-2 py-1.5"
+                    >
+                      <span className="size-6 rounded-full bg-accent text-accent-foreground text-[10px] font-mono font-bold flex items-center justify-center shrink-0">
+                        {i + 1}
+                      </span>
+                      <Icon className={`h-4 w-4 ${STAT_TONE[s]} shrink-0`} />
+                      <span className="text-xs uppercase tracking-wide flex-1">
+                        {s.toLowerCase()}
+                      </span>
+                      <span className="text-[10px] font-mono text-muted tabular-nums">
+                        ×{targetOrder.length - i}
+                      </span>
+                      <button
+                        onClick={() => moveTargetStat(s, -1)}
+                        disabled={i === 0}
+                        aria-label="Move up"
+                        className="size-6 rounded border border-border bg-card text-muted hover:text-foreground disabled:opacity-30"
+                      >
+                        ↑
+                      </button>
+                      <button
+                        onClick={() => moveTargetStat(s, 1)}
+                        disabled={i === targetOrder.length - 1}
+                        aria-label="Move down"
+                        className="size-6 rounded border border-border bg-card text-muted hover:text-foreground disabled:opacity-30"
+                      >
+                        ↓
+                      </button>
+                      <button
+                        onClick={() => toggleTargetStat(s)}
+                        aria-label="Remove"
+                        className="size-6 rounded border border-border bg-card text-muted hover:text-red-500"
+                      >
+                        <X className="h-3 w-3 mx-auto" />
+                      </button>
+                    </li>
+                  );
+                })}
+              </ol>
+            )}
+
             <div className="mt-3 flex flex-wrap gap-2">
-              {(["ACCELERATION", "SKILL", "SPEED", "STAMINA", "JUMP"] as RidingStat[]).map(
-                (s) => {
-                  const active = targetStats.has(s);
+              {(["ACCELERATION", "SKILL", "SPEED", "STAMINA", "JUMP"] as RidingStat[])
+                .filter((s) => !targetOrder.includes(s))
+                .map((s) => {
                   const Icon = STAT_ICON[s];
                   return (
                     <button
                       key={s}
                       onClick={() => toggleTargetStat(s)}
-                      className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs transition-colors ${
-                        active
-                          ? "border-accent bg-accent/10"
-                          : "border-border bg-card text-muted hover:text-foreground"
-                      }`}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border bg-card text-muted hover:text-foreground text-xs transition-colors"
                     >
                       <Icon className={`h-3.5 w-3.5 ${STAT_TONE[s]}`} />
                       <span className="uppercase tracking-wide">
@@ -280,11 +350,10 @@ export function JuiceMaker() {
                       </span>
                     </button>
                   );
-                },
-              )}
-              {targetStats.size > 0 && (
+                })}
+              {targetOrder.length > 0 && (
                 <button
-                  onClick={() => setTargetStats(new Set())}
+                  onClick={() => setTargetOrder([])}
                   className="text-xs px-2 py-1 rounded-md border border-border text-muted hover:text-foreground"
                 >
                   Clear
@@ -297,7 +366,7 @@ export function JuiceMaker() {
             <h3 className="text-sm font-medium uppercase tracking-wide text-muted">
               Top combinations {suggestLoading && <Spinner className="ml-2" />}
             </h3>
-            {targetStats.size === 0 ? (
+            {targetOrder.length === 0 ? (
               <p className="mt-3 text-sm text-muted">
                 Pick at least one stat above.
               </p>
