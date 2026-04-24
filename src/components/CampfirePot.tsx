@@ -135,6 +135,50 @@ type SlotState = [Seasoning | null, Seasoning | null, Seasoning | null];
 
 type BiomeApiEntry = { value: string; label: string; namespace: string };
 
+/**
+ * Poké Snack base recipe preview (3x3 grid of required non-seasoning
+ * ingredients). Extracted so the snack page can mount it in the top-right
+ * of the hero header, next to the title, rather than inside the cooking pot
+ * column. Alternates between Cobblemon moomoo milk and vanilla milk buckets
+ * on an interval to make the preview a little more lively.
+ */
+export function SnackBaseRecipe({ size = 48 }: { size?: number }) {
+  const [useVanillaMilk, setUseVanillaMilk] = useState(false);
+  useEffect(() => {
+    const id = window.setInterval(() => setUseVanillaMilk((v) => !v), 2500);
+    return () => window.clearInterval(id);
+  }, []);
+  const milkId = useVanillaMilk ? "minecraft:milk_bucket" : "cobblemon:moomoo_milk";
+  const ids = [
+    milkId,
+    milkId,
+    milkId,
+    "minecraft:honey_bottle",
+    "cobblemon:vivichoke",
+    "minecraft:honey_bottle",
+    "cobblemon:hearty_grains",
+    "cobblemon:hearty_grains",
+    "cobblemon:hearty_grains",
+  ];
+  return (
+    <div className="inline-flex flex-col items-center gap-1">
+      <div className="grid grid-cols-3 gap-1 p-2 rounded-lg bg-subtle border border-border">
+        {ids.map((id, i) => (
+          <div
+            key={i}
+            className="rounded bg-card border border-border flex items-center justify-center"
+            style={{ width: size, height: size }}
+            title={id}
+          >
+            <ItemIcon id={id} size={Math.round(size * 0.7)} />
+          </div>
+        ))}
+      </div>
+      <div className="text-[10px] text-muted uppercase">Poké Snack base recipe</div>
+    </div>
+  );
+}
+
 export function CampfirePot() {
   const [seasonings, setSeasonings] = useState<Seasoning[]>([]);
   const [slots, setSlots] = useState<SlotState>([null, null, null]);
@@ -410,41 +454,7 @@ export function CampfirePot() {
         <div>
           <h3 className="text-sm font-medium uppercase tracking-wide text-muted">Cooking Pot</h3>
           <div className="mt-3 inline-flex flex-col items-center gap-3 p-4 rounded-xl border border-border bg-card">
-            <div className="flex gap-2">
-              {slots.map((slot, idx) => (
-                <div
-                  key={idx}
-                  onDragOver={(e) => e.preventDefault()}
-                  onDrop={(e) => {
-                    e.preventDefault();
-                    const slug = e.dataTransfer.getData("text/seasoning");
-                    const s = seasonings.find((x) => x.slug === slug);
-                    if (s && s.snackValid) setSlot(idx, s);
-                  }}
-                  onClick={() => setSlot(idx, null)}
-                  title={slot ? `Remove ${slot.slug}` : "Drop a bait seasoning here"}
-                  className={`size-20 rounded-lg border-2 flex items-center justify-center cursor-pointer transition-colors ${
-                    slot
-                      ? "border-accent bg-subtle"
-                      : "border-dashed border-border bg-subtle/50 hover:bg-subtle"
-                  }`}
-                  style={
-                    slot?.colour
-                      ? { boxShadow: `0 0 0 2px ${slot.colour.toLowerCase()}33 inset` }
-                      : undefined
-                  }
-                >
-                  {slot ? (
-                    <ItemIcon id={slot.itemId} size={56} />
-                  ) : (
-                    <span className="text-[9px] text-muted uppercase">S{idx + 1}</span>
-                  )}
-                </div>
-              ))}
-            </div>
-            <div className="text-[10px] text-muted uppercase">3 seasoning slots</div>
-
-            <div className="flex items-center gap-1 pt-1">
+            <div className="flex items-center gap-1">
               {POT_COLOURS.map((c) => (
                 <button
                   key={c.slug ?? "default"}
@@ -466,7 +476,7 @@ export function CampfirePot() {
               flavour={dominant}
               berries={snackBerries}
               potColour={potColour.hex}
-              size={200}
+              size={220}
             />
 
             <div className="flex items-center gap-2 text-xs text-muted">
@@ -483,28 +493,39 @@ export function CampfirePot() {
               )}
             </div>
 
-            <div className="mt-2 grid grid-cols-3 gap-1 p-2 rounded-lg bg-subtle">
-              {[
-                "cobblemon:moomoo_milk",
-                "cobblemon:moomoo_milk",
-                "cobblemon:moomoo_milk",
-                "minecraft:honey_bottle",
-                "cobblemon:vivichoke",
-                "minecraft:honey_bottle",
-                "cobblemon:hearty_grains",
-                "cobblemon:hearty_grains",
-                "cobblemon:hearty_grains",
-              ].map((id, i) => (
+            <div className="flex gap-2 mt-1">
+              {slots.map((slot, idx) => (
                 <div
-                  key={i}
-                  className="size-10 rounded bg-card border border-border flex items-center justify-center"
-                  title={id}
+                  key={idx}
+                  onDragOver={(e) => e.preventDefault()}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    const slug = e.dataTransfer.getData("text/seasoning");
+                    const s = seasonings.find((x) => x.slug === slug);
+                    if (s && s.snackValid) setSlot(idx, s);
+                  }}
+                  onClick={() => setSlot(idx, null)}
+                  title={slot ? `Remove ${slot.slug}` : "Drop a bait seasoning here"}
+                  className={`size-16 rounded-lg border-2 flex items-center justify-center cursor-pointer transition-colors ${
+                    slot
+                      ? "border-accent bg-subtle"
+                      : "border-dashed border-border bg-subtle/50 hover:bg-subtle"
+                  }`}
+                  style={
+                    slot?.colour
+                      ? { boxShadow: `0 0 0 2px ${slot.colour.toLowerCase()}33 inset` }
+                      : undefined
+                  }
                 >
-                  <ItemIcon id={id} size={28} />
+                  {slot ? (
+                    <ItemIcon id={slot.itemId} size={48} />
+                  ) : (
+                    <span className="text-[9px] text-muted uppercase">S{idx + 1}</span>
+                  )}
                 </div>
               ))}
             </div>
-            <div className="text-[10px] text-muted uppercase">Poké Snack base recipe</div>
+            <div className="text-[10px] text-muted uppercase">3 seasoning slots</div>
           </div>
         </div>
       </aside>
