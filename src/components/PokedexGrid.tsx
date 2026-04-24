@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Star } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { Spinner, TopProgress, PokedexCardSkeleton } from "./Loader";
 import { PokemonSprite } from "./PokemonSprite";
 import { TypePair } from "./TypeBadge";
@@ -78,6 +79,8 @@ function StatBar({
 }
 
 export function PokedexGrid() {
+  const t = useTranslations("pokedexUi");
+  const tc = useTranslations("common");
   const [results, setResults] = useState<Species[]>([]);
   const [cursor, setCursor] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -219,48 +222,48 @@ export function PokedexGrid() {
             type="search"
             value={q}
             onChange={(e) => setQ(e.target.value)}
-            placeholder="Search Pokémon by name…"
+            placeholder={t("searchPlaceholder")}
             className="flex-1 min-w-48 rounded-lg border border-border bg-card px-4 py-2 outline-none focus:border-accent"
           />
           <MultiSelect
-            label="Types"
+            label={t("types")}
             options={TYPE_OPTIONS}
             value={types}
             onChange={setTypes}
-            placeholder="Any type"
+            placeholder={t("typesAny")}
             maxSelection={2}
           />
           <MultiSelect
-            label="Gens"
+            label={t("gens")}
             options={GEN_OPTIONS}
             value={gens}
             onChange={setGens}
-            placeholder="All gens"
+            placeholder={t("gensAny")}
             searchable={false}
           />
           <MultiSelect
-            label="Tag"
+            label={t("tag")}
             options={LABEL_OPTIONS}
             value={labels}
             onChange={setLabels}
-            placeholder="Any"
+            placeholder={t("tagAny")}
             searchable={false}
           />
           <label className="text-xs inline-flex items-center gap-1 text-muted">
-            <span className="text-[10px] uppercase tracking-wide">Sort</span>
+            <span className="text-[10px] uppercase tracking-wide">{tc("sort")}</span>
             <select
               value={sort}
               onChange={(e) => setSort(e.target.value as SortKey)}
               className="rounded-md border border-border bg-card px-2 py-1 text-xs"
             >
-              <option value="dex">Dex number (asc)</option>
-              <option value="dex_desc">Dex number (desc)</option>
-              <option value="name">Name (A→Z)</option>
-              <option value="name_desc">Name (Z→A)</option>
-              <option value="hp">HP (desc)</option>
-              <option value="attack">Attack (desc)</option>
-              <option value="speed">Speed (desc)</option>
-              <option value="total">Total base stats (desc)</option>
+              <option value="dex">{t("sortDex")}</option>
+              <option value="dex_desc">{t("sortDexDesc")}</option>
+              <option value="name">{t("sortName")}</option>
+              <option value="name_desc">{t("sortNameDesc")}</option>
+              <option value="hp">{t("sortHp")}</option>
+              <option value="attack">{t("sortAttack")}</option>
+              <option value="speed">{t("sortSpeed")}</option>
+              <option value="total">{t("sortTotal")}</option>
             </select>
           </label>
           <button
@@ -271,20 +274,20 @@ export function PokedexGrid() {
                 ? "border-amber-400 bg-amber-400/10 text-amber-600 dark:text-amber-400"
                 : "border-border text-muted hover:text-foreground"
             }`}
-            title="Toggle shiny sprites"
+            title={t("shinyTitle")}
           >
             <Star
               className={`h-3.5 w-3.5 ${shiny ? "text-amber-500 fill-amber-500" : ""}`}
               aria-hidden
             />
-            <span className="text-[10px] uppercase tracking-wide">Shiny</span>
+            <span className="text-[10px] uppercase tracking-wide">{t("shiny")}</span>
           </button>
           {(q || types.length > 0 || gens.length > 0 || labels.length > 0) && (
             <button
               onClick={clearAll}
               className="text-xs px-2 py-1 rounded-md border border-border text-muted hover:text-foreground"
             >
-              Clear all
+              {tc("clearAll")}
             </button>
           )}
           {loading && <Spinner label="loading" />}
@@ -342,8 +345,8 @@ export function PokedexGrid() {
                   <StatBar label="spe" value={s.baseStats.speed ?? 0} />
                 </div>
                 <div className="mt-2 flex items-center justify-between text-[10px] text-muted">
-                  <span>Total · <span className="font-mono text-foreground">{total}</span></span>
-                  <span>Catch · <span className="font-mono text-foreground">{s.catchRate}</span></span>
+                  <span>{t("total")} · <span className="font-mono text-foreground">{total}</span></span>
+                  <span>{t("catch")} · <span className="font-mono text-foreground">{s.catchRate}</span></span>
                 </div>
               </Link>
             </li>
@@ -352,7 +355,11 @@ export function PokedexGrid() {
       </ul>
 
       <div ref={sentinel} className="h-20 flex items-center justify-center text-xs text-muted">
-        {loading ? <Spinner label="loading" /> : done ? `${results.length} species` : ""}
+        {loading
+          ? <Spinner label={tc("loading")} />
+          : done
+            ? t("speciesCount", { count: results.length })
+            : ""}
       </div>
     </>
   );

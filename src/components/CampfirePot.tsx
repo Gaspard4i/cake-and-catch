@@ -3,6 +3,7 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { Star } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { Spinner, TopProgress, AttractedCardSkeleton, Skeleton } from "./Loader";
 import { ItemIcon } from "./ItemIcon";
 import { PokemonSprite } from "./PokemonSprite";
@@ -143,6 +144,7 @@ type BiomeApiEntry = { value: string; label: string; namespace: string };
  * on an interval to make the preview a little more lively.
  */
 export function SnackBaseRecipe({ size = 48 }: { size?: number }) {
+  const t = useTranslations("snack");
   const [useVanillaMilk, setUseVanillaMilk] = useState(false);
   useEffect(() => {
     const id = window.setInterval(() => setUseVanillaMilk((v) => !v), 2500);
@@ -174,12 +176,14 @@ export function SnackBaseRecipe({ size = 48 }: { size?: number }) {
           </div>
         ))}
       </div>
-      <div className="text-[10px] text-muted uppercase">Poké Snack base recipe</div>
+      <div className="text-[10px] text-muted uppercase">{t("baseRecipe")}</div>
     </div>
   );
 }
 
 export function CampfirePot() {
+  const t = useTranslations("snack");
+  const tc = useTranslations("common");
   const [seasonings, setSeasonings] = useState<Seasoning[]>([]);
   const [slots, setSlots] = useState<SlotState>([null, null, null]);
   const [biomes, setBiomes] = useState<string[]>([]);
@@ -452,7 +456,7 @@ export function CampfirePot() {
     <div className="grid gap-8 lg:grid-cols-[auto_1fr]">
       <aside className="space-y-6">
         <div>
-          <h3 className="text-sm font-medium uppercase tracking-wide text-muted">Cooking Pot</h3>
+          <h3 className="text-sm font-medium uppercase tracking-wide text-muted">{t("cookingPot")}</h3>
           <div className="mt-3 inline-flex flex-col items-center gap-3 p-4 rounded-xl border border-border bg-card">
             <div className="flex items-center gap-1">
               {POT_COLOURS.map((c) => (
@@ -470,7 +474,7 @@ export function CampfirePot() {
                 />
               ))}
             </div>
-            <div className="text-[10px] text-muted uppercase">Pot: {potColour.label}</div>
+            <div className="text-[10px] text-muted uppercase">{t("potDefault", { name: potColour.label })}</div>
 
             <Snack3D
               flavour={dominant}
@@ -480,7 +484,7 @@ export function CampfirePot() {
             />
 
             <div className="flex items-center gap-2 text-xs text-muted">
-              <span>Dominant:</span>
+              <span>{t("dominant")}</span>
               {dominant ? (
                 <span
                   className="px-2 py-0.5 rounded-full font-mono text-[10px] uppercase text-foreground"
@@ -525,7 +529,7 @@ export function CampfirePot() {
                 </div>
               ))}
             </div>
-            <div className="text-[10px] text-muted uppercase">3 seasoning slots</div>
+            <div className="text-[10px] text-muted uppercase">{t("seasoningSlotsCount", { count: 3 })}</div>
           </div>
         </div>
       </aside>
@@ -533,14 +537,14 @@ export function CampfirePot() {
       <div className="space-y-6">
         <div>
           <h3 className="text-sm font-medium uppercase tracking-wide text-muted">
-            Pantry — bait seasonings
+            {t("pantry")}
           </h3>
 
           <div className="mt-2 flex flex-wrap items-center gap-2">
             <input
               value={filterQuery}
               onChange={(e) => setFilterQuery(e.target.value)}
-              placeholder="Filter seasonings…"
+              placeholder={t("filterSeasonings")}
               className="w-full sm:w-52 rounded-md border border-border bg-card px-3 py-1.5 text-sm outline-none focus:border-accent"
             />
             <div className="flex gap-1">
@@ -565,7 +569,7 @@ export function CampfirePot() {
                 onChange={(e) => setValidOnly(e.target.checked)}
                 className="accent-accent"
               />
-              Bait-valid only
+              {t("baitValidOnly")}
             </label>
             <div className="flex flex-wrap gap-1">
               {FLAVOURS.map((f) => {
@@ -611,7 +615,7 @@ export function CampfirePot() {
                 ))}
               </div>
             ) : grouped.length === 0 ? (
-              <p className="text-xs text-muted p-3">No seasoning matches these filters.</p>
+              <p className="text-xs text-muted p-3">{t("noSeasoningMatch")}</p>
             ) : null}
             {grouped.map(([category, items]) => (
               <div key={category}>
@@ -639,13 +643,9 @@ export function CampfirePot() {
 
         <div>
           <h3 className="text-sm font-medium uppercase tracking-wide text-muted">
-            Snack bait effects {loading && <Spinner className="ml-2" />}
+            {t("snackEffects")} {loading && <Spinner className="ml-2" />}
           </h3>
-          <p className="mt-1 text-xs text-muted">
-            Cumulated effects from every seasoning in the pot. Merged per
-            (type, subcategory) following SpawnBaitUtils.mergeEffects: chances
-            sum and cap at 100%, values are ceil-summed.
-          </p>
+          <p className="mt-1 text-xs text-muted">{t("effectsHelp")}</p>
           <div className="mt-3">
             <SnackEffectsSummary effects={snackBaitEffects} />
           </div>
@@ -653,32 +653,32 @@ export function CampfirePot() {
 
 
         <div>
-          <h3 className="text-sm font-medium uppercase tracking-wide text-muted">Filters</h3>
+          <h3 className="text-sm font-medium uppercase tracking-wide text-muted">{t("filters")}</h3>
           <div className="mt-3 flex flex-wrap items-center gap-2">
             <MultiSelect
-              label="Mods"
+              label={t("mods")}
               options={NAMESPACE_OPTIONS}
               value={allowedNamespaces}
               onChange={setAllowedNamespaces}
-              placeholder="Cobblemon + vanilla"
+              placeholder={t("modsAny")}
             />
             <MultiSelect
-              label="Biomes"
+              label={t("biomes")}
               options={biomeOptions}
               value={biomes}
               onChange={setBiomes}
-              placeholder="Any biome"
+              placeholder={t("biomesAny")}
             />
             <MultiSelect
-              label="Time"
+              label={t("time")}
               options={TIME_OPTIONS}
               value={times}
               onChange={setTimes}
-              placeholder="Any time"
+              placeholder={t("timeAny")}
               searchable={false}
             />
             <label className="text-xs inline-flex items-center gap-1 text-muted">
-              <span className="text-[10px] uppercase tracking-wide">Min Y</span>
+              <span className="text-[10px] uppercase tracking-wide">{t("minY")}</span>
               <input
                 value={minY}
                 onChange={(e) => setMinY(e.target.value)}
@@ -688,7 +688,7 @@ export function CampfirePot() {
               />
             </label>
             <label className="text-xs inline-flex items-center gap-1 text-muted">
-              <span className="text-[10px] uppercase tracking-wide">Max Y</span>
+              <span className="text-[10px] uppercase tracking-wide">{t("maxY")}</span>
               <input
                 value={maxY}
                 onChange={(e) => setMaxY(e.target.value)}
@@ -706,7 +706,7 @@ export function CampfirePot() {
       <div className="w-full">
         <div>
           <h3 className="text-sm font-medium uppercase tracking-wide text-muted">
-            Attracted Pokémon {loading && <Spinner className="ml-2" />}
+            {t("attracted")} {loading && <Spinner className="ml-2" />}
           </h3>
           <div className="mt-2 rounded-lg border border-amber-400/50 bg-amber-400/10 p-3 text-xs">
             <div className="flex items-start gap-2">
@@ -718,20 +718,9 @@ export function CampfirePot() {
               </span>
               <div>
                 <div className="font-semibold text-amber-700 dark:text-amber-300 uppercase tracking-wide text-[10px]">
-                  Work in progress — probabilities are approximate
+                  {t("attractedWip")}
                 </div>
-                <p className="mt-1 text-muted leading-relaxed">
-                  The ranking below is my best-effort reproduction of the Cobblemon
-                  Poké Snack spawn pipeline (world pool filtered by biome/time/Y,
-                  uncommon ×2.25 / rare & ultra-rare ×5.5 bucket multipliers applied
-                  unconditionally, typing/egg-group bait effects multiplying matching
-                  entries&apos; weight, then <code>rarity_bucket</code> softening
-                  inter-bucket ratios — probability ≈ P(bucket) × weight share).
-                  It is <strong>not yet 1:1 with the mod</strong>. Edge cases around
-                  anticonditions, nested conditions, structure/lunar/skylight gates and
-                  addon-specific spawn rules are still being ironed out, so treat the
-                  numbers as a guide, not a guarantee. Improvements land continuously.
-                </p>
+                <p className="mt-1 text-muted leading-relaxed">{t("attractedWipBody")}</p>
               </div>
             </div>
           </div>
@@ -740,27 +729,27 @@ export function CampfirePot() {
               type="search"
               value={attQuery}
               onChange={(e) => setAttQuery(e.target.value)}
-              placeholder="Search by name or dex…"
+              placeholder={t("searchAttracted")}
               className="flex-1 min-w-40 rounded-md border border-border bg-card px-3 py-1.5 text-sm outline-none focus:border-accent"
             />
             <MultiSelect
-              label="Types"
+              label={t("types")}
               options={TYPE_OPTIONS}
               value={attTypes}
               onChange={setAttTypes}
-              placeholder="Any type"
+              placeholder={t("typesAny")}
               maxSelection={2}
             />
             <MultiSelect
-              label="Rarity"
+              label={t("rarity")}
               options={BUCKET_OPTIONS}
               value={attBuckets}
               onChange={setAttBuckets}
-              placeholder="Any"
+              placeholder={tc("any")}
               searchable={false}
             />
             <label className="text-xs inline-flex items-center gap-1 text-muted">
-              <span className="text-[10px] uppercase tracking-wide">Sort</span>
+              <span className="text-[10px] uppercase tracking-wide">{tc("sort")}</span>
               <select
                 value={attSort}
                 onChange={(e) =>
@@ -768,12 +757,12 @@ export function CampfirePot() {
                 }
                 className="rounded-md border border-border bg-card px-2 py-1 text-xs"
               >
-                <option value="probability">Spawn % (desc)</option>
-                <option value="bucket">Rarity (ultra → common)</option>
-                <option value="dex">Dex number (asc)</option>
-                <option value="dex_desc">Dex number (desc)</option>
-                <option value="name">Name (A→Z)</option>
-                <option value="name_desc">Name (Z→A)</option>
+                <option value="probability">{t("sortProbability")}</option>
+                <option value="bucket">{t("sortBucket")}</option>
+                <option value="dex">{t("sortDex")}</option>
+                <option value="dex_desc">{t("sortDexDesc")}</option>
+                <option value="name">{t("sortName")}</option>
+                <option value="name_desc">{t("sortNameDesc")}</option>
               </select>
             </label>
             {hasShinyBoost && (
@@ -791,7 +780,7 @@ export function CampfirePot() {
                   className={`h-3.5 w-3.5 ${showShiny ? "text-amber-500 fill-amber-500" : ""}`}
                   aria-hidden
                 />
-                <span className="text-[10px] uppercase tracking-wide">Shiny</span>
+                <span className="text-[10px] uppercase tracking-wide">{t("shiny")}</span>
               </button>
             )}
             {(attQuery || attTypes.length > 0 || attBuckets.length > 0) && (
@@ -803,7 +792,7 @@ export function CampfirePot() {
                 }}
                 className="text-xs px-2 py-1 rounded-md border border-border text-muted hover:text-foreground"
               >
-                Clear
+                {tc("clear")}
               </button>
             )}
           </div>
@@ -818,7 +807,7 @@ export function CampfirePot() {
                 ))}
               </ul>
             ) : (
-              <p className="mt-3 text-sm text-muted">No Pokémon match. Try removing filters.</p>
+              <p className="mt-3 text-sm text-muted">{t("noAttracted")}</p>
             )
           ) : (
             <ul className="mt-3 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-2">
@@ -887,7 +876,7 @@ export function CampfirePot() {
               className="mt-3 flex items-center justify-center gap-2 text-xs text-muted py-4"
             >
               <Spinner />
-              <span>{attractedView.length - attractedVisible} remaining</span>
+              <span>{tc("remaining", { count: attractedView.length - attractedVisible })}</span>
             </div>
           )}
         </div>

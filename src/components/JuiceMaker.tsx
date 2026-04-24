@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Zap, Target, Wind, Shield, ArrowUp, X, type LucideIcon } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { ItemIcon } from "./ItemIcon";
 import { Spinner, TopProgress, Skeleton } from "./Loader";
 
@@ -42,6 +43,17 @@ const APRICORNS: Apricorn[] = [
   "WHITE",
 ];
 
+/** Cobblemon apricorn item ids, used to render the shaped recipe. */
+const APRICORN_ITEM: Record<Apricorn, string> = {
+  RED: "cobblemon:red_apricorn",
+  YELLOW: "cobblemon:yellow_apricorn",
+  GREEN: "cobblemon:green_apricorn",
+  BLUE: "cobblemon:blue_apricorn",
+  PINK: "cobblemon:pink_apricorn",
+  BLACK: "cobblemon:black_apricorn",
+  WHITE: "cobblemon:white_apricorn",
+};
+
 const APRICORN_HEX: Record<Apricorn, string> = {
   RED: "#ff6b6b",
   YELLOW: "#f7d26a",
@@ -75,7 +87,42 @@ type Suggestion = {
   score: number;
 };
 
+/**
+ * Shaped Aprijuice recipe preview from the Cobblemon wiki — a 3×3 grid where
+ * only the top row is used: apricorn (selected colour) + Pep-Up Flower +
+ * Energy Root. The other 6 cells are intentionally empty, like the wiki's
+ * cooking-interface.
+ */
+function JuiceRecipePreview({ apricornItem }: { apricornItem: string }) {
+  const cells: Array<string | null> = [
+    apricornItem,
+    "cobblemon:pep_up_flower",
+    "cobblemon:energy_root",
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+  ];
+  return (
+    <div className="mt-3 grid grid-cols-3 gap-1 p-2 rounded-lg bg-subtle border border-border">
+      {cells.map((id, i) => (
+        <div
+          key={i}
+          className="size-10 rounded bg-card border border-border flex items-center justify-center"
+          title={id ?? ""}
+        >
+          {id && <ItemIcon id={id} size={28} />}
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export function JuiceMaker() {
+  const t = useTranslations("juice");
+  const tc = useTranslations("common");
   const [berries, setBerries] = useState<BerryDTO[]>([]);
   const [berriesLoading, setBerriesLoading] = useState(true);
   const [apricorn, setApricorn] = useState<Apricorn>("RED");
@@ -257,7 +304,7 @@ export function JuiceMaker() {
               : "text-muted hover:text-foreground"
           }`}
         >
-          Cook a juice
+          {t("modeCook")}
         </button>
         <button
           type="button"
@@ -269,7 +316,7 @@ export function JuiceMaker() {
               : "text-muted hover:text-foreground"
           }`}
         >
-          I want a stat → suggest
+          {t("modeSuggest")}
         </button>
       </div>
 
@@ -277,13 +324,9 @@ export function JuiceMaker() {
         <section className="space-y-4">
           <div>
             <h3 className="text-sm font-medium uppercase tracking-wide text-muted">
-              Rank ride stats by priority
+              {t("targetTitle")}
             </h3>
-            <p className="mt-1 text-xs text-muted">
-              Click a stat to add it to your priority list. Use the arrows to
-              reorder — rank 1 weighs the most, rank 5 the least. Unranked
-              stats are ignored by the solver.
-            </p>
+            <p className="mt-1 text-xs text-muted">{t("targetHelp")}</p>
 
             {targetOrder.length > 0 && (
               <ol className="mt-3 space-y-1">
@@ -307,7 +350,7 @@ export function JuiceMaker() {
                       <button
                         onClick={() => moveTargetStat(s, -1)}
                         disabled={i === 0}
-                        aria-label="Move up"
+                        aria-label={t("moveUp")}
                         className="size-6 rounded border border-border bg-card text-muted hover:text-foreground disabled:opacity-30"
                       >
                         ↑
@@ -315,14 +358,14 @@ export function JuiceMaker() {
                       <button
                         onClick={() => moveTargetStat(s, 1)}
                         disabled={i === targetOrder.length - 1}
-                        aria-label="Move down"
+                        aria-label={t("moveDown")}
                         className="size-6 rounded border border-border bg-card text-muted hover:text-foreground disabled:opacity-30"
                       >
                         ↓
                       </button>
                       <button
                         onClick={() => toggleTargetStat(s)}
-                        aria-label="Remove"
+                        aria-label={t("remove")}
                         className="size-6 rounded border border-border bg-card text-muted hover:text-red-500"
                       >
                         <X className="h-3 w-3 mx-auto" />
@@ -356,7 +399,7 @@ export function JuiceMaker() {
                   onClick={() => setTargetOrder([])}
                   className="text-xs px-2 py-1 rounded-md border border-border text-muted hover:text-foreground"
                 >
-                  Clear
+                  {tc("clear")}
                 </button>
               )}
             </div>
@@ -364,14 +407,12 @@ export function JuiceMaker() {
 
           <div>
             <h3 className="text-sm font-medium uppercase tracking-wide text-muted">
-              Top combinations {suggestLoading && <Spinner className="ml-2" />}
+              {t("topCombos")} {suggestLoading && <Spinner className="ml-2" />}
             </h3>
             {targetOrder.length === 0 ? (
-              <p className="mt-3 text-sm text-muted">
-                Pick at least one stat above.
-              </p>
+              <p className="mt-3 text-sm text-muted">{t("pickStat")}</p>
             ) : suggestions.length === 0 && !suggestLoading ? (
-              <p className="mt-3 text-sm text-muted">No combination scores positive. Try fewer stats.</p>
+              <p className="mt-3 text-sm text-muted">{t("noCombo")}</p>
             ) : (
               <ul className="mt-3 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
                 {suggestions.map((s, i) => (
@@ -388,7 +429,7 @@ export function JuiceMaker() {
                         title={`${s.apricorn} apricorn`}
                       />
                       <span className="text-xs uppercase font-medium">
-                        {s.apricorn} aprijuice
+                        {t("apricornHeading", { kind: s.apricorn })}
                       </span>
                       {i < 3 && (
                         <span className="ml-auto text-[10px] font-mono bg-accent text-accent-foreground rounded-full px-1.5 py-0.5">
@@ -400,7 +441,7 @@ export function JuiceMaker() {
                     <div className="flex flex-wrap gap-1 min-h-[2.5rem]">
                       {s.berrySlugs.length === 0 ? (
                         <span className="text-[10px] text-muted italic">
-                          no seasoning
+                          {t("noSeasoning")}
                         </span>
                       ) : (
                         s.berrySlugs.map((slug, j) => {
@@ -452,7 +493,7 @@ export function JuiceMaker() {
                       onClick={() => applySuggestion(s)}
                       className="w-full text-xs px-2 py-1.5 rounded-md border border-border hover:border-accent/60 hover:bg-subtle transition-colors"
                     >
-                      Load into cook
+                      {t("loadIntoCook")}
                     </button>
                   </li>
                 ))}
@@ -467,7 +508,7 @@ export function JuiceMaker() {
       <aside className="space-y-4">
         <div>
           <h3 className="text-sm font-medium uppercase tracking-wide text-muted">
-            Apricorn
+            {t("apricorn")}
           </h3>
           <div className="mt-3 grid grid-cols-4 gap-2">
             {APRICORNS.map((a) => {
@@ -489,7 +530,12 @@ export function JuiceMaker() {
             })}
           </div>
           <div className="mt-3 text-[10px] uppercase tracking-wide text-muted">
-            {apricorn} aprijuice
+            {t("apricornHeading", { kind: apricorn })}
+          </div>
+
+          <JuiceRecipePreview apricornItem={APRICORN_ITEM[apricorn]} />
+          <div className="text-[10px] text-muted uppercase text-center">
+            {t("title")}
           </div>
           <ul className="mt-2 text-xs space-y-0.5">
             {(Object.entries(apricornDeltas) as Array<[RidingStat, number]>).map(
@@ -516,13 +562,13 @@ export function JuiceMaker() {
               ),
             )}
             {Object.keys(apricornDeltas).length === 0 && (
-              <li className="text-muted italic">no baked-in effect</li>
+              <li className="text-muted italic">{t("noBakedEffect")}</li>
             )}
           </ul>
         </div>
 
         <div className="text-[10px] uppercase tracking-wider text-muted border-t border-border pt-3">
-          Flavour thresholds
+          {t("flavourThresholds")}
         </div>
         <ul className="text-[10px] text-muted grid grid-cols-2 gap-x-2">
           <li>15 → 1pt</li>
@@ -537,9 +583,9 @@ export function JuiceMaker() {
       <div className="space-y-6">
         <div>
           <h3 className="text-sm font-medium uppercase tracking-wide text-muted">
-            Seasoning slots
+            {t("seasoningSlots")}
             <span className="ml-2 text-[10px] normal-case tracking-normal text-muted">
-              {slugs.length} / {MAX_JUICE_SEASONINGS} · Cobblemon campfire pot cap
+              {t("slotsCap", { count: slugs.length, max: MAX_JUICE_SEASONINGS })}
             </span>
           </h3>
 
@@ -584,14 +630,14 @@ export function JuiceMaker() {
 
         <div>
           <h3 className="text-sm font-medium uppercase tracking-wide text-muted">
-            Pantry — berries
+            {t("pantryBerries")}
           </h3>
 
           <div className="mt-2 flex flex-wrap items-center gap-2">
             <input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Filter berries…"
+              placeholder={t("filterBerries")}
               className="w-full sm:w-52 rounded-md border border-border bg-card px-3 py-1.5 text-sm outline-none focus:border-accent"
             />
             <div className="flex flex-wrap gap-1">
@@ -680,7 +726,7 @@ export function JuiceMaker() {
               })}
               {visibleBerries.length === 0 && (
                 <li className="col-span-full text-center text-xs text-muted py-6">
-                  No berry matches.
+                  {t("noBerry")}
                 </li>
               )}
             </ul>
@@ -690,7 +736,7 @@ export function JuiceMaker() {
 
         <div>
           <h3 className="text-sm font-medium uppercase tracking-wide text-muted">
-            Flavour totals {loading && <Spinner className="ml-2" />}
+            {t("flavourTotals")} {loading && <Spinner className="ml-2" />}
           </h3>
           <div className="mt-2 grid grid-cols-5 gap-2 text-xs">
             {(
@@ -730,15 +776,12 @@ export function JuiceMaker() {
 
         <div>
           <h3 className="text-sm font-medium uppercase tracking-wide text-muted">
-            Ride stat boosts
+            {t("rideBoosts")}
           </h3>
-          <p className="mt-1 text-xs text-muted">
-            Result = flavour points (converted from totals) + apricorn baseline.
-            Held by a rideable Pokémon, these boost its ride controller stats.
-          </p>
+          <p className="mt-1 text-xs text-muted">{t("rideBoostsHelp")}</p>
           {result && result.summary.length === 0 ? (
             <p className="mt-3 text-sm text-muted">
-              No net boost. Add more berries to cross the next threshold.
+              {t("noNetBoost")}
             </p>
           ) : (
             <ul className="mt-3 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-2">
