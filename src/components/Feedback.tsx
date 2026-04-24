@@ -1,5 +1,6 @@
 import { useTranslations } from "next-intl";
 import { MessageCircleHeart } from "lucide-react";
+import { RatingForm } from "./RatingForm";
 
 export const DISCORD_HANDLE = "Gaz4i";
 export const GITHUB_ISSUES_URL =
@@ -27,6 +28,13 @@ export function FeedbackCard({ className = "" }: { className?: string }) {
           <p className="mt-1 text-xs text-muted leading-relaxed">
             {t("body")}
           </p>
+
+          {/* Inline rating form: lets visitors rate the site right here
+              without waiting for the 10-min modal to pop up. */}
+          <div className="mt-4 rounded-lg border border-border bg-card p-3">
+            <RatingForm showComment />
+          </div>
+
           <div className="mt-3 flex flex-wrap gap-2">
             <a
               href={GITHUB_ISSUES_URL}

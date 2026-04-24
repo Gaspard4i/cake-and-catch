@@ -9,6 +9,7 @@ import {
   GITHUB_ISSUES_URL,
   GithubIcon,
 } from "./Feedback";
+import { RatingForm } from "./RatingForm";
 
 /**
  * Always-visible floating action button. Bottom-right on desktop, above
@@ -44,12 +45,13 @@ export function FloatingFeedback() {
             </button>
           </div>
           <p className="text-xs text-muted leading-relaxed">{t("bodyShort")}</p>
-          <div className="space-y-1.5">
+          <RatingForm showComment={false} />
+          <div className="pt-1 border-t border-border space-y-1.5">
             <a
               href={GITHUB_ISSUES_URL}
               target="_blank"
               rel="noreferrer"
-              className="flex items-center gap-2 rounded-md border border-border bg-card px-3 py-2 text-xs hover:bg-subtle transition-colors"
+              className="flex items-center gap-2 rounded-md border border-border bg-card px-3 py-2 text-xs hover:bg-subtle transition-colors mt-2"
             >
               <GithubIcon className="h-4 w-4 shrink-0" />
               <span className="flex-1">{t("ctaGithub")}</span>

@@ -1,14 +1,15 @@
 "use client";
 
 import { useEffect, useLayoutEffect, useState } from "react";
-import { useLocale, useTranslations } from "next-intl";
-import { MessageCircleHeart, Star, X } from "lucide-react";
+import { useTranslations } from "next-intl";
+import { MessageCircleHeart, X } from "lucide-react";
 import {
   DISCORD_HANDLE,
   DiscordIcon,
   GITHUB_ISSUES_URL,
   GithubIcon,
 } from "./Feedback";
+import { RatingForm } from "./RatingForm";
 
 const STORAGE_KEY = "satisfaction-dismissed";
 /** Time in milliseconds spent on the site before the modal auto-opens. */
@@ -29,13 +30,7 @@ const APPEAR_DELAY_MS = 10 * 60 * 1000; // 10 minutes
 export function SatisfactionModal() {
   const t = useTranslations("satisfaction");
   const tFeedback = useTranslations("feedback");
-  const locale = useLocale();
   const [open, setOpen] = useState(false);
-  const [stars, setStars] = useState(0);
-  const [hover, setHover] = useState(0);
-  const [comment, setComment] = useState("");
-  const [submitting, setSubmitting] = useState(false);
-  const [submitted, setSubmitted] = useState(false);
 
   // Defer the timer until the user has accumulated APPEAR_DELAY_MS of
   // ACTIVE time (page visible). Skip entirely if already dismissed/rated.
@@ -99,24 +94,6 @@ export function SatisfactionModal() {
     setOpen(false);
   };
 
-  const submit = async () => {
-    if (stars < 1 || submitting) return;
-    setSubmitting(true);
-    try {
-      await fetch("/api/site/rate", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ stars, comment: comment.trim() || null, locale }),
-      });
-      setSubmitted(true);
-      // Give the user a moment to read the thank-you before closing.
-      setTimeout(() => dismiss("rated"), 1500);
-    } catch {
-      // Let them retry on failure — don't dismiss.
-      setSubmitting(false);
-    }
-  };
-
   if (!open) return null;
 
   return (
@@ -153,90 +130,38 @@ export function SatisfactionModal() {
           </button>
         </div>
 
-        {submitted ? (
-          <p className="py-6 text-center text-sm">{t("thanks")}</p>
-        ) : (
-          <>
-            {/* Star picker */}
-            <div
-              className="flex items-center justify-center gap-1"
-              role="radiogroup"
-              aria-label={t("rateLabel")}
+        <RatingForm
+          showComment
+          onSubmitted={() => setTimeout(() => dismiss("rated"), 1500)}
+        />
+
+        <div className="rounded-lg border border-border bg-subtle p-3 text-xs space-y-2">
+          <p className="text-muted">{t("feedbackIntro")}</p>
+          <div className="flex flex-wrap gap-2">
+            <a
+              href={GITHUB_ISSUES_URL}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-2.5 py-1.5 hover:bg-card/80 transition-colors"
             >
-              {[1, 2, 3, 4, 5].map((n) => {
-                const active = (hover || stars) >= n;
-                return (
-                  <button
-                    key={n}
-                    type="button"
-                    role="radio"
-                    aria-checked={stars === n}
-                    aria-label={`${n} / 5`}
-                    onClick={() => setStars(n)}
-                    onMouseEnter={() => setHover(n)}
-                    onMouseLeave={() => setHover(0)}
-                    className="size-10 flex items-center justify-center transition-transform hover:scale-110"
-                  >
-                    <Star
-                      className={`h-7 w-7 ${
-                        active
-                          ? "text-amber-400 fill-amber-400"
-                          : "text-muted"
-                      }`}
-                    />
-                  </button>
-                );
-              })}
-            </div>
+              <GithubIcon className="h-3.5 w-3.5" />
+              {tFeedback("ctaGithub")}
+            </a>
+            <span className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-2.5 py-1.5">
+              <DiscordIcon className="h-3.5 w-3.5 text-[#5865F2]" />
+              <span className="text-muted">Discord:</span>
+              <code className="font-mono">{DISCORD_HANDLE}</code>
+            </span>
+          </div>
+        </div>
 
-            <textarea
-              value={comment}
-              onChange={(e) => setComment(e.target.value)}
-              placeholder={t("commentPlaceholder")}
-              rows={3}
-              maxLength={1000}
-              className="w-full rounded-md border border-border bg-subtle px-3 py-2 text-sm outline-none focus:border-accent resize-none"
-            />
-
-            <div className="rounded-lg border border-border bg-subtle p-3 text-xs space-y-2">
-              <p className="text-muted">{t("feedbackIntro")}</p>
-              <div className="flex flex-wrap gap-2">
-                <a
-                  href={GITHUB_ISSUES_URL}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-2.5 py-1.5 hover:bg-card/80 transition-colors"
-                >
-                  <GithubIcon className="h-3.5 w-3.5" />
-                  {tFeedback("ctaGithub")}
-                </a>
-                <span className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-2.5 py-1.5">
-                  <DiscordIcon className="h-3.5 w-3.5 text-[#5865F2]" />
-                  <span className="text-muted">Discord:</span>
-                  <code className="font-mono">{DISCORD_HANDLE}</code>
-                </span>
-              </div>
-            </div>
-
-            <div className="flex items-center justify-between gap-2 pt-1">
-              <button
-                type="button"
-                onClick={() => dismiss("dismissed")}
-                className="text-xs text-muted hover:text-foreground underline underline-offset-2"
-              >
-                {t("dontShowAgain")}
-              </button>
-              <button
-                type="button"
-                onClick={submit}
-                disabled={stars < 1 || submitting}
-                className="rounded-md bg-accent text-accent-foreground px-4 py-2 text-sm font-medium disabled:opacity-50 hover:opacity-90 transition-opacity"
-              >
-                {submitting ? t("submitting") : t("submit")}
-              </button>
-            </div>
-          </>
-        )}
+        <button
+          type="button"
+          onClick={() => dismiss("dismissed")}
+          className="text-xs text-muted hover:text-foreground underline underline-offset-2"
+        >
+          {t("dontShowAgain")}
+        </button>
       </div>
     </div>
   );
