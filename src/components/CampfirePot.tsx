@@ -188,16 +188,10 @@ export function CampfirePot() {
   const [slots, setSlots] = useState<SlotState>([null, null, null]);
   const [biomes, setBiomes] = useState<string[]>([]);
   const [biomeCatalog, setBiomeCatalog] = useState<BiomeApiEntry[]>([]);
-  /**
-   * Biome namespaces enabled by default. Includes every option the UI
-   * exposes so legendary-pokemon addons that spawn via modded biome tags
-   * (Terralith, BYG, Aether, Incendium, Nullscape, The Bumblezone,
-   * Biomes O' Plenty) are visible out of the box. Users can still uncheck
-   * anything they don't run.
-   */
-  const [allowedNamespaces, setAllowedNamespaces] = useState<string[]>(
-    NAMESPACE_OPTIONS.map((o) => o.value),
-  );
+  const [allowedNamespaces, setAllowedNamespaces] = useState<string[]>([
+    "cobblemon",
+    "minecraft",
+  ]);
   const [times, setTimes] = useState<string[]>([]);
   const [minY, setMinY] = useState<string>("");
   const [maxY, setMaxY] = useState<string>("");
