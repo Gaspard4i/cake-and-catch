@@ -95,6 +95,14 @@ async function findSpawnPoolDir(root: string): Promise<string | null> {
   return null;
 }
 
+/**
+ * Addons we ingest at build time. Kept restricted to projects under
+ * MIT or equivalent permissive licences so we can legally redistribute
+ * their data (species + spawn pool) via our API. ARR / NC / ND addons
+ * (Mega Showdown, Pokemans, AllTheMons, Alatia's / Laser's fakemon
+ * packs, MissingMons…) are intentionally excluded even though they
+ * would add more mons — rebundling their assets is not allowed.
+ */
 export const ADDONS: AddonSource[] = [
   {
     name: "mysticmons",
@@ -109,6 +117,38 @@ export const ADDONS: AddonSource[] = [
     modrinthSlug: "better-cobblemon-spawns",
     license: "MIT",
     pageUrl: "https://modrinth.com/mod/better-cobblemon-spawns",
+    versionZipUrl: "",
+    versionName: "",
+  },
+  {
+    name: "cobblemon-integrations",
+    modrinthSlug: "cobblemon-integrations",
+    license: "MIT",
+    pageUrl: "https://modrinth.com/mod/cobblemon-integrations",
+    versionZipUrl: "",
+    versionName: "",
+  },
+  {
+    name: "mundialmons",
+    modrinthSlug: "mundialmons",
+    license: "MIT",
+    pageUrl: "https://modrinth.com/datapack/mundialmons",
+    versionZipUrl: "",
+    versionName: "",
+  },
+  {
+    name: "glitchdex-cobblemon",
+    modrinthSlug: "glitchdex-cobblemon",
+    license: "MIT",
+    pageUrl: "https://modrinth.com/datapack/glitchdex-cobblemon",
+    versionZipUrl: "",
+    versionName: "",
+  },
+  {
+    name: "ggt-pack",
+    modrinthSlug: "ggt-pack",
+    license: "MIT",
+    pageUrl: "https://modrinth.com/datapack/ggt-pack",
     versionZipUrl: "",
     versionName: "",
   },

@@ -25,15 +25,39 @@ const DATA_SOURCES: SourceEntry[] = [
   },
   {
     name: "MysticMons",
-    license: "ARR (free add-on)",
+    license: "MIT",
     url: "https://modrinth.com/datapack/mysticmons",
     purpose: "Addon species + spawns merged into the Pokédex and snack attraction pool.",
   },
   {
     name: "Better Cobblemon Spawns",
-    license: "ARR (free add-on)",
+    license: "MIT",
     url: "https://modrinth.com/mod/better-cobblemon-spawns",
-    purpose: "Addon spawn rebalance — used to extend the biome/weight catalog.",
+    purpose: "Addon spawn rebalance — extends the biome/weight catalog.",
+  },
+  {
+    name: "Cobblemon Integrations",
+    license: "MIT",
+    url: "https://modrinth.com/mod/cobblemon-integrations",
+    purpose: "Cross-mod spawns added to the pool.",
+  },
+  {
+    name: "MundialMons",
+    license: "MIT",
+    url: "https://modrinth.com/datapack/mundialmons",
+    purpose: "Reanimated species + spawns merged into the pool.",
+  },
+  {
+    name: "Glitchdex",
+    license: "MIT",
+    url: "https://modrinth.com/datapack/glitchdex-cobblemon",
+    purpose: "Glitch-flavoured species + spawns.",
+  },
+  {
+    name: "GG&T Fakemon Pack",
+    license: "MIT",
+    url: "https://modrinth.com/datapack/ggt-pack",
+    purpose: "Fakemon species + spawns.",
   },
   {
     name: "Terralith / Biomes O' Plenty / BYG / Aether / Incendium / Nullscape / The Bumblezone",
