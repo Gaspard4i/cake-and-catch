@@ -20,6 +20,39 @@ import type {
   RidingStat,
 } from "@/lib/recommend/aprijuice";
 
+/**
+ * Client-side mirror of `maxForStatGiven` from the server solver. We
+ * receive the set of achievable stat vectors once per ownership change
+ * and recompute constrained caps locally every time the user drags a
+ * slider. Worst case ~1 000 vectors × 5 constraints × 50ms debounce →
+ * sub-ms per cap.
+ */
+type StatVector = Record<RidingStat, number>;
+
+function maxForStatGivenClient(
+  vectors: StatVector[],
+  stat: RidingStat,
+  constraints: Record<RidingStat, number>,
+): number {
+  let best = -Infinity;
+  outer: for (const v of vectors) {
+    for (const other of RIDE_STATS) {
+      if (other === stat) continue;
+      if (v[other] < constraints[other]) continue outer;
+    }
+    if (v[stat] > best) best = v[stat];
+  }
+  return Number.isFinite(best) ? best : 0;
+}
+
+const RIDE_STATS: RidingStat[] = [
+  "ACCELERATION",
+  "SKILL",
+  "SPEED",
+  "STAMINA",
+  "JUMP",
+];
+
 type BerryDTO = {
   slug: string;
   itemId: string;
@@ -120,6 +153,13 @@ export function JuiceMaker() {
 
   const [budget, setBudget] = useState(0);
   const [caps, setCaps] = useState<Record<RidingStat, number>>(ZERO_STATS);
+  /**
+   * Full set of stat vectors reachable given what the user owns. Used
+   * to compute the REAL max slider reach for a stat accounting for the
+   * points already allocated on the other stats (no single recipe can
+   * hit every stat at its ceiling simultaneously).
+   */
+  const [vectors, setVectors] = useState<StatVector[]>([]);
 
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [suggestLoading, setSuggestLoading] = useState(false);
@@ -156,6 +196,7 @@ export function JuiceMaker() {
     if (ownedBerries.size === 0 || ownedApricorns.size === 0) {
       setBudget(0);
       setCaps(ZERO_STATS);
+      setVectors([]);
       return;
     }
     const ctrl = new AbortController();
@@ -163,18 +204,25 @@ export function JuiceMaker() {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({
-        target: { SPEED: 1 }, // dummy so server returns caps
         ownedBerrySlugs: [...ownedBerries],
         ownedApricorns: [...ownedApricorns],
+        includeVectors: true,
         limit: 0,
       }),
       signal: ctrl.signal,
     })
       .then((r) => r.json())
-      .then((d: { budget: number; caps: Record<RidingStat, number> }) => {
-        setBudget(d.budget ?? 0);
-        if (d.caps) setCaps(d.caps);
-      })
+      .then(
+        (d: {
+          budget: number;
+          caps: Record<RidingStat, number>;
+          vectors?: StatVector[];
+        }) => {
+          setBudget(d.budget ?? 0);
+          if (d.caps) setCaps(d.caps);
+          if (d.vectors) setVectors(d.vectors);
+        },
+      )
       .catch(() => {});
     return () => ctrl.abort();
   }, [ownedBerries, ownedApricorns]);
@@ -235,14 +283,22 @@ export function JuiceMaker() {
   const setStatPoints = (stat: RidingStat, raw: number) => {
     if (ignoredStats.has(stat)) return;
     setTargetPoints((prev) => {
-      const cap = caps[stat] ?? 0;
-      // "Other" points = all non-ignored stats EXCEPT this one. Ignored
-      // stats do not consume budget.
-      const currentOther = (Object.entries(prev) as Array<[RidingStat, number]>)
-        .filter(([s]) => s !== stat && !ignoredStats.has(s))
-        .reduce((s, [, v]) => s + v, 0);
-      const remaining = Math.max(0, budget - currentOther);
-      const next = Math.max(0, Math.min(raw, cap, remaining));
+      // Hard cap = the biggest value for `stat` that's STILL reachable
+      // while every OTHER non-ignored stat stays at its current value.
+      // Ignored stats don't constrain (−Infinity).
+      const constraints: Record<RidingStat, number> = {
+        ACCELERATION: ignoredStats.has("ACCELERATION")
+          ? -Infinity
+          : prev.ACCELERATION,
+        SKILL: ignoredStats.has("SKILL") ? -Infinity : prev.SKILL,
+        SPEED: ignoredStats.has("SPEED") ? -Infinity : prev.SPEED,
+        STAMINA: ignoredStats.has("STAMINA") ? -Infinity : prev.STAMINA,
+        JUMP: ignoredStats.has("JUMP") ? -Infinity : prev.JUMP,
+      };
+      const hard = vectors.length > 0
+        ? maxForStatGivenClient(vectors, stat, constraints)
+        : (caps[stat] ?? 0);
+      const next = Math.max(0, Math.min(raw, hard));
       return { ...prev, [stat]: next };
     });
   };
@@ -510,16 +566,41 @@ export function JuiceMaker() {
               const cap = caps[stat] ?? 0;
               const value = targetPoints[stat];
               const ignored = ignoredStats.has(stat);
-              // "remaining" = how many budget points are still free for
-              // this stat, given what's already assigned to the OTHERS
-              // (excluding ignored stats which don't consume budget).
-              const currentOther = (
-                Object.entries(targetPoints) as Array<[RidingStat, number]>
-              )
-                .filter(([s]) => s !== stat && !ignoredStats.has(s))
-                .reduce((s, [, v]) => s + v, 0);
-              const remaining = Math.max(0, budget - currentOther);
-              const maxForThis = ignored ? 0 : Math.min(cap, remaining);
+              // Real constrained cap: given the OTHER stats are pinned
+              // at their current values, how high can `stat` actually
+              // go? Computed by scanning the achievable-vector set
+              // returned by the server.
+              const constraints: Record<RidingStat, number> = {
+                ACCELERATION: ignoredStats.has("ACCELERATION")
+                  ? -Infinity
+                  : stat === "ACCELERATION"
+                    ? -Infinity
+                    : targetPoints.ACCELERATION,
+                SKILL: ignoredStats.has("SKILL")
+                  ? -Infinity
+                  : stat === "SKILL"
+                    ? -Infinity
+                    : targetPoints.SKILL,
+                SPEED: ignoredStats.has("SPEED")
+                  ? -Infinity
+                  : stat === "SPEED"
+                    ? -Infinity
+                    : targetPoints.SPEED,
+                STAMINA: ignoredStats.has("STAMINA")
+                  ? -Infinity
+                  : stat === "STAMINA"
+                    ? -Infinity
+                    : targetPoints.STAMINA,
+                JUMP: ignoredStats.has("JUMP")
+                  ? -Infinity
+                  : stat === "JUMP"
+                    ? -Infinity
+                    : targetPoints.JUMP,
+              };
+              const constrained = vectors.length > 0
+                ? maxForStatGivenClient(vectors, stat, constraints)
+                : cap;
+              const maxForThis = ignored ? 0 : Math.max(0, constrained);
               return (
                 <li key={stat} className="flex items-center gap-2">
                   <Icon

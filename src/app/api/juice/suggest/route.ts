@@ -8,8 +8,10 @@ import type {
 } from "@/lib/recommend/aprijuice";
 import {
   achievableMaxPerStat,
+  achievableVectors,
   suggestAprijuice,
   totalAchievableBudget,
+  type StatVector,
   type TargetBoosts,
 } from "@/lib/recommend/aprijuice-suggest";
 
@@ -23,7 +25,21 @@ type Body = {
   /** Stats the user doesn't care about — excluded from scoring. */
   ignoredStats?: RidingStat[];
   limit?: number;
+  /** If true, server also returns the full achievable stat-vector set
+   *  so the client can compute constrained caps on the fly as the user
+   *  drags the sliders. */
+  includeVectors?: boolean;
 };
+
+const ALL_APRICORNS: Apricorn[] = [
+  "RED",
+  "YELLOW",
+  "GREEN",
+  "BLUE",
+  "PINK",
+  "BLACK",
+  "WHITE",
+];
 
 export async function POST(req: NextRequest) {
   let body: Body = {};
@@ -31,15 +47,6 @@ export async function POST(req: NextRequest) {
     body = (await req.json()) as Body;
   } catch {
     return Response.json({ error: "invalid json" }, { status: 400 });
-  }
-
-  const target: TargetBoosts = { ...(body.target ?? {}) };
-  // Drop 0/negative entries — user didn't ask for those.
-  for (const k of Object.keys(target) as RidingStat[]) {
-    if (!target[k] || target[k]! <= 0) delete target[k];
-  }
-  if (Object.keys(target).length === 0) {
-    return Response.json({ suggestions: [], budget: 0, caps: {} });
   }
 
   const rows = await listBerries();
@@ -54,23 +61,36 @@ export async function POST(req: NextRequest) {
       flavours: b.flavours as Partial<Record<Flavour, number>>,
     }));
 
-  const apricorns = body.ownedApricorns?.length ? body.ownedApricorns : undefined;
+  const apricorns = body.ownedApricorns?.length
+    ? body.ownedApricorns
+    : ALL_APRICORNS;
 
-  const suggestions = suggestAprijuice(pool, target, {
-    limit: Math.min(Math.max(body.limit ?? 6, 1), 20),
-    apricorns,
-    ignoredStats: body.ignoredStats,
-  });
+  // Pre-compute the achievable set once; everything derives from it.
+  const vectors: StatVector[] = achievableVectors(pool, apricorns);
+  const caps = achievableMaxPerStat(vectors);
+  const budget = totalAchievableBudget(vectors);
+
+  // Normalise target.
+  const target: TargetBoosts = { ...(body.target ?? {}) };
+  for (const k of Object.keys(target) as RidingStat[]) {
+    if (!target[k] || target[k]! <= 0) delete target[k];
+  }
+
+  const suggestions =
+    Object.keys(target).length === 0
+      ? []
+      : suggestAprijuice(pool, target, {
+          limit: Math.min(Math.max(body.limit ?? 6, 1), 20),
+          apricorns,
+          ignoredStats: body.ignoredStats,
+        });
 
   return Response.json(
     {
       suggestions,
-      budget: totalAchievableBudget(pool, apricorns ?? [
-        "RED", "YELLOW", "GREEN", "BLUE", "PINK", "BLACK", "WHITE",
-      ]),
-      caps: achievableMaxPerStat(pool, apricorns ?? [
-        "RED", "YELLOW", "GREEN", "BLUE", "PINK", "BLACK", "WHITE",
-      ]),
+      budget,
+      caps,
+      vectors: body.includeVectors ? vectors : undefined,
     },
     { headers: { "cache-control": "public, s-maxage=30" } },
   );

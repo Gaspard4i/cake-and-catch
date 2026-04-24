@@ -27,7 +27,6 @@
  */
 
 import {
-  APRICORN_EFFECTS,
   FLAVOUR_TO_STAT,
   cookAprijuice,
   type Apricorn,
@@ -152,91 +151,110 @@ function distance(
 }
 
 /**
- * Per-stat ceiling ("how high can that single stat realistically go?").
+ * Full enumeration of every achievable stat vector for an owned pool.
  *
- * Each berry can only sit in ONE of the 3 seasoning slots at a time. To
- * push a stat as high as possible we dedicate all 3 slots to its flavour.
- * So per stat: pick the 3 owned berries richest in that flavour, sum
- * their flavour magnitude, convert through the threshold table, then add
- * the best positive apricorn contribution for that stat.
+ * For every (apricorn × multiset of ≤3 owned berries from the pruned
+ * top-5-per-flavour pool) we cook the juice and store the resulting
+ * stat vector. The UI uses this table to compute the REAL per-stat
+ * ceiling given what's already allocated on the other stats (see
+ * `maxForStatGiven`). That is the "ABR" the user asked for: a tree-like
+ * index letting us answer "what's the biggest ACCEL reachable while
+ * keeping SKILL ≥ 4 and SPEED ≥ 4?" in a single scan.
  *
- * This is an *independent* ceiling per stat (assumes the user spends
- * everything on this one stat). The global achievable budget is NOT
- * the sum of these — see totalAchievableBudget.
+ * Size: pool ≤ 25 berries → multisets of size ≤3 is ≈ 2 925 combos × 7
+ * apricorns ≈ 20 500 vectors. Dedup by stringified key keeps the unique
+ * set small (typically < 1 000). Works in a few ms on the server.
  */
-export function achievableMaxPerStat(
+export type StatVector = Record<RidingStat, number>;
+
+export function achievableVectors(
   berries: BerrySeasoning[],
   apricorns: Apricorn[],
-): Record<RidingStat, number> {
-  const THRESHOLDS: Array<[number, number]> = [
-    [15, 1], [35, 2], [45, 3], [55, 4], [75, 5], [105, 6],
-  ];
-  const ptsForFlavourTotal = (total: number) => {
-    let pts = 0;
-    for (const [min, v] of THRESHOLDS) {
-      if (total >= min) pts = v;
-      else break;
+): StatVector[] {
+  if (apricorns.length === 0 || berries.length === 0) return [];
+  const pool = buildBerryPool(berries);
+  const seen = new Map<string, StatVector>();
+  for (const apricorn of apricorns) {
+    for (const combo of multisetCombos(pool, MAX_SEASONINGS)) {
+      const result = cookAprijuice({ apricorn, berries: combo });
+      const v: StatVector = {
+        ACCELERATION: result.statBoosts.ACCELERATION ?? 0,
+        SKILL: result.statBoosts.SKILL ?? 0,
+        SPEED: result.statBoosts.SPEED ?? 0,
+        STAMINA: result.statBoosts.STAMINA ?? 0,
+        JUMP: result.statBoosts.JUMP ?? 0,
+      };
+      const key = `${v.ACCELERATION}|${v.SKILL}|${v.SPEED}|${v.STAMINA}|${v.JUMP}`;
+      if (!seen.has(key)) seen.set(key, v);
     }
-    return pts;
-  };
+  }
+  return [...seen.values()];
+}
 
+/**
+ * Per-stat ceiling — maximum achievable value for `stat` across ALL
+ * reachable vectors. Independent of other stats; this is what a single
+ * stat can hit if you dedicate the whole recipe to it. Useful as the
+ * *initial* slider range before the user has allocated anything.
+ */
+export function achievableMaxPerStat(
+  vectors: StatVector[],
+): Record<RidingStat, number> {
   const out: Record<RidingStat, number> = {
     ACCELERATION: 0, SKILL: 0, SPEED: 0, STAMINA: 0, JUMP: 0,
   };
-
-  const flavourToStat = FLAVOUR_TO_STAT;
-  for (const f of Object.keys(flavourToStat) as Flavour[]) {
-    const stat = flavourToStat[f];
-    const top3 = berries
-      .map((b) => b.flavours[f] ?? 0)
-      .filter((v) => v > 0)
-      .sort((a, b) => b - a)
-      .slice(0, MAX_SEASONINGS)
-      .reduce((s, v) => s + v, 0);
-    const berryPts = ptsForFlavourTotal(top3);
-
-    let bestApricorn = 0;
-    for (const ap of apricorns) {
-      const delta = APRICORN_EFFECTS[ap]?.[stat] ?? 0;
-      if (delta > bestApricorn) bestApricorn = delta;
+  for (const v of vectors) {
+    for (const s of RIDE_STATS) {
+      if (v[s] > out[s]) out[s] = v[s];
     }
-
-    out[stat] = berryPts + bestApricorn;
   }
   return out;
 }
 
 /**
- * Realistic *global* budget the user can distribute across the 5 stats at
- * once. NOT the sum of per-stat ceilings — a single 3-berry recipe
- * can't hit every stat at its maximum, it can only hit ONE.
+ * Constrained ceiling — "how high can `stat` go given that the other
+ * stats must at least reach the values `constraints` has already
+ * committed to?"
  *
- * Algorithm: enumerate every (apricorn × multiset of ≤3 owned berries)
- * the same way the solver does, and return the combo whose sum of
- * non-negative stat points is highest. That's the best total number of
- * points a user can actually achieve in-game with those ingredients.
+ * This replaces the naive `budget - spentElsewhere` heuristic. Two stats
+ * might EACH be individually reachable at 7 but share limited slots, so
+ * pinning one at 7 forces the other below 7. This function gives the
+ * honest answer by scanning the achievable set.
  *
- * Example: a single juice typically sits around 8–12 net points total,
- * not 30+ (which would be 6×5). Returning the true ceiling prevents the
- * UI from offering a budget the solver can never match.
+ * @param stat        the stat we're querying
+ * @param constraints lower bounds for EVERY stat (including stats the
+ *                    user ignores — pass -Infinity for those so they
+ *                    don't constrain the search)
  */
-export function totalAchievableBudget(
-  berries: BerrySeasoning[],
-  apricorns: Apricorn[],
+export function maxForStatGiven(
+  vectors: StatVector[],
+  stat: RidingStat,
+  constraints: Record<RidingStat, number>,
 ): number {
-  if (apricorns.length === 0 || berries.length === 0) return 0;
-  const pool = buildBerryPool(berries);
-  let best = 0;
-  for (const apricorn of apricorns) {
-    for (const combo of multisetCombos(pool, MAX_SEASONINGS)) {
-      const result = cookAprijuice({ apricorn, berries: combo });
-      let sum = 0;
-      for (const stat of RIDE_STATS) {
-        const v = result.statBoosts[stat] ?? 0;
-        if (v > 0) sum += v;
-      }
-      if (sum > best) best = sum;
+  let best = -Infinity;
+  outer: for (const v of vectors) {
+    for (const other of RIDE_STATS) {
+      if (other === stat) continue;
+      if (v[other] < constraints[other]) continue outer;
     }
+    if (v[stat] > best) best = v[stat];
+  }
+  return Number.isFinite(best) ? best : 0;
+}
+
+/**
+ * Global budget across all requested stats. NOT the sum of
+ * achievableMaxPerStat — a single 3-berry recipe can't hit each stat at
+ * its ceiling. We scan the achievable set and return the maximum sum of
+ * non-negative stats produced by any single recipe. Typical juices land
+ * 8–12 pts total.
+ */
+export function totalAchievableBudget(vectors: StatVector[]): number {
+  let best = 0;
+  for (const v of vectors) {
+    let sum = 0;
+    for (const s of RIDE_STATS) if (v[s] > 0) sum += v[s];
+    if (sum > best) best = sum;
   }
   return best;
 }
