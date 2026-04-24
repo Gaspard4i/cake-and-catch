@@ -73,63 +73,6 @@ const ASSET_SOURCES: SourceEntry[] = [
   },
 ];
 
-const TECH_STACK: SourceEntry[] = [
-  {
-    name: "Next.js 16 (App Router, Cache Components)",
-    license: "MIT",
-    url: "https://nextjs.org",
-    purpose: "Framework.",
-  },
-  {
-    name: "React 19",
-    license: "MIT",
-    url: "https://react.dev",
-    purpose: "UI library.",
-  },
-  {
-    name: "Tailwind CSS 4",
-    license: "MIT",
-    url: "https://tailwindcss.com",
-    purpose: "Styling.",
-  },
-  {
-    name: "Drizzle ORM",
-    license: "Apache 2.0",
-    url: "https://orm.drizzle.team",
-    purpose: "Type-safe SQL / migrations.",
-  },
-  {
-    name: "Neon (Postgres)",
-    license: "Apache 2.0 (drivers)",
-    url: "https://neon.tech",
-    purpose: "Managed Postgres (production).",
-  },
-  {
-    name: "Three.js + @react-three/fiber",
-    license: "MIT",
-    url: "https://threejs.org",
-    purpose: "3D rendering of the Poké Snack and berry bait on top.",
-  },
-  {
-    name: "Lucide icons",
-    license: "ISC",
-    url: "https://lucide.dev",
-    purpose: "Icons throughout the UI (no emojis).",
-  },
-  {
-    name: "next-intl",
-    license: "MIT",
-    url: "https://next-intl-docs.vercel.app",
-    purpose: "i18n (fr / en).",
-  },
-  {
-    name: "postgres-js",
-    license: "Unlicense",
-    url: "https://github.com/porsager/postgres",
-    purpose: "Postgres client.",
-  },
-];
-
 function SourceList({ items }: { items: SourceEntry[] }) {
   return (
     <ul className="mt-3 space-y-2 text-sm">
@@ -209,11 +152,6 @@ async function AboutContent() {
       <section className="mt-10">
         <h2 className="text-lg font-semibold">Visual assets</h2>
         <SourceList items={ASSET_SOURCES} />
-      </section>
-
-      <section className="mt-10">
-        <h2 className="text-lg font-semibold">Tech stack</h2>
-        <SourceList items={TECH_STACK} />
       </section>
 
       <section className="mt-10">
