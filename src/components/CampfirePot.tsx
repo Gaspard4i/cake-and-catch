@@ -808,7 +808,7 @@ export function CampfirePot() {
 
           {attractedView.length === 0 ? (
             loading && attracted.length === 0 ? (
-              <ul className="mt-3 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-2">
+              <ul className="mt-3 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-2 auto-rows-fr">
                 {Array.from({ length: 12 }).map((_, i) => (
                   <li key={`sk-att-${i}`}>
                     <AttractedCardSkeleton />
@@ -819,12 +819,12 @@ export function CampfirePot() {
               <p className="mt-3 text-sm text-muted">{t("noAttracted")}</p>
             )
           ) : (
-            <ul className="mt-3 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-2">
+            <ul className="mt-3 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-2 auto-rows-fr">
               {attractedView.slice(0, attractedVisible).map((p) => (
-                <li key={p.slug}>
+                <li key={p.slug} className="h-full">
                   <Link
                     href={`/pokemon/${p.slug}`}
-                    className="rounded-lg border border-border bg-card p-2 flex items-center gap-2 hover:border-accent/60 hover:bg-subtle transition-colors"
+                    className="h-full rounded-lg border border-border bg-card p-2 flex items-center gap-2 hover:border-accent/60 hover:bg-subtle transition-colors"
                   >
                     <PokemonSprite
                       dexNo={p.dexNo}
@@ -832,7 +832,7 @@ export function CampfirePot() {
                       size={44}
                       shiny={showShiny && hasShinyBoost}
                     />
-                  <div className="min-w-0">
+                  <div className="min-w-0 flex-1 self-stretch flex flex-col">
                     <div className="flex items-center gap-1">
                       <span className="text-xs font-mono text-muted">
                         #{String(p.dexNo).padStart(4, "0")}
