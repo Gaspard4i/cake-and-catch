@@ -405,8 +405,8 @@ export function CampfirePot() {
   return (
     <div className="space-y-8">
       <TopProgress active={loading} />
-    <div className="grid gap-8 lg:grid-cols-[1fr_auto]">
-      <aside className="space-y-6 lg:order-2">
+    <div className="grid gap-8 lg:grid-cols-[auto_1fr]">
+      <aside className="space-y-6">
         <div>
           <h3 className="text-sm font-medium uppercase tracking-wide text-muted">Cooking Pot</h3>
           <div className="mt-3 inline-flex flex-col items-center gap-3 p-4 rounded-xl border border-border bg-card">
@@ -507,7 +507,9 @@ export function CampfirePot() {
             <div className="text-[10px] text-muted uppercase">Poké Snack base recipe</div>
           </div>
         </div>
+      </aside>
 
+      <div className="space-y-6">
         <div>
           <h3 className="text-sm font-medium uppercase tracking-wide text-muted">
             Pantry — bait seasonings
@@ -613,9 +615,7 @@ export function CampfirePot() {
             ))}
           </div>
         </div>
-      </aside>
 
-      <div className="space-y-6 lg:order-1">
         <div>
           <h3 className="text-sm font-medium uppercase tracking-wide text-muted">
             Snack bait effects {loading && <Spinner className="ml-2" />}
