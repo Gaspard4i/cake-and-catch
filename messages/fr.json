@@ -168,6 +168,7 @@
     "ignore": "Ignorer",
     "ignoreTitle": "Ignorer — accepte n'importe quelle valeur (même négative)",
     "flavourFilter": "Filtre par saveur",
+    "distanceTitle": "Distance à ta cible (plus bas = plus proche)",
     "topCombos": "Meilleures combinaisons",
     "pickStat": "Choisis au moins une stat ci-dessus.",
     "noCombo": "Aucune combinaison ne score positivement. Essaie moins de stats.",

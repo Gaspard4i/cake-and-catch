@@ -168,6 +168,7 @@
     "ignore": "忽略",
     "ignoreTitle": "忽略 — 接受任意值(包括负数)",
     "flavourFilter": "按味道筛选",
+    "distanceTitle": "距目标的差距(越小越接近)",
     "topCombos": "最佳组合",
     "pickStat": "请在上面至少选择一个属性。",
     "noCombo": "没有组合得到正分。尝试选择更少的属性。",

@@ -100,10 +100,17 @@ function* multisetCombos<T>(
   yield* rec(0, []);
 }
 
-/** Clamp a berry pool to the top K per-flavour to keep the search small. */
+/**
+ * Clamp a berry pool to the top K per-flavour. Bigger K = more combos
+ * explored = better chance of finding a composite berry that hits two
+ * flavours at once. 5 is a sweet spot: ≤25 berries × multiset-of-3 =
+ * ~2925 combos × 7 apricorns ≈ 20k cook() calls, still <20 ms server-
+ * side. Lower and we'd miss cross-flavour berries (Lansat, Liechi,
+ * Ganlon etc. that boost ACCEL + SKILL together).
+ */
 function buildBerryPool(
   berries: BerrySeasoning[],
-  perFlavour = 3,
+  perFlavour = 5,
 ): BerrySeasoning[] {
   const picks = new Map<string, BerrySeasoning>();
   for (const f of Object.keys(FLAVOUR_TO_STAT) as Flavour[]) {
@@ -234,6 +241,30 @@ export function totalAchievableBudget(
   return best;
 }
 
+/**
+ * Composite score for tiebreaking. Two recipes with the same L2 distance
+ * to the target aren't equivalent from a user perspective — the one that
+ * packs MORE total useful points into the requested stats is better.
+ *
+ * Returned value: sum of min(actual, target) across the targeted (non-
+ * ignored) stats. Higher is better.
+ */
+function usefulYield(
+  target: TargetBoosts,
+  actual: Partial<Record<RidingStat, number>>,
+  ignored: Set<RidingStat>,
+): number {
+  let s = 0;
+  for (const stat of RIDE_STATS) {
+    if (ignored.has(stat)) continue;
+    const t = target[stat] ?? 0;
+    if (t <= 0) continue;
+    const a = actual[stat] ?? 0;
+    s += Math.max(0, Math.min(a, t));
+  }
+  return s;
+}
+
 export function suggestAprijuice(
   berries: BerrySeasoning[],
   target: TargetBoosts,
@@ -246,30 +277,44 @@ export function suggestAprijuice(
   const ignored = new Set(opts.ignoredStats ?? []);
   const pool = buildBerryPool(berries);
 
-  const bySignature = new Map<string, Suggestion>();
+  type Scored = Suggestion & { yield: number };
+  const bySignature = new Map<string, Scored>();
 
   for (const apricorn of apricorns) {
     for (const combo of multisetCombos(pool, MAX_SEASONINGS)) {
       const result = cookAprijuice({ apricorn, berries: combo });
       const d = distance(target, result.statBoosts, ignored);
+      const y = usefulYield(target, result.statBoosts, ignored);
       const sig = `${apricorn}|${[...combo]
         .map((b) => b.slug)
         .sort()
         .join(",")}`;
       const prev = bySignature.get(sig);
-      if (!prev || prev.distance > d) {
+      if (
+        !prev ||
+        prev.distance > d ||
+        (prev.distance === d && prev.yield < y)
+      ) {
         bySignature.set(sig, {
           apricorn,
           berrySlugs: combo.map((b) => b.slug),
           result,
           distance: d,
+          yield: y,
         });
       }
     }
   }
 
   return [...bySignature.values()]
-    .sort((a, b) => a.distance - b.distance)
+    .sort((a, b) => {
+      // Primary: closest to target (smaller L2 distance wins).
+      if (a.distance !== b.distance) return a.distance - b.distance;
+      // Tiebreak: higher useful yield wins (recipes that fill more of
+      // the requested stats).
+      return b.yield - a.yield;
+    })
+    .map(({ yield: _y, ...rest }) => rest)
     .slice(0, limit);
 }
 

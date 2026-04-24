@@ -614,8 +614,14 @@ export function JuiceMaker() {
                   <span className="text-xs uppercase font-medium">
                     {t("apricornHeading", { kind: s.apricorn })}
                   </span>
+                  <span
+                    className="ml-auto text-[10px] font-mono text-muted tabular-nums"
+                    title={t("distanceTitle")}
+                  >
+                    Δ {s.distance.toFixed(1)}
+                  </span>
                   {i < 3 && (
-                    <span className="ml-auto text-[10px] font-mono bg-accent text-accent-foreground rounded-full px-1.5 py-0.5">
+                    <span className="text-[10px] font-mono bg-accent text-accent-foreground rounded-full px-1.5 py-0.5">
                       #{i + 1}
                     </span>
                   )}
