@@ -33,7 +33,7 @@ export function DebugViewer({
   overrides,
 }: Props) {
   return (
-    <div className="rounded-lg border border-border bg-subtle overflow-hidden h-[70vh] min-h-[500px] relative">
+    <div className="rounded-lg border border-border bg-subtle overflow-hidden h-full min-h-[500px] relative">
       <Canvas
         camera={{ position: [1.8, 1.6, 1.8], fov: 30, near: 0.01, far: 100 }}
         gl={{ preserveDrawingBuffer: true }}

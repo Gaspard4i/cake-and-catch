@@ -80,18 +80,16 @@ export default function SnackDebugPage() {
   };
 
   return (
-    <div className="mx-auto max-w-[1400px] px-4 sm:px-6 py-6 sm:py-10">
-      <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight">
-        Snack 3D debug
-      </h1>
-      <p className="mt-2 text-sm text-muted max-w-2xl">
-        Hidden debug page. Large canvas with OrbitControls (drag = rotate,
-        scroll = zoom, right-drag = pan), axes + grid helpers, wireframe
-        toggle. Use the quick-fill buttons to sanity-check 1/2/3 berry
-        layouts against the in-game renderer.
-      </p>
+    <div className="px-3 py-3 h-[calc(100vh-56px)] flex flex-col">
+      <header className="flex items-baseline gap-3 flex-wrap mb-2">
+        <h1 className="text-lg font-semibold tracking-tight">Snack 3D debug</h1>
+        <p className="text-[11px] text-muted">
+          drag=rotate · scroll=zoom · right-drag=pan — tune placements live
+          with the sliders on the right.
+        </p>
+      </header>
 
-      <div className="mt-6 grid gap-4 lg:grid-cols-[1fr_340px]">
+      <div className="flex-1 grid gap-3 min-h-0 lg:grid-cols-[1fr_440px] xl:grid-cols-[1fr_520px]">
         <DebugViewer
           berries={selected}
           showAxes={showAxes}
@@ -101,53 +99,48 @@ export default function SnackDebugPage() {
           overrides={overrides}
         />
 
-        <aside className="space-y-4">
-          <section className="rounded-lg border border-border bg-card p-3 space-y-2">
-            <h2 className="text-xs uppercase tracking-wide text-muted">
-              Quick fill
-            </h2>
-            <div className="flex gap-2">
+        <aside className="overflow-y-auto pr-1 grid gap-3 grid-cols-1 auto-rows-min content-start">
+          {/* Top compact panel: quick fill + selected + helpers in a row. */}
+          <section className="rounded-lg border border-border bg-card p-2 space-y-2">
+            <div className="grid grid-cols-4 gap-1">
               <button
                 onClick={() => quickFill(1)}
-                className="flex-1 text-xs px-2 py-1.5 rounded-md border border-border hover:bg-subtle"
+                className="text-[11px] px-2 py-1 rounded-md border border-border hover:bg-subtle"
               >
-                1 berry
+                1
               </button>
               <button
                 onClick={() => quickFill(2)}
-                className="flex-1 text-xs px-2 py-1.5 rounded-md border border-border hover:bg-subtle"
+                className="text-[11px] px-2 py-1 rounded-md border border-border hover:bg-subtle"
               >
-                2 berries
+                2
               </button>
               <button
                 onClick={() => quickFill(3)}
-                className="flex-1 text-xs px-2 py-1.5 rounded-md border border-border hover:bg-subtle"
+                className="text-[11px] px-2 py-1 rounded-md border border-border hover:bg-subtle"
               >
-                3 berries
+                3
               </button>
               <button
                 onClick={() => setSlugs([])}
-                className="text-xs px-2 py-1.5 rounded-md border border-border hover:bg-subtle"
+                className="text-[11px] px-2 py-1 rounded-md border border-border hover:bg-subtle"
               >
                 Clear
               </button>
             </div>
-          </section>
 
-          <section className="rounded-lg border border-border bg-card p-3 space-y-2">
-            <h2 className="text-xs uppercase tracking-wide text-muted">
-              Selected ({selected.length}/3)
-            </h2>
             {selected.length === 0 ? (
-              <p className="text-xs text-muted">No berries on the snack.</p>
+              <p className="text-[11px] text-muted px-1">
+                No berries on the snack.
+              </p>
             ) : (
-              <ul className="space-y-1">
+              <ul className="space-y-0.5">
                 {selected.map((b, i) => (
                   <li
                     key={`${b.slug}-${i}`}
-                    className="flex items-center gap-2 text-xs rounded px-2 py-1 bg-subtle"
+                    className="flex items-center gap-1.5 text-[11px] rounded px-1.5 py-0.5 bg-subtle"
                   >
-                    <span className="font-mono text-[10px] text-muted">
+                    <span className="font-mono text-[9px] text-muted">
                       #{i}
                     </span>
                     <span className="flex-1 capitalize truncate">
@@ -156,7 +149,7 @@ export default function SnackDebugPage() {
                     <PositioningPreview b={b} i={i} total={selected.length} />
                     <button
                       onClick={() => removeAt(i)}
-                      className="text-muted hover:text-red-500"
+                      className="text-muted hover:text-red-500 leading-none"
                     >
                       ×
                     </button>
@@ -179,108 +172,90 @@ export default function SnackDebugPage() {
               </button>
             </div>
             <p className="text-[10px] text-muted leading-relaxed">
-              Tune every berry live. Offsets in world units (1 = 1 block = 16 MC
-              pixels). Rotations in degrees, added on top of the JSON rotation.
-              Y scale sign flips the berry (-1 = mod default, +1 = raw).
+              Offsets in world units (1 = block = 16 MC px). Rotations in
+              degrees, added on top of JSON. Scale Y sign flips the berry
+              (-1 = mod default, +1 = raw).
             </p>
-            <DebugSlider
-              label="offset X"
-              value={overrides.offsetX ?? 0}
-              min={-0.5}
-              max={0.5}
-              step={1 / 32}
-              onChange={(v) => setOv("offsetX", v)}
-            />
-            <DebugSlider
-              label="offset Y"
-              value={overrides.offsetY ?? 0}
-              min={-0.5}
-              max={0.5}
-              step={1 / 32}
-              onChange={(v) => setOv("offsetY", v)}
-            />
-            <DebugSlider
-              label="offset Z"
-              value={overrides.offsetZ ?? 0}
-              min={-0.5}
-              max={0.5}
-              step={1 / 32}
-              onChange={(v) => setOv("offsetZ", v)}
-            />
-            <DebugSlider
-              label="rot X"
-              value={overrides.rotOffsetX ?? 0}
-              min={-180}
-              max={180}
-              step={5}
-              unit="°"
-              onChange={(v) => setOv("rotOffsetX", v)}
-            />
-            <DebugSlider
-              label="rot Y"
-              value={overrides.rotOffsetY ?? 0}
-              min={-180}
-              max={180}
-              step={5}
-              unit="°"
-              onChange={(v) => setOv("rotOffsetY", v)}
-            />
-            <DebugSlider
-              label="rot Z"
-              value={overrides.rotOffsetZ ?? 0}
-              min={-180}
-              max={180}
-              step={5}
-              unit="°"
-              onChange={(v) => setOv("rotOffsetZ", v)}
-            />
-            <DebugSlider
-              label="scale Y factor"
-              value={overrides.scaleFactorY ?? -1}
-              min={-2}
-              max={2}
-              step={0.1}
-              onChange={(v) => setOv("scaleFactorY", v)}
-            />
-            <pre className="text-[9px] text-muted bg-subtle p-1.5 rounded overflow-x-auto">
-{JSON.stringify(overrides, null, 2)}
-            </pre>
-          </section>
-
-          <section className="rounded-lg border border-border bg-card p-3 space-y-2">
-            <h2 className="text-xs uppercase tracking-wide text-muted">
-              Berries ({berries.length})
-            </h2>
-            <div className="max-h-80 overflow-y-auto space-y-0.5">
-              {berries.map((b) => (
-                <button
-                  key={b.slug}
-                  onClick={() => add(b)}
-                  disabled={slugs.length >= 3}
-                  className="w-full text-left text-xs px-2 py-1 rounded hover:bg-subtle disabled:opacity-40 disabled:cursor-not-allowed"
-                >
-                  <span className="capitalize">{b.slug.replaceAll("_", " ")}</span>
-                  <span className="text-muted ml-1">
-                    ({b.snackPositionings?.length ?? 0})
-                  </span>
-                </button>
-              ))}
+            <div className="grid grid-cols-2 gap-x-3 gap-y-1">
+              <DebugSlider
+                label="off X"
+                value={overrides.offsetX ?? 0}
+                min={-0.5}
+                max={0.5}
+                step={1 / 32}
+                onChange={(v) => setOv("offsetX", v)}
+              />
+              <DebugSlider
+                label="rot X"
+                value={overrides.rotOffsetX ?? 0}
+                min={-180}
+                max={180}
+                step={5}
+                unit="°"
+                onChange={(v) => setOv("rotOffsetX", v)}
+              />
+              <DebugSlider
+                label="off Y"
+                value={overrides.offsetY ?? 0}
+                min={-0.5}
+                max={0.5}
+                step={1 / 32}
+                onChange={(v) => setOv("offsetY", v)}
+              />
+              <DebugSlider
+                label="rot Y"
+                value={overrides.rotOffsetY ?? 0}
+                min={-180}
+                max={180}
+                step={5}
+                unit="°"
+                onChange={(v) => setOv("rotOffsetY", v)}
+              />
+              <DebugSlider
+                label="off Z"
+                value={overrides.offsetZ ?? 0}
+                min={-0.5}
+                max={0.5}
+                step={1 / 32}
+                onChange={(v) => setOv("offsetZ", v)}
+              />
+              <DebugSlider
+                label="rot Z"
+                value={overrides.rotOffsetZ ?? 0}
+                min={-180}
+                max={180}
+                step={5}
+                unit="°"
+                onChange={(v) => setOv("rotOffsetZ", v)}
+              />
+              <DebugSlider
+                label="scale Y"
+                value={overrides.scaleFactorY ?? -1}
+                min={-2}
+                max={2}
+                step={0.1}
+                onChange={(v) => setOv("scaleFactorY", v)}
+              />
             </div>
+            <details className="text-[9px]">
+              <summary className="text-muted cursor-pointer">JSON</summary>
+              <pre className="text-muted bg-subtle p-1.5 rounded overflow-x-auto mt-1">
+{JSON.stringify(overrides, null, 2)}
+              </pre>
+            </details>
           </section>
 
-          <section className="rounded-lg border border-border bg-card p-3 space-y-2">
-            <h2 className="text-xs uppercase tracking-wide text-muted">
-              Helpers
-            </h2>
-            <label className="flex items-center gap-2 text-xs">
+          {/* Compact helpers row. */}
+          <section className="rounded-lg border border-border bg-card p-2 flex items-center gap-3 flex-wrap text-[11px]">
+            <label className="flex items-center gap-1">
               <input
                 type="checkbox"
                 checked={showAxes}
                 onChange={(e) => setShowAxes(e.target.checked)}
               />
-              Axes (R=X G=Y B=Z)
+              Axes
             </label>
-            <label className="flex items-center gap-2 text-xs">
+            <label className="flex items-center gap-1">
               <input
                 type="checkbox"
                 checked={showGrid}
@@ -288,24 +263,48 @@ export default function SnackDebugPage() {
               />
               Grid
             </label>
-            <label className="flex items-center gap-2 text-xs">
+            <label className="flex items-center gap-1">
               <input
                 type="checkbox"
                 checked={wireSnack}
                 onChange={(e) => setWireSnack(e.target.checked)}
               />
-              Wireframe snack
+              Wire
             </label>
-            <label className="flex items-center gap-2 text-xs">
-              <span>Pot colour</span>
+            <label className="flex items-center gap-1 ml-auto">
+              <span className="text-muted">Pot</span>
               <input
                 type="color"
                 value={potColour}
                 onChange={(e) => setPotColour(e.target.value)}
-                className="h-6 w-10"
+                className="h-5 w-8 rounded border border-border"
               />
-              <code className="font-mono text-[10px] text-muted">{potColour}</code>
             </label>
+          </section>
+
+          <section className="rounded-lg border border-border bg-card p-2 space-y-1">
+            <div className="flex items-center justify-between">
+              <h2 className="text-xs uppercase tracking-wide text-muted">
+                Berries ({berries.length})
+              </h2>
+            </div>
+            <ul className="grid grid-cols-2 gap-0.5 max-h-[calc(100vh-520px)] min-h-[160px] overflow-y-auto">
+              {berries.map((b) => (
+                <li key={b.slug}>
+                  <button
+                    onClick={() => add(b)}
+                    disabled={slugs.length >= 3}
+                    className="w-full text-left text-[11px] px-1.5 py-0.5 rounded hover:bg-subtle disabled:opacity-40 disabled:cursor-not-allowed capitalize truncate"
+                    title={b.slug}
+                  >
+                    {b.slug.replaceAll("_", " ")}
+                    <span className="text-muted text-[9px] ml-1">
+                      ({b.snackPositionings?.length ?? 0})
+                    </span>
+                  </button>
+                </li>
+              ))}
+            </ul>
           </section>
         </aside>
       </div>
@@ -331,11 +330,11 @@ function DebugSlider({
   onChange: (v: number) => void;
 }) {
   return (
-    <label className="block">
+    <label className="block leading-tight">
       <div className="flex items-center justify-between text-[10px] text-muted">
-        <span>{label}</span>
-        <span className="font-mono tabular-nums">
-          {value.toFixed(3)}
+        <span className="uppercase tracking-wide">{label}</span>
+        <span className="font-mono tabular-nums text-foreground">
+          {value.toFixed(value >= 1 || value <= -1 ? 0 : 2)}
           {unit}
         </span>
       </div>
@@ -346,7 +345,7 @@ function DebugSlider({
         step={step}
         value={value}
         onChange={(e) => onChange(Number(e.target.value))}
-        className="w-full accent-accent"
+        className="w-full accent-accent h-3"
       />
     </label>
   );
