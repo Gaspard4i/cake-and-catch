@@ -1,0 +1,248 @@
+{
+  "app": {
+    "title": "Snack & Catch",
+    "tagline": "Cobblemon のすべてのポケモンについて:どの Poké Snack を作れば引き寄せられるか、どこでスポーンするか、どんな条件か。",
+    "indexedSpecies": "{count} 種を登録済み。"
+  },
+  "footer": {
+    "dataFrom": "データ提供:",
+    "modSource": "Cobblemon (MPL 2.0)",
+    "and": "および",
+    "wikiSource": "Cobblemon wiki (CC BY 4.0)",
+    "builtBy": "制作:"
+  },
+  "home": {
+    "pokedexPreview": "ポケモン図鑑プレビュー",
+    "ctaPokedex": "図鑑を開く",
+    "ctaCake": "Snack maker",
+    "ctaRecipes": "レシピ",
+    "recentlyIndexed": "図鑑サンプル"
+  },
+  "pokedex": {
+    "title": "Cobblemon 図鑑",
+    "intro": "Mod とアドオンが登録するすべての種と実際のステータス。タイプや世代でフィルター、スクロールで追加読み込み。"
+  },
+  "nav": {
+    "pokedex": "図鑑",
+    "recipes": "レシピ",
+    "cake": "Snack maker",
+    "about": "このサイトについて"
+  },
+  "cake": {
+    "title": "Poké Snack maker",
+    "intro": "bait seasoning をスロットに置いてください。Seasoning に応じて Snack はタイプ・タマゴグループ・性格・個体値で引き寄せを偏らせ、色違い・隠れ特性・rarity bucket をブーストするものもあります。Snack を地面に置くと 8 ブロック以内のポケモンを引き寄せます。"
+  },
+  "biome": {
+    "spawnsHere": "登録スポーン ({count})"
+  },
+  "about": {
+    "title": "このサイトについて",
+    "intro": "Snack & Catch は Cobblemon Mod とコミュニティアドオンが公開するデータを参照します。表示される値はすべて出典とリンクされています。",
+    "sources": "データソース",
+    "api": "公開 API",
+    "apiIntro": "読み取り専用 JSON エンドポイント、キャッシュ 60 秒、レート制限 60 req/min/IP。",
+    "pokemon": "ポケモン商標",
+    "pokemonNotice": "ポケモンおよびクリーチャー名は任天堂・ゲームフリーク・株式会社ポケモンの商標です。本プロジェクトは非公式で、提携関係はありません。"
+  },
+  "recipes": {
+    "title": "料理レシピ",
+    "intro": "Cobblemon Campfire Pot のレシピ:cake、bait、snack、aprijuice。Seasoning スロットで効果をカスタマイズ。",
+    "shaped": "固定パターン",
+    "shapeless": "順不同",
+    "seasoningTag": "許可される seasoning スロット",
+    "kinds": {
+      "cake": "Poké Cake",
+      "bait": "Poké Bait",
+      "snack": "Poké Snack",
+      "aprijuice": "Aprijuice"
+    },
+    "kindsHelp": {
+      "cake": "遭遇を偏らせる共有ケーキ(色は seasoning に依存)。",
+      "bait": "釣り用餌 — 使う seasoning に応じて稀少度・性格・HA を調整。",
+      "snack": "味タイプでポケモンを引き寄せる snack。",
+      "aprijuice": "アプリコーンの実ジュースで騎乗ステータスを強化。"
+    }
+  },
+  "search": {
+    "placeholder": "ポケモンを検索 (例: pikachu、victini…)",
+    "submit": "検索",
+    "title": "ポケモンを検索",
+    "noResults": "「{q}」に一致する結果はありません。",
+    "loading": "読み込み中…"
+  },
+  "pokemon": {
+    "back": "← 戻る",
+    "stats": "ステータス",
+    "notes": "メモ",
+    "cakeSection": "最適な Snack",
+    "cakeHelp": "このポケモンのタイプ ({flavour}) を通じて遭遇を偏らせる bait seasoning。Snack のスロットに置いてください。",
+    "baitsTitle": "関連する bait seasoning",
+    "baitsHelp": "文書化されている bait 効果 (bite time、色違いリロール、HA、タイプバイアス)。",
+    "reason": {
+      "shiny_reroll": "色違いブースト",
+      "hidden_ability": "隠れ特性",
+      "nature_boost": "性格",
+      "level_boost": "レベル",
+      "baseline": "通常"
+    },
+    "spawnsCount": "スポーン ({count})",
+    "noSpawn": "この種の自然スポーンは記録されていません。",
+    "captureRate": "捕獲率 {value}",
+    "friendship": "なつき度 {value}",
+    "levelRange": "Lv. {min}–{max}",
+    "weight": "重み {value}",
+    "biomes": "バイオーム: ",
+    "condition": {
+      "time": "時間: {value}",
+      "moon": "月齢: {value}",
+      "raining": "雨",
+      "thundering": "雷雨",
+      "y": "Y: {min} → {max}",
+      "skyLight": "空の明るさ: {min}–{max}",
+      "structures": "構造物: {value}",
+      "blocks": "必要ブロック: {value}"
+    }
+  },
+  "theme": {
+    "label": "テーマを変更",
+    "system": "システム",
+    "light": "ライト",
+    "dark": "ダーク",
+    "pokecenter": "ポケモンセンター",
+    "grass": "フシギダネ",
+    "fire": "ヒトカゲ",
+    "water": "ゼニガメ"
+  },
+  "locale": {
+    "label": "言語",
+    "en": "English",
+    "fr": "Français",
+    "es": "Español",
+    "de": "Deutsch",
+    "pt": "Português",
+    "ja": "日本語",
+    "zh": "中文"
+  },
+  "source": {
+    "mod": "Mod ソース",
+    "wiki": "Wiki",
+    "derived": "導出",
+    "addon": "アドオン",
+    "addonNamed": "アドオン · {name}"
+  },
+  "common": {
+    "loading": "読み込み中",
+    "clear": "クリア",
+    "clearAll": "すべてクリア",
+    "any": "すべて",
+    "sort": "並び替え",
+    "search": "検索",
+    "remaining": "残り {count}",
+    "noMatch": "一致なし。"
+  },
+  "juice": {
+    "title": "Aprijuice maker",
+    "intro": "Campfire Pot で aprijuice を作ります。アプリコーンの色が騎乗ステータスの固定デルタを提供し、seasoning として加えたきのみは味ポイントとなり、しきい値テーブル (15 → 1pt、35 → 2pt、45 → 3pt、55 → 4pt、75 → 5pt、105 → 6pt) で追加ブーストに変換されます。",
+    "modeCook": "ジュースを作る",
+    "modeSuggest": "このステータスが欲しい → 提案",
+    "targetTitle": "騎乗ステータスを優先順で並べる",
+    "targetHelp": "ステータスをクリックして優先リストに追加。矢印で並べ替え — 順位 1 が最重要、順位 5 が最低。並んでいないステータスはソルバーで無視されます。",
+    "topCombos": "トップ組み合わせ",
+    "pickStat": "上のステータスを少なくとも 1 つ選んでください。",
+    "noCombo": "プラスになる組み合わせなし。ステータスを減らしてみてください。",
+    "loadIntoCook": "調理に読み込む",
+    "apricorn": "アプリコーン",
+    "apricornHeading": "{kind} aprijuice",
+    "noBakedEffect": "固定効果なし",
+    "flavourThresholds": "味しきい値",
+    "seasoningSlots": "Seasoning スロット",
+    "slotsCap": "{count} / {max} · Cobblemon campfire pot 上限",
+    "pantryBerries": "パントリー — きのみ",
+    "filterBerries": "きのみを絞り込む…",
+    "noBerry": "一致するきのみがありません。",
+    "flavourTotals": "味合計",
+    "rideBoosts": "騎乗ステータスブースト",
+    "rideBoostsHelp": "結果 = 味ポイント (合計から変換) + アプリコーンの基礎値。騎乗可能なポケモンが持つと、その ride controller のステータスが上昇します。",
+    "noNetBoost": "正味ブーストなし。次のしきい値を超えるには、きのみを追加してください。",
+    "moveUp": "上へ",
+    "moveDown": "下へ",
+    "remove": "削除",
+    "emptySlot": "空きスロット",
+    "noSeasoning": "seasoning なし"
+  },
+  "snack": {
+    "cookingPot": "Campfire Pot",
+    "potDefault": "ポット: {name}",
+    "dominant": "ドミナント:",
+    "seasoningSlotsCount": "Seasoning スロット {count}",
+    "baseRecipe": "Poké Snack 基本レシピ",
+    "pantry": "パントリー — bait seasoning",
+    "filterSeasonings": "Seasoning を絞り込む…",
+    "baitValidOnly": "有効な bait のみ",
+    "noSeasoningMatch": "このフィルターに一致する seasoning はありません。",
+    "snackEffects": "Snack bait 効果",
+    "effectsHelp": "ポット内のすべての seasoning の累積効果。(type, subcategory) 単位で SpawnBaitUtils.mergeEffects に従い合算され、チャンスは合計して 100 % でキャップ、値は切り上げで合算されます。",
+    "dropSeasoning": "bait seasoning を置くと効果が表示されます。",
+    "filters": "フィルター",
+    "mods": "Mod",
+    "modsAny": "デフォルト",
+    "biomes": "バイオーム",
+    "biomesAny": "すべてのバイオーム",
+    "time": "時間",
+    "timeAny": "すべての時間",
+    "minY": "Y 最小",
+    "maxY": "Y 最大",
+    "attracted": "引き寄せられたポケモン",
+    "attractedWip": "開発中 — 確率はおおよその値です",
+    "attractedWipBody": "下のランキングは Cobblemon Poké Snack のスポーンパイプライン (バイオーム/時間/Y で絞った世界プール、uncommon ×2.25 / rare & ultra-rare ×5.5 の bucket 倍率を無条件適用、typing/egg-group bait 効果で一致エントリの重みを乗算、rarity_bucket で bucket 間比率を平滑化 — 確率 ≈ P(bucket) × 重みシェア) を再現するベストエフォートです。まだ Mod と 1:1 ではありません。anticondition、入れ子条件、structure/lunar/skylight ゲート、アドオン固有ルールなどのエッジケースは調整中のため、数値は参考として扱い、保証ではありません。改善は継続的に反映されます。",
+    "searchAttracted": "名前または Dex で検索…",
+    "types": "タイプ",
+    "typesAny": "すべてのタイプ",
+    "rarity": "稀少度",
+    "sortProbability": "スポーン % (降順)",
+    "sortBucket": "稀少度 (ultra → common)",
+    "sortDex": "Dex 番号 (昇順)",
+    "sortDexDesc": "Dex 番号 (降順)",
+    "sortName": "名前 (A→Z)",
+    "sortNameDesc": "名前 (Z→A)",
+    "shiny": "色違い",
+    "noAttracted": "一致するポケモンがありません。フィルターを外してみてください。",
+    "dropHint": "ここに bait seasoning を置く",
+    "previewDisclaimer": "プレビュー表示です — ゲーム内の snack は異なる場合があります。"
+  },
+  "pokedexUi": {
+    "searchPlaceholder": "名前で検索…",
+    "types": "タイプ",
+    "typesAny": "すべてのタイプ",
+    "gens": "世代",
+    "gensAny": "すべての世代",
+    "tag": "タグ",
+    "tagAny": "すべて",
+    "shiny": "色違い",
+    "shinyTitle": "色違いスプライト切替",
+    "abilities": "特性:",
+    "total": "合計",
+    "catch": "捕獲",
+    "speciesCount": "{count} 種",
+    "sortDex": "Dex 番号 (昇順)",
+    "sortDexDesc": "Dex 番号 (降順)",
+    "sortName": "名前 (A→Z)",
+    "sortNameDesc": "名前 (Z→A)",
+    "sortHp": "HP (降順)",
+    "sortAttack": "こうげき (降順)",
+    "sortSpeed": "すばやさ (降順)",
+    "sortTotal": "種族値合計 (降順)"
+  },
+  "effects": {
+    "ev": "EV",
+    "iv": "IV",
+    "nature": "性格",
+    "hiddenAbility": "隠れ特性",
+    "markChance": "マーク確率",
+    "rarity": "稀少度",
+    "bite": "喰い付き",
+    "lv": "Lv",
+    "drops": "ドロップ",
+    "rerollN": "reroll ×{value}"
+  }
+}

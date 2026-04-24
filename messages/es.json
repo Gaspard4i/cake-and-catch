@@ -1,0 +1,248 @@
+{
+  "app": {
+    "title": "Snack & Catch",
+    "tagline": "Para cada Pokémon de Cobblemon: qué Poké Snack cocinar para atraerlo, dónde aparece y bajo qué condiciones.",
+    "indexedSpecies": "{count} especies indexadas."
+  },
+  "footer": {
+    "dataFrom": "Datos de",
+    "modSource": "Cobblemon (MPL 2.0)",
+    "and": "y",
+    "wikiSource": "wiki de Cobblemon (CC BY 4.0)",
+    "builtBy": "Hecho por"
+  },
+  "home": {
+    "pokedexPreview": "Vista previa de la Pokédex",
+    "ctaPokedex": "Abrir la Pokédex",
+    "ctaCake": "Snack maker",
+    "ctaRecipes": "Recetas",
+    "recentlyIndexed": "Muestra de la Pokédex"
+  },
+  "pokedex": {
+    "title": "Pokédex de Cobblemon",
+    "intro": "Todas las especies indexadas por el mod y sus addons, con sus stats reales. Filtra por tipo o generación, desplaza para cargar más."
+  },
+  "nav": {
+    "pokedex": "Pokédex",
+    "recipes": "Recetas",
+    "cake": "Snack maker",
+    "about": "Acerca de"
+  },
+  "cake": {
+    "title": "Poké Snack maker",
+    "intro": "Coloca un bait seasoning en un slot. Según el seasoning, el Snack sesga la atracción por tipo, grupo huevo, naturaleza o IVs; algunos aumentan probabilidad shiny, habilidad oculta o rarity bucket. Deja el Snack en el suelo para atraer Pokémon en un radio de 8 bloques."
+  },
+  "biome": {
+    "spawnsHere": "Apariciones listadas ({count})"
+  },
+  "about": {
+    "title": "Acerca de",
+    "intro": "Snack & Catch referencia datos publicados por el mod Cobblemon y sus addons comunitarios populares. Cada valor mostrado está ligado a su fuente.",
+    "sources": "Fuentes de datos",
+    "api": "API pública",
+    "apiIntro": "Endpoint JSON de solo lectura, caché 60s, límite 60 req/min/IP.",
+    "pokemon": "Marca Pokémon",
+    "pokemonNotice": "Pokémon y los nombres de las criaturas son marcas de Nintendo / Game Freak / The Pokémon Company. Este proyecto es no oficial y no afiliado."
+  },
+  "recipes": {
+    "title": "Recetas de cocina",
+    "intro": "Recetas de la Campfire Pot de Cobblemon: pastel, bait, snack, aprijuice. Los seasoning slots personalizan los efectos.",
+    "shaped": "patrón fijo",
+    "shapeless": "sin forma",
+    "seasoningTag": "Slot de seasoning aceptado",
+    "kinds": {
+      "cake": "Poké Cake",
+      "bait": "Poké Bait",
+      "snack": "Poké Snack",
+      "aprijuice": "Aprijuice"
+    },
+    "kindsHelp": {
+      "cake": "Pastel compartido que sesga los encuentros (color depende del seasoning).",
+      "bait": "Cebo de pesca — ajusta rareza / naturaleza / HA según el seasoning usado.",
+      "snack": "Snack que atrae a un Pokémon por tipo de sabor.",
+      "aprijuice": "Jugo de apricorn para potenciar stats de montura."
+    }
+  },
+  "search": {
+    "placeholder": "Busca un Pokémon (ej. pikachu, victini…)",
+    "submit": "Buscar",
+    "title": "Buscar un Pokémon",
+    "noResults": "Sin resultados para «{q}».",
+    "loading": "Cargando…"
+  },
+  "pokemon": {
+    "back": "← Atrás",
+    "stats": "Stats",
+    "notes": "Notas",
+    "cakeSection": "Snack óptimo",
+    "cakeHelp": "Bait seasonings que sesgan los encuentros hacia este Pokémon vía su tipo ({flavour}). Coloca uno en un slot del Snack.",
+    "baitsTitle": "Bait seasonings relevantes",
+    "baitsHelp": "Efectos de bait documentados (bite time, shiny reroll, HA, sesgo de tipo).",
+    "reason": {
+      "shiny_reroll": "bonus shiny",
+      "hidden_ability": "habilidad oculta",
+      "nature_boost": "naturaleza",
+      "level_boost": "nivel",
+      "baseline": "básico"
+    },
+    "spawnsCount": "Apariciones ({count})",
+    "noSpawn": "No hay apariciones naturales documentadas para esta especie.",
+    "captureRate": "Tasa de captura {value}",
+    "friendship": "Amistad {value}",
+    "levelRange": "Niv. {min}–{max}",
+    "weight": "peso {value}",
+    "biomes": "Biomas: ",
+    "condition": {
+      "time": "Hora: {value}",
+      "moon": "Luna: {value}",
+      "raining": "Lluvia",
+      "thundering": "Tormenta",
+      "y": "Y: {min} → {max}",
+      "skyLight": "Luz celeste: {min}–{max}",
+      "structures": "Estructuras: {value}",
+      "blocks": "Bloques requeridos: {value}"
+    }
+  },
+  "theme": {
+    "label": "Cambiar tema",
+    "system": "Sistema",
+    "light": "Claro",
+    "dark": "Oscuro",
+    "pokecenter": "Poké Center",
+    "grass": "Bulbasaur",
+    "fire": "Charmander",
+    "water": "Squirtle"
+  },
+  "locale": {
+    "label": "Idioma",
+    "en": "English",
+    "fr": "Français",
+    "es": "Español",
+    "de": "Deutsch",
+    "pt": "Português",
+    "ja": "日本語",
+    "zh": "中文"
+  },
+  "source": {
+    "mod": "Fuente del mod",
+    "wiki": "Wiki",
+    "derived": "Derivado",
+    "addon": "Addon",
+    "addonNamed": "Addon · {name}"
+  },
+  "common": {
+    "loading": "cargando",
+    "clear": "Limpiar",
+    "clearAll": "Limpiar todo",
+    "any": "Cualquiera",
+    "sort": "Orden",
+    "search": "Buscar",
+    "remaining": "{count} restantes",
+    "noMatch": "Sin resultados."
+  },
+  "juice": {
+    "title": "Aprijuice maker",
+    "intro": "Prepara un aprijuice en la Campfire Pot. El color del apricorn aporta un conjunto de deltas de stats de montura; las bayas añadidas como seasoning aportan puntos de sabor convertidos en boosts vía la tabla de umbrales (15 → 1pt, 35 → 2pt, 45 → 3pt, 55 → 4pt, 75 → 5pt, 105 → 6pt).",
+    "modeCook": "Cocinar un jugo",
+    "modeSuggest": "Quiero una stat → sugerir",
+    "targetTitle": "Ordena las stats de montura por prioridad",
+    "targetHelp": "Haz clic en una stat para añadirla a tu lista de prioridad. Usa las flechas para reordenar — el rango 1 pesa más, el rango 5 menos. Las stats no clasificadas son ignoradas por el solver.",
+    "topCombos": "Mejores combinaciones",
+    "pickStat": "Elige al menos una stat arriba.",
+    "noCombo": "Ninguna combinación puntúa positivamente. Prueba con menos stats.",
+    "loadIntoCook": "Cargar en cocción",
+    "apricorn": "Apricorn",
+    "apricornHeading": "aprijuice {kind}",
+    "noBakedEffect": "sin efecto integrado",
+    "flavourThresholds": "Umbrales de sabor",
+    "seasoningSlots": "Slots de seasoning",
+    "slotsCap": "{count} / {max} · límite campfire pot Cobblemon",
+    "pantryBerries": "Despensa — bayas",
+    "filterBerries": "Filtrar bayas…",
+    "noBerry": "Ninguna baya coincide.",
+    "flavourTotals": "Totales de sabor",
+    "rideBoosts": "Boosts de stats de montura",
+    "rideBoostsHelp": "Resultado = puntos de sabor (convertidos desde los totales) + base del apricorn. Portado por un Pokémon montable, potencia las stats de su ride controller.",
+    "noNetBoost": "Sin boost neto. Añade más bayas para cruzar el siguiente umbral.",
+    "moveUp": "Subir",
+    "moveDown": "Bajar",
+    "remove": "Quitar",
+    "emptySlot": "Slot vacío",
+    "noSeasoning": "sin seasoning"
+  },
+  "snack": {
+    "cookingPot": "Campfire Pot",
+    "potDefault": "Olla: {name}",
+    "dominant": "Dominante:",
+    "seasoningSlotsCount": "{count} slots de seasoning",
+    "baseRecipe": "Receta base del Poké Snack",
+    "pantry": "Despensa — bait seasonings",
+    "filterSeasonings": "Filtrar seasonings…",
+    "baitValidOnly": "Solo bait válidos",
+    "noSeasoningMatch": "Ningún seasoning coincide con estos filtros.",
+    "snackEffects": "Efectos de bait del snack",
+    "effectsHelp": "Efectos acumulados de cada seasoning en la olla. Fusionados por (tipo, subcategoría) siguiendo SpawnBaitUtils.mergeEffects: las probabilidades se suman y cappean al 100 %, los valores se redondean arriba.",
+    "dropSeasoning": "Coloca un bait seasoning para ver sus efectos.",
+    "filters": "Filtros",
+    "mods": "Mods",
+    "modsAny": "Por defecto",
+    "biomes": "Biomas",
+    "biomesAny": "Cualquier bioma",
+    "time": "Hora",
+    "timeAny": "Cualquier hora",
+    "minY": "Y min",
+    "maxY": "Y max",
+    "attracted": "Pokémon atraídos",
+    "attractedWip": "En desarrollo — las probabilidades son aproximadas",
+    "attractedWipBody": "El ranking de abajo es mi mejor reproducción del pipeline de spawn del Poké Snack de Cobblemon (pool mundial filtrado por bioma/hora/Y, multiplicadores uncommon ×2.25 / rare & ultra-rare ×5.5 aplicados incondicionalmente, efectos bait de tipo/grupo-huevo multiplicando el peso de las entradas coincidentes, luego rarity_bucket suavizando los ratios entre buckets — probabilidad ≈ P(bucket) × parte del peso). Todavía no es 1:1 con el mod. Los casos límite con anticonditions, condiciones anidadas, gates de estructura/luna/skylight y reglas de spawn específicas de addons siguen en ajuste, así que toma los números como guía, no como garantía. Las mejoras llegan continuamente.",
+    "searchAttracted": "Buscar por nombre o dex…",
+    "types": "Tipos",
+    "typesAny": "Cualquier tipo",
+    "rarity": "Rareza",
+    "sortProbability": "% spawn (desc)",
+    "sortBucket": "Rareza (ultra → común)",
+    "sortDex": "Número dex (asc)",
+    "sortDexDesc": "Número dex (desc)",
+    "sortName": "Nombre (A→Z)",
+    "sortNameDesc": "Nombre (Z→A)",
+    "shiny": "Shiny",
+    "noAttracted": "Ningún Pokémon coincide. Quita filtros.",
+    "dropHint": "Coloca un bait seasoning aquí",
+    "previewDisclaimer": "Vista previa orientativa — el snack en juego puede diferir."
+  },
+  "pokedexUi": {
+    "searchPlaceholder": "Buscar Pokémon por nombre…",
+    "types": "Tipos",
+    "typesAny": "Cualquier tipo",
+    "gens": "Gens",
+    "gensAny": "Todas las gens",
+    "tag": "Tag",
+    "tagAny": "Cualquiera",
+    "shiny": "Shiny",
+    "shinyTitle": "Alternar sprites shiny",
+    "abilities": "Habilidades:",
+    "total": "Total",
+    "catch": "Captura",
+    "speciesCount": "{count} especies",
+    "sortDex": "Número dex (asc)",
+    "sortDexDesc": "Número dex (desc)",
+    "sortName": "Nombre (A→Z)",
+    "sortNameDesc": "Nombre (Z→A)",
+    "sortHp": "HP (desc)",
+    "sortAttack": "Ataque (desc)",
+    "sortSpeed": "Velocidad (desc)",
+    "sortTotal": "Stats base total (desc)"
+  },
+  "effects": {
+    "ev": "EV",
+    "iv": "IV",
+    "nature": "Naturaleza",
+    "hiddenAbility": "Habilidad oculta",
+    "markChance": "Probabilidad de marca",
+    "rarity": "Rareza",
+    "bite": "Mordida",
+    "lv": "Niv",
+    "drops": "Drops",
+    "rerollN": "reroll ×{value}"
+  }
+}

@@ -1,0 +1,248 @@
+{
+  "app": {
+    "title": "Snack & Catch",
+    "tagline": "对于每只 Cobblemon 宝可梦:该烹饪哪款 Poké Snack 吸引它、它在哪里刷新、需要什么条件。",
+    "indexedSpecies": "已收录 {count} 种。"
+  },
+  "footer": {
+    "dataFrom": "数据来自",
+    "modSource": "Cobblemon (MPL 2.0)",
+    "and": "与",
+    "wikiSource": "Cobblemon wiki (CC BY 4.0)",
+    "builtBy": "作者:"
+  },
+  "home": {
+    "pokedexPreview": "图鉴预览",
+    "ctaPokedex": "打开图鉴",
+    "ctaCake": "Snack maker",
+    "ctaRecipes": "配方",
+    "recentlyIndexed": "图鉴样例"
+  },
+  "pokedex": {
+    "title": "Cobblemon 图鉴",
+    "intro": "由 Mod 及其扩展收录的全部种类与真实种族值。按属性或世代筛选,滚动以加载更多。"
+  },
+  "nav": {
+    "pokedex": "图鉴",
+    "recipes": "配方",
+    "cake": "Snack maker",
+    "about": "关于"
+  },
+  "cake": {
+    "title": "Poké Snack maker",
+    "intro": "将一个 bait seasoning 放入槽中。依据所用 seasoning,Snack 会按属性、蛋组、性格或个体值偏向吸引,有的会提高闪光率、隐藏特性或 rarity bucket。把 Snack 放在地上可吸引 8 格内的宝可梦。"
+  },
+  "biome": {
+    "spawnsHere": "已列出的刷新 ({count})"
+  },
+  "about": {
+    "title": "关于",
+    "intro": "Snack & Catch 引用 Cobblemon Mod 及社区扩展发布的数据。每个显示值都链接到其来源。",
+    "sources": "数据来源",
+    "api": "公共 API",
+    "apiIntro": "只读 JSON 端点,60 秒缓存,限流 60 req/min/IP。",
+    "pokemon": "宝可梦商标",
+    "pokemonNotice": "宝可梦及生物名称为任天堂 / Game Freak / 株式会社宝可梦的商标。本项目非官方、无隶属关系。"
+  },
+  "recipes": {
+    "title": "烹饪配方",
+    "intro": "Cobblemon Campfire Pot 配方:cake、bait、snack、aprijuice。Seasoning 槽用于定制效果。",
+    "shaped": "固定样式",
+    "shapeless": "无序",
+    "seasoningTag": "可接受的 seasoning 槽",
+    "kinds": {
+      "cake": "Poké Cake",
+      "bait": "Poké Bait",
+      "snack": "Poké Snack",
+      "aprijuice": "Aprijuice"
+    },
+    "kindsHelp": {
+      "cake": "共享蛋糕,偏向遭遇(颜色由 seasoning 决定)。",
+      "bait": "钓鱼饵 — 按所用 seasoning 调整稀有度 / 性格 / HA。",
+      "snack": "按味道类型吸引一只宝可梦的 snack。",
+      "aprijuice": "由 Apricorn 果汁提升坐骑属性。"
+    }
+  },
+  "search": {
+    "placeholder": "搜索宝可梦(如 pikachu、victini…)",
+    "submit": "搜索",
+    "title": "搜索宝可梦",
+    "noResults": "没有与「{q}」匹配的结果。",
+    "loading": "加载中…"
+  },
+  "pokemon": {
+    "back": "← 返回",
+    "stats": "能力值",
+    "notes": "备注",
+    "cakeSection": "最佳 Snack",
+    "cakeHelp": "通过属性({flavour})把遭遇偏向该宝可梦的 bait seasoning。请放入 Snack 槽之一。",
+    "baitsTitle": "相关 bait seasoning",
+    "baitsHelp": "已文档化的 bait 效果(bite time、shiny reroll、HA、属性偏向)。",
+    "reason": {
+      "shiny_reroll": "闪光加成",
+      "hidden_ability": "隐藏特性",
+      "nature_boost": "性格",
+      "level_boost": "等级",
+      "baseline": "基础"
+    },
+    "spawnsCount": "刷新 ({count})",
+    "noSpawn": "该种类未记录自然刷新。",
+    "captureRate": "捕获率 {value}",
+    "friendship": "亲密度 {value}",
+    "levelRange": "Lv. {min}–{max}",
+    "weight": "权重 {value}",
+    "biomes": "生物群系: ",
+    "condition": {
+      "time": "时间: {value}",
+      "moon": "月相: {value}",
+      "raining": "下雨",
+      "thundering": "雷暴",
+      "y": "Y: {min} → {max}",
+      "skyLight": "天空亮度: {min}–{max}",
+      "structures": "结构: {value}",
+      "blocks": "必需方块: {value}"
+    }
+  },
+  "theme": {
+    "label": "切换主题",
+    "system": "系统",
+    "light": "浅色",
+    "dark": "深色",
+    "pokecenter": "Poké 中心",
+    "grass": "妙蛙种子",
+    "fire": "小火龙",
+    "water": "杰尼龟"
+  },
+  "locale": {
+    "label": "语言",
+    "en": "English",
+    "fr": "Français",
+    "es": "Español",
+    "de": "Deutsch",
+    "pt": "Português",
+    "ja": "日本語",
+    "zh": "中文"
+  },
+  "source": {
+    "mod": "Mod 源",
+    "wiki": "Wiki",
+    "derived": "推导",
+    "addon": "扩展",
+    "addonNamed": "扩展 · {name}"
+  },
+  "common": {
+    "loading": "加载中",
+    "clear": "清除",
+    "clearAll": "全部清除",
+    "any": "任意",
+    "sort": "排序",
+    "search": "搜索",
+    "remaining": "剩余 {count}",
+    "noMatch": "无匹配。"
+  },
+  "juice": {
+    "title": "Aprijuice maker",
+    "intro": "在 Campfire Pot 中酿制 aprijuice。Apricorn 的颜色提供固定的坐骑属性增量;作为 seasoning 加入的果实贡献风味点,并通过门槛表(15 → 1pt、35 → 2pt、45 → 3pt、55 → 4pt、75 → 5pt、105 → 6pt)转换为额外加成。",
+    "modeCook": "烹饪果汁",
+    "modeSuggest": "我想要某个属性 → 推荐",
+    "targetTitle": "按优先级对坐骑属性排序",
+    "targetHelp": "点击某个属性以加入优先级列表。用箭头重新排序 — 第 1 位权重最高,第 5 位最低。未列出的属性将被求解器忽略。",
+    "topCombos": "最佳组合",
+    "pickStat": "请在上面至少选择一个属性。",
+    "noCombo": "没有组合得到正分。尝试选择更少的属性。",
+    "loadIntoCook": "加载到烹饪",
+    "apricorn": "Apricorn",
+    "apricornHeading": "{kind} aprijuice",
+    "noBakedEffect": "无内置效果",
+    "flavourThresholds": "风味门槛",
+    "seasoningSlots": "Seasoning 槽",
+    "slotsCap": "{count} / {max} · Cobblemon campfire pot 上限",
+    "pantryBerries": "储藏 — 果实",
+    "filterBerries": "筛选果实…",
+    "noBerry": "没有果实匹配。",
+    "flavourTotals": "风味合计",
+    "rideBoosts": "坐骑属性加成",
+    "rideBoostsHelp": "结果 = 风味点(由合计转换)+ apricorn 基础值。被可乘骑的宝可梦携带时,用于提升 ride controller 属性。",
+    "noNetBoost": "没有净加成。添加更多果实以跨过下一个门槛。",
+    "moveUp": "上移",
+    "moveDown": "下移",
+    "remove": "移除",
+    "emptySlot": "空槽",
+    "noSeasoning": "无 seasoning"
+  },
+  "snack": {
+    "cookingPot": "Campfire Pot",
+    "potDefault": "锅: {name}",
+    "dominant": "主导:",
+    "seasoningSlotsCount": "{count} 个 seasoning 槽",
+    "baseRecipe": "Poké Snack 基础配方",
+    "pantry": "储藏 — bait seasoning",
+    "filterSeasonings": "筛选 seasoning…",
+    "baitValidOnly": "仅有效 bait",
+    "noSeasoningMatch": "没有 seasoning 匹配这些筛选。",
+    "snackEffects": "Snack bait 效果",
+    "effectsHelp": "锅中每个 seasoning 的累积效果。按 (type, subcategory) 依据 SpawnBaitUtils.mergeEffects 合并:概率求和并在 100 % 处封顶,数值按向上取整求和。",
+    "dropSeasoning": "放入一个 bait seasoning 以查看效果。",
+    "filters": "筛选",
+    "mods": "Mods",
+    "modsAny": "默认",
+    "biomes": "生物群系",
+    "biomesAny": "任意生物群系",
+    "time": "时间",
+    "timeAny": "任意时间",
+    "minY": "Y 最小",
+    "maxY": "Y 最大",
+    "attracted": "被吸引的宝可梦",
+    "attractedWip": "开发中 — 概率为近似值",
+    "attractedWipBody": "下方排名是我对 Cobblemon Poké Snack 刷新流程的尽力还原(按生物群系/时间/Y 过滤的世界池、uncommon ×2.25 / rare & ultra-rare ×5.5 的 bucket 乘数无条件应用、typing/egg-group bait 效果为匹配项的权重相乘、再用 rarity_bucket 缓和 bucket 间比例 — 概率 ≈ P(bucket) × 权重占比)。尚未与 Mod 完全一致。关于 anticondition、嵌套条件、structure/lunar/skylight 限制及扩展特有刷新规则的边缘情形仍在打磨,数字仅供参考,并非保证。改进持续推送。",
+    "searchAttracted": "按名称或 dex 搜索…",
+    "types": "属性",
+    "typesAny": "任意属性",
+    "rarity": "稀有度",
+    "sortProbability": "刷新 %(降序)",
+    "sortBucket": "稀有度 (ultra → common)",
+    "sortDex": "Dex 编号(升序)",
+    "sortDexDesc": "Dex 编号(降序)",
+    "sortName": "名称(A→Z)",
+    "sortNameDesc": "名称(Z→A)",
+    "shiny": "闪光",
+    "noAttracted": "没有宝可梦匹配。请移除部分筛选。",
+    "dropHint": "将 bait seasoning 放在这里",
+    "previewDisclaimer": "仅为预览 — 游戏中的 snack 可能不同。"
+  },
+  "pokedexUi": {
+    "searchPlaceholder": "按名称搜索…",
+    "types": "属性",
+    "typesAny": "任意属性",
+    "gens": "世代",
+    "gensAny": "全部世代",
+    "tag": "标签",
+    "tagAny": "任意",
+    "shiny": "闪光",
+    "shinyTitle": "切换闪光精灵图",
+    "abilities": "特性:",
+    "total": "合计",
+    "catch": "捕获",
+    "speciesCount": "{count} 种",
+    "sortDex": "Dex 编号(升序)",
+    "sortDexDesc": "Dex 编号(降序)",
+    "sortName": "名称(A→Z)",
+    "sortNameDesc": "名称(Z→A)",
+    "sortHp": "HP(降序)",
+    "sortAttack": "攻击(降序)",
+    "sortSpeed": "速度(降序)",
+    "sortTotal": "种族值合计(降序)"
+  },
+  "effects": {
+    "ev": "EV",
+    "iv": "IV",
+    "nature": "性格",
+    "hiddenAbility": "隐藏特性",
+    "markChance": "印记几率",
+    "rarity": "稀有度",
+    "bite": "咬合",
+    "lv": "Lv",
+    "drops": "掉落",
+    "rerollN": "reroll ×{value}"
+  }
+}

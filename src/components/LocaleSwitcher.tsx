@@ -6,8 +6,13 @@ import { setLocale } from "@/i18n/actions";
 import type { Locale } from "@/i18n/config";
 
 const LOCALES: { id: Locale; flag: string }[] = [
-  { id: "fr", flag: "FR" },
   { id: "en", flag: "EN" },
+  { id: "fr", flag: "FR" },
+  { id: "es", flag: "ES" },
+  { id: "de", flag: "DE" },
+  { id: "pt", flag: "PT" },
+  { id: "ja", flag: "JA" },
+  { id: "zh", flag: "ZH" },
 ];
 
 export function LocaleSwitcher() {

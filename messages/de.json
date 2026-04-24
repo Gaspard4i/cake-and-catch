@@ -1,0 +1,248 @@
+{
+  "app": {
+    "title": "Snack & Catch",
+    "tagline": "Für jedes Cobblemon-Pokémon: welchen Poké Snack kochen, um es anzulocken, wo es spawnt und unter welchen Bedingungen.",
+    "indexedSpecies": "{count} Spezies indexiert."
+  },
+  "footer": {
+    "dataFrom": "Daten von",
+    "modSource": "Cobblemon (MPL 2.0)",
+    "and": "und",
+    "wikiSource": "Cobblemon-Wiki (CC BY 4.0)",
+    "builtBy": "Gebaut von"
+  },
+  "home": {
+    "pokedexPreview": "Pokédex-Vorschau",
+    "ctaPokedex": "Pokédex öffnen",
+    "ctaCake": "Snack maker",
+    "ctaRecipes": "Rezepte",
+    "recentlyIndexed": "Pokédex-Auszug"
+  },
+  "pokedex": {
+    "title": "Cobblemon Pokédex",
+    "intro": "Alle vom Mod und seinen Addons indexierten Spezies mit echten Stats. Nach Typ oder Generation filtern, scrollen zum Nachladen."
+  },
+  "nav": {
+    "pokedex": "Pokédex",
+    "recipes": "Rezepte",
+    "cake": "Snack maker",
+    "about": "Über"
+  },
+  "cake": {
+    "title": "Poké Snack maker",
+    "intro": "Lege ein Bait Seasoning in einen Slot. Je nach Seasoning lenkt der Snack die Anziehung über Typ, Egg-Gruppe, Wesen oder IVs; einige erhöhen Shiny-Chance, versteckte Fähigkeit oder Rarity-Bucket. Platziere den Snack auf dem Boden, um Pokémon im Umkreis von 8 Blöcken anzuziehen."
+  },
+  "biome": {
+    "spawnsHere": "Aufgeführte Spawns ({count})"
+  },
+  "about": {
+    "title": "Über",
+    "intro": "Snack & Catch referenziert Daten des Cobblemon-Mods und beliebter Community-Addons. Jeder angezeigte Wert ist mit seiner Quelle verknüpft.",
+    "sources": "Datenquellen",
+    "api": "Öffentliche API",
+    "apiIntro": "Schreibgeschützter JSON-Endpoint, 60s Cache, Rate Limit 60 req/min/IP.",
+    "pokemon": "Pokémon-Markenzeichen",
+    "pokemonNotice": "Pokémon und die Namen der Kreaturen sind Marken von Nintendo / Game Freak / The Pokémon Company. Dieses Projekt ist inoffiziell und nicht verbunden."
+  },
+  "recipes": {
+    "title": "Kochrezepte",
+    "intro": "Rezepte des Cobblemon Campfire Pot: Cake, Bait, Snack, Aprijuice. Seasoning-Slots personalisieren die Effekte.",
+    "shaped": "festes Muster",
+    "shapeless": "formlos",
+    "seasoningTag": "Akzeptierter Seasoning-Slot",
+    "kinds": {
+      "cake": "Poké Cake",
+      "bait": "Poké Bait",
+      "snack": "Poké Snack",
+      "aprijuice": "Aprijuice"
+    },
+    "kindsHelp": {
+      "cake": "Gemeinsamer Cake, der Begegnungen verschiebt (Farbe hängt vom Seasoning ab).",
+      "bait": "Angelköder — passt Seltenheit / Wesen / HA je nach verwendetem Seasoning an.",
+      "snack": "Snack, der ein Pokémon nach Geschmackstyp anzieht.",
+      "aprijuice": "Apricorn-Beeren-Saft zur Steigerung der Reit-Stats."
+    }
+  },
+  "search": {
+    "placeholder": "Pokémon suchen (z. B. pikachu, victini…)",
+    "submit": "Suchen",
+    "title": "Pokémon suchen",
+    "noResults": "Kein Ergebnis für „{q}“.",
+    "loading": "Lade…"
+  },
+  "pokemon": {
+    "back": "← Zurück",
+    "stats": "Stats",
+    "notes": "Notizen",
+    "cakeSection": "Optimaler Snack",
+    "cakeHelp": "Bait Seasonings, die Begegnungen zu diesem Pokémon über seinen Typ ({flavour}) verschieben. Lege eines in einen Snack-Slot.",
+    "baitsTitle": "Relevante Bait Seasonings",
+    "baitsHelp": "Dokumentierte Bait-Effekte (Bite Time, Shiny Reroll, HA, Typ-Bias).",
+    "reason": {
+      "shiny_reroll": "Shiny-Boost",
+      "hidden_ability": "versteckte Fähigkeit",
+      "nature_boost": "Wesen",
+      "level_boost": "Level",
+      "baseline": "einfach"
+    },
+    "spawnsCount": "Spawns ({count})",
+    "noSpawn": "Kein natürlicher Spawn für diese Spezies dokumentiert.",
+    "captureRate": "Fangrate {value}",
+    "friendship": "Freundschaft {value}",
+    "levelRange": "Lv. {min}–{max}",
+    "weight": "Gewicht {value}",
+    "biomes": "Biome: ",
+    "condition": {
+      "time": "Zeit: {value}",
+      "moon": "Mond: {value}",
+      "raining": "Regen",
+      "thundering": "Gewitter",
+      "y": "Y: {min} → {max}",
+      "skyLight": "Himmelslicht: {min}–{max}",
+      "structures": "Strukturen: {value}",
+      "blocks": "Erforderliche Blöcke: {value}"
+    }
+  },
+  "theme": {
+    "label": "Theme wechseln",
+    "system": "System",
+    "light": "Hell",
+    "dark": "Dunkel",
+    "pokecenter": "Poké Center",
+    "grass": "Bulbasaur",
+    "fire": "Charmander",
+    "water": "Squirtle"
+  },
+  "locale": {
+    "label": "Sprache",
+    "en": "English",
+    "fr": "Français",
+    "es": "Español",
+    "de": "Deutsch",
+    "pt": "Português",
+    "ja": "日本語",
+    "zh": "中文"
+  },
+  "source": {
+    "mod": "Mod-Quelle",
+    "wiki": "Wiki",
+    "derived": "Abgeleitet",
+    "addon": "Addon",
+    "addonNamed": "Addon · {name}"
+  },
+  "common": {
+    "loading": "lade",
+    "clear": "Leeren",
+    "clearAll": "Alles leeren",
+    "any": "Beliebig",
+    "sort": "Sortierung",
+    "search": "Suche",
+    "remaining": "noch {count}",
+    "noMatch": "Keine Treffer."
+  },
+  "juice": {
+    "title": "Aprijuice maker",
+    "intro": "Braue einen Aprijuice im Campfire Pot. Die Apricorn-Farbe liefert feste Reit-Stat-Deltas; Beeren als Seasoning geben Geschmackspunkte, die per Schwellentabelle in Boosts umgewandelt werden (15 → 1pt, 35 → 2pt, 45 → 3pt, 55 → 4pt, 75 → 5pt, 105 → 6pt).",
+    "modeCook": "Einen Saft kochen",
+    "modeSuggest": "Ich will eine Stat → vorschlagen",
+    "targetTitle": "Reit-Stats nach Priorität ordnen",
+    "targetHelp": "Klicke auf eine Stat, um sie zur Prioritätsliste hinzuzufügen. Mit den Pfeilen umsortieren — Rang 1 zählt am meisten, Rang 5 am wenigsten. Nicht geordnete Stats ignoriert der Solver.",
+    "topCombos": "Top-Kombinationen",
+    "pickStat": "Wähle oben mindestens eine Stat.",
+    "noCombo": "Keine Kombination punktet positiv. Versuche weniger Stats.",
+    "loadIntoCook": "In Kochen laden",
+    "apricorn": "Apricorn",
+    "apricornHeading": "{kind} aprijuice",
+    "noBakedEffect": "kein fester Effekt",
+    "flavourThresholds": "Geschmacksschwellen",
+    "seasoningSlots": "Seasoning-Slots",
+    "slotsCap": "{count} / {max} · Cobblemon Campfire-Pot-Limit",
+    "pantryBerries": "Speisekammer — Beeren",
+    "filterBerries": "Beeren filtern…",
+    "noBerry": "Keine Beere passt.",
+    "flavourTotals": "Geschmackssummen",
+    "rideBoosts": "Reit-Stat-Boosts",
+    "rideBoostsHelp": "Ergebnis = Geschmackspunkte (aus Summen) + Apricorn-Basis. Von einem reitbaren Pokémon getragen, steigert dies seine Ride-Controller-Stats.",
+    "noNetBoost": "Kein Nettoboost. Füge mehr Beeren hinzu, um die nächste Schwelle zu überschreiten.",
+    "moveUp": "Hoch",
+    "moveDown": "Runter",
+    "remove": "Entfernen",
+    "emptySlot": "Leerer Slot",
+    "noSeasoning": "kein Seasoning"
+  },
+  "snack": {
+    "cookingPot": "Campfire Pot",
+    "potDefault": "Topf: {name}",
+    "dominant": "Dominant:",
+    "seasoningSlotsCount": "{count} Seasoning-Slots",
+    "baseRecipe": "Poké-Snack-Basisrezept",
+    "pantry": "Speisekammer — Bait Seasonings",
+    "filterSeasonings": "Seasonings filtern…",
+    "baitValidOnly": "Nur Bait-gültig",
+    "noSeasoningMatch": "Kein Seasoning passt zu diesen Filtern.",
+    "snackEffects": "Snack Bait-Effekte",
+    "effectsHelp": "Kumulierte Effekte jedes Seasonings im Topf. Zusammengeführt nach (Typ, Unterkategorie) gemäß SpawnBaitUtils.mergeEffects: Chancen addieren und bei 100 % cappen, Werte aufrunden.",
+    "dropSeasoning": "Lege ein Bait Seasoning ab, um seine Effekte zu sehen.",
+    "filters": "Filter",
+    "mods": "Mods",
+    "modsAny": "Standard",
+    "biomes": "Biome",
+    "biomesAny": "Beliebiges Biom",
+    "time": "Zeit",
+    "timeAny": "Beliebige Zeit",
+    "minY": "Min Y",
+    "maxY": "Max Y",
+    "attracted": "Angelockte Pokémon",
+    "attractedWip": "In Arbeit — Wahrscheinlichkeiten sind ungefähr",
+    "attractedWipBody": "Das Ranking unten ist meine bestmögliche Nachbildung der Cobblemon Poké Snack Spawn-Pipeline (Weltenpool gefiltert nach Biom/Zeit/Y, unbedingte Bucket-Multiplikatoren uncommon ×2,25 / rare & ultra-rare ×5,5, Typing/Egg-Group-Bait-Effekte multiplizieren passende Einträge, rarity_bucket glättet Inter-Bucket-Verhältnisse — Wahrscheinlichkeit ≈ P(Bucket) × Gewichtanteil). Noch nicht 1:1 mit dem Mod. Edge-Cases bei Anticonditions, verschachtelten Bedingungen, Struktur-/Mond-/Skylight-Gates und addon-spezifischen Spawn-Regeln werden noch ausgefeilt, also als Orientierung verstehen, nicht als Garantie. Verbesserungen folgen laufend.",
+    "searchAttracted": "Nach Name oder Dex suchen…",
+    "types": "Typen",
+    "typesAny": "Beliebiger Typ",
+    "rarity": "Seltenheit",
+    "sortProbability": "Spawn % (abst.)",
+    "sortBucket": "Seltenheit (ultra → common)",
+    "sortDex": "Dex-Nummer (aufst.)",
+    "sortDexDesc": "Dex-Nummer (abst.)",
+    "sortName": "Name (A→Z)",
+    "sortNameDesc": "Name (Z→A)",
+    "shiny": "Shiny",
+    "noAttracted": "Kein Pokémon passt. Entferne Filter.",
+    "dropHint": "Hier ein Bait Seasoning ablegen",
+    "previewDisclaimer": "Nur Vorschau — der Snack im Spiel kann abweichen."
+  },
+  "pokedexUi": {
+    "searchPlaceholder": "Pokémon nach Name suchen…",
+    "types": "Typen",
+    "typesAny": "Beliebiger Typ",
+    "gens": "Gens",
+    "gensAny": "Alle Gens",
+    "tag": "Tag",
+    "tagAny": "Beliebig",
+    "shiny": "Shiny",
+    "shinyTitle": "Shiny-Sprites umschalten",
+    "abilities": "Fähigkeiten:",
+    "total": "Gesamt",
+    "catch": "Fang",
+    "speciesCount": "{count} Spezies",
+    "sortDex": "Dex-Nummer (aufst.)",
+    "sortDexDesc": "Dex-Nummer (abst.)",
+    "sortName": "Name (A→Z)",
+    "sortNameDesc": "Name (Z→A)",
+    "sortHp": "KP (abst.)",
+    "sortAttack": "Angriff (abst.)",
+    "sortSpeed": "Initiative (abst.)",
+    "sortTotal": "Basiswerte-Summe (abst.)"
+  },
+  "effects": {
+    "ev": "EV",
+    "iv": "IV",
+    "nature": "Wesen",
+    "hiddenAbility": "Versteckte Fähigkeit",
+    "markChance": "Markierung",
+    "rarity": "Seltenheit",
+    "bite": "Biss",
+    "lv": "Lv",
+    "drops": "Drops",
+    "rerollN": "reroll ×{value}"
+  }
+}

@@ -115,8 +115,13 @@
   },
   "locale": {
     "label": "Language",
+    "en": "English",
     "fr": "Français",
-    "en": "English"
+    "es": "Español",
+    "de": "Deutsch",
+    "pt": "Português",
+    "ja": "日本語",
+    "zh": "中文"
   },
   "source": {
     "mod": "Mod source",
