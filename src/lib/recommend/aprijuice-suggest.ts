@@ -137,18 +137,17 @@ function distance(
 }
 
 /**
- * Estimate the *achievable* ceiling per stat given a berry pool + apricorn
- * list. Used by the UI to build a reasonable budget without hitting a wall
- * that's impossible to reach. Derivation:
- *   - For each stat, the flavour threshold max is 6 pts (105 flavour units).
- *     Reaching that requires stacking ≥105 of that flavour across up to 3
- *     berries. We check whether the user's owned berries can get there.
- *   - Apricorn contribution: +2 on one stat (the positive one) for every
- *     apricorn variant except WHITE/BLACK, −1 on another.
- *   - This is conservative: we take the best per-stat reachable points
- *     (0..6) from the user's berries assuming the 3 strongest go into that
- *     flavour, plus the best apricorn delta for that stat (+2 if any
- *     apricorn boosts it).
+ * Per-stat ceiling ("how high can that single stat realistically go?").
+ *
+ * Each berry can only sit in ONE of the 3 seasoning slots at a time. To
+ * push a stat as high as possible we dedicate all 3 slots to its flavour.
+ * So per stat: pick the 3 owned berries richest in that flavour, sum
+ * their flavour magnitude, convert through the threshold table, then add
+ * the best positive apricorn contribution for that stat.
+ *
+ * This is an *independent* ceiling per stat (assumes the user spends
+ * everything on this one stat). The global achievable budget is NOT
+ * the sum of these — see totalAchievableBudget.
  */
 export function achievableMaxPerStat(
   berries: BerrySeasoning[],
@@ -173,7 +172,6 @@ export function achievableMaxPerStat(
   const flavourToStat = FLAVOUR_TO_STAT;
   for (const f of Object.keys(flavourToStat) as Flavour[]) {
     const stat = flavourToStat[f];
-    // Stack the 3 best berries' flavour magnitude for flavour `f`.
     const top3 = berries
       .map((b) => b.flavours[f] ?? 0)
       .filter((v) => v > 0)
@@ -182,7 +180,6 @@ export function achievableMaxPerStat(
       .reduce((s, v) => s + v, 0);
     const berryPts = ptsForFlavourTotal(top3);
 
-    // Best apricorn contribution on this stat.
     let bestApricorn = 0;
     for (const ap of apricorns) {
       const delta = APRICORN_EFFECTS[ap]?.[stat] ?? 0;
@@ -195,16 +192,38 @@ export function achievableMaxPerStat(
 }
 
 /**
- * Sum of all per-stat max points. Used to size a default budget the user
- * can distribute. Inflated by 0 — we intentionally expose the full
- * theoretical sum so the UI can clamp it back if desired.
+ * Realistic *global* budget the user can distribute across the 5 stats at
+ * once. NOT the sum of per-stat ceilings — a single 3-berry recipe
+ * can't hit every stat at its maximum, it can only hit ONE.
+ *
+ * Algorithm: enumerate every (apricorn × multiset of ≤3 owned berries)
+ * the same way the solver does, and return the combo whose sum of
+ * non-negative stat points is highest. That's the best total number of
+ * points a user can actually achieve in-game with those ingredients.
+ *
+ * Example: a single juice typically sits around 8–12 net points total,
+ * not 30+ (which would be 6×5). Returning the true ceiling prevents the
+ * UI from offering a budget the solver can never match.
  */
 export function totalAchievableBudget(
   berries: BerrySeasoning[],
   apricorns: Apricorn[],
 ): number {
-  const caps = achievableMaxPerStat(berries, apricorns);
-  return Object.values(caps).reduce((s, v) => s + v, 0);
+  if (apricorns.length === 0 || berries.length === 0) return 0;
+  const pool = buildBerryPool(berries);
+  let best = 0;
+  for (const apricorn of apricorns) {
+    for (const combo of multisetCombos(pool, MAX_SEASONINGS)) {
+      const result = cookAprijuice({ apricorn, berries: combo });
+      let sum = 0;
+      for (const stat of RIDE_STATS) {
+        const v = result.statBoosts[stat] ?? 0;
+        if (v > 0) sum += v;
+      }
+      if (sum > best) best = sum;
+    }
+  }
+  return best;
 }
 
 export function suggestAprijuice(
