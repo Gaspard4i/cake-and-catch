@@ -370,14 +370,20 @@ function BerryOnTop({
 
 }
 
-function SnackMesh({
+export function SnackMesh({
   berries,
   fallbackFlavour,
   potColour,
+  wireframe = false,
+  spin = true,
 }: {
   berries: BerryPlacement[];
   fallbackFlavour: string | null;
   potColour: string | null;
+  /** Debug-only: render the snack block as wireframe. */
+  wireframe?: boolean;
+  /** Idle rotation. Disable for the debug viewer so OrbitControls owns the scene. */
+  spin?: boolean;
 }) {
   const group = useRef<THREE.Group>(null);
 
@@ -389,7 +395,7 @@ function SnackMesh({
   [topTex, bottomTex, sideTex].forEach(pixelate);
 
   useFrame((_state, delta) => {
-    if (group.current) group.current.rotation.y += delta * 0.35;
+    if (spin && group.current) group.current.rotation.y += delta * 0.35;
   });
 
   // potColour overrides the berry-derived tint (UI convenience: see README).
@@ -417,14 +423,14 @@ function SnackMesh({
   // Every face is tinted in the snack model.
   const mats = useMemo(
     () => [
-      new THREE.MeshStandardMaterial({ map: sideTex, color: tint }),
-      new THREE.MeshStandardMaterial({ map: sideTex, color: tint }),
-      new THREE.MeshStandardMaterial({ map: topTex, color: tint }),
-      new THREE.MeshStandardMaterial({ map: bottomTex, color: tint }),
-      new THREE.MeshStandardMaterial({ map: sideTex, color: tint }),
-      new THREE.MeshStandardMaterial({ map: sideTex, color: tint }),
+      new THREE.MeshStandardMaterial({ map: sideTex, color: tint, wireframe }),
+      new THREE.MeshStandardMaterial({ map: sideTex, color: tint, wireframe }),
+      new THREE.MeshStandardMaterial({ map: topTex, color: tint, wireframe }),
+      new THREE.MeshStandardMaterial({ map: bottomTex, color: tint, wireframe }),
+      new THREE.MeshStandardMaterial({ map: sideTex, color: tint, wireframe }),
+      new THREE.MeshStandardMaterial({ map: sideTex, color: tint, wireframe }),
     ],
-    [sideTex, topTex, bottomTex, tint],
+    [sideTex, topTex, bottomTex, tint, wireframe],
   );
 
   // Berry placements are now read per-berry from pokeSnackPositionings inside
