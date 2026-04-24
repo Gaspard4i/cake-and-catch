@@ -20,17 +20,17 @@ export function SnackPageClient({
 }) {
   return (
     <>
-      <header className="flex items-start justify-between gap-8 flex-wrap">
+      <header className="flex flex-col sm:flex-row items-start justify-between gap-4 sm:gap-8">
         <div className="max-w-2xl">
-          <h1 className="text-3xl font-semibold tracking-tight">{title}</h1>
-          <p className="mt-2 text-muted">{intro}</p>
+          <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight">{title}</h1>
+          <p className="mt-2 text-sm sm:text-base text-muted">{intro}</p>
         </div>
         <div className="shrink-0">
-          <SnackBaseRecipe size={44} />
+          <SnackBaseRecipe size={40} />
         </div>
       </header>
 
-      <div className="mt-8">
+      <div className="mt-6 sm:mt-8">
         <CampfirePot />
       </div>
     </>

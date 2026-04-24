@@ -128,44 +128,57 @@ export function Landing({ labels }: { labels: Labels }) {
         ))}
       </div>
 
-      <section className="mx-auto max-w-6xl px-6 pt-20 pb-24 flex flex-col-reverse md:flex-row items-start gap-10">
-        <div className="flex-1 w-full">
+      <section className="mx-auto max-w-6xl px-4 sm:px-6 pt-10 sm:pt-20 pb-16 sm:pb-24 flex flex-col md:flex-row md:items-start gap-6 md:gap-10">
+        <div className="flex-1 w-full min-w-0">
           <div className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-3 py-1 text-[10px] uppercase tracking-widest text-muted">
             <span className="size-1.5 rounded-full bg-accent animate-pulse" />
             <span>Cobblemon companion</span>
           </div>
-          <h1 className="mt-4 text-4xl sm:text-5xl font-semibold tracking-tight">
+          <h1 className="mt-4 text-3xl sm:text-4xl md:text-5xl font-semibold tracking-tight leading-tight">
             Cook the right snack.
             <br />
             <span className="text-accent">Catch the right Pokémon.</span>
           </h1>
-          <p className="mt-4 text-muted max-w-xl">{labels.tagline}</p>
-          <p className="mt-2 text-sm text-muted">
+          <p className="mt-3 sm:mt-4 text-sm sm:text-base text-muted max-w-xl">
+            {labels.tagline}
+          </p>
+          <p className="mt-2 text-xs sm:text-sm text-muted">
             <span className="text-foreground font-medium">{labels.indexedSpecies}</span>
           </p>
 
-          <div className="mt-8">
+          {/* On mobile, show the 3D snack between the intro and the search so
+              the main CTA (search + buttons) stays near the fold. */}
+          <div className="md:hidden mt-6 flex flex-col items-center gap-2">
+            <ResponsiveSnack3D berries={berries} mobile />
+            <div className="text-[10px] uppercase tracking-widest text-muted text-center max-w-[280px]">
+              {berries.length === 0
+                ? "no seasoning"
+                : berries.map((b) => b.slug.replaceAll("_", " ")).join(" · ")}
+            </div>
+          </div>
+
+          <div className="mt-6 md:mt-8">
             <HomeSearch />
           </div>
 
-          <div className="mt-6 flex flex-wrap gap-3">
+          <div className="mt-4 sm:mt-6 flex flex-wrap gap-3">
             <Link
               href="/pokedex"
-              className="rounded-lg bg-accent text-accent-foreground px-5 py-2.5 text-sm font-medium hover:opacity-90 transition"
+              className="flex-1 sm:flex-none text-center rounded-lg bg-accent text-accent-foreground px-5 py-3 sm:py-2.5 text-sm font-medium hover:opacity-90 transition"
             >
               Open the Pokédex →
             </Link>
             <Link
               href="/snack"
-              className="rounded-lg border border-border bg-card px-5 py-2.5 text-sm font-medium hover:bg-subtle transition"
+              className="flex-1 sm:flex-none text-center rounded-lg border border-border bg-card px-5 py-3 sm:py-2.5 text-sm font-medium hover:bg-subtle transition"
             >
               Snack maker
             </Link>
           </div>
         </div>
 
-        <div className="shrink-0 flex flex-col items-center gap-3">
-          <Snack3D berries={berries} size={460} />
+        <div className="hidden md:flex shrink-0 flex-col items-center gap-3">
+          <ResponsiveSnack3D berries={berries} />
           <div className="text-xs uppercase tracking-widest text-muted text-center max-w-[460px]">
             {berries.length === 0
               ? "no seasoning"
@@ -175,4 +188,34 @@ export function Landing({ labels }: { labels: Labels }) {
       </section>
     </div>
   );
+}
+
+/**
+ * Adaptive Snack3D wrapper: picks a canvas size based on the viewport so the
+ * hero model stays readable on small screens (phones get ~min(viewport-2rem,
+ * 280px); tablets+ get 460px). Size is measured client-side after mount.
+ */
+function ResponsiveSnack3D({
+  berries,
+  mobile = false,
+}: {
+  berries: Seasoning[];
+  mobile?: boolean;
+}) {
+  const [size, setSize] = useState(mobile ? 240 : 460);
+  useEffect(() => {
+    const update = () => {
+      const w = window.innerWidth;
+      if (mobile) {
+        // Cap at 280px, leave 32px of padding around the canvas.
+        setSize(Math.min(Math.max(w - 32, 200), 280));
+      } else {
+        setSize(w < 1100 ? 320 : 460);
+      }
+    };
+    update();
+    window.addEventListener("resize", update);
+    return () => window.removeEventListener("resize", update);
+  }, [mobile]);
+  return <Snack3D berries={berries} size={size} />;
 }

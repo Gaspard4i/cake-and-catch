@@ -160,7 +160,7 @@ export default function SearchPage({
   searchParams: Promise<{ q?: string; type?: string; bucket?: string; source?: string }>;
 }) {
   return (
-    <div className="mx-auto max-w-3xl px-6 py-10">
+    <div className="mx-auto max-w-3xl px-4 sm:px-6 py-6 sm:py-10">
       <Suspense fallback={<div className="h-8" />}>
         <SearchHeader />
       </Suspense>

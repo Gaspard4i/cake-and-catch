@@ -294,7 +294,7 @@ export function PokedexGrid() {
         </div>
       </div>
 
-      <ul className="mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+      <ul className="mt-6 grid grid-cols-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2 sm:gap-4">
         {loading && results.length === 0
           ? Array.from({ length: 8 }).map((_, i) => (
               <li key={`sk-${i}`}>
@@ -309,9 +309,9 @@ export function PokedexGrid() {
             <li key={s.id}>
               <Link
                 href={`/pokemon/${s.slug}`}
-                className="group relative block rounded-xl border border-border bg-card p-4 hover:bg-subtle hover:border-accent/50 transition-all overflow-hidden"
+                className="group relative block rounded-lg sm:rounded-xl border border-border bg-card p-1.5 sm:p-4 hover:bg-subtle hover:border-accent/50 transition-all overflow-hidden"
               >
-                <div className="flex items-start justify-between gap-2">
+                <div className="hidden sm:flex items-start justify-between gap-2">
                   <span className="font-mono text-xs text-muted">
                     #{String(s.dexNo).padStart(4, "0")}
                   </span>
@@ -327,16 +327,19 @@ export function PokedexGrid() {
                     name={s.name}
                     size={120}
                     shiny={shiny}
-                    className="transition-transform group-hover:scale-110"
+                    className="transition-transform group-hover:scale-110 size-16 sm:size-[120px] object-contain"
                   />
                 </div>
-                <div className="mt-1 text-center font-semibold truncate">
+                <div className="mt-0.5 sm:mt-1 text-center font-semibold truncate text-[11px] sm:text-base">
                   {s.name}
                 </div>
-                <div className="mt-1 flex justify-center min-w-0 max-w-full overflow-hidden">
+                <div className="mt-0.5 text-center font-mono text-[9px] text-muted sm:hidden">
+                  #{String(s.dexNo).padStart(4, "0")}
+                </div>
+                <div className="hidden sm:flex mt-1 justify-center min-w-0 max-w-full overflow-hidden">
                   <TypePair primary={s.primaryType} secondary={s.secondaryType} size={16} />
                 </div>
-                <div className="mt-3 space-y-0.5">
+                <div className="hidden sm:block mt-3 space-y-0.5">
                   <StatBar label="hp" value={s.baseStats.hp ?? 0} />
                   <StatBar label="atk" value={s.baseStats.attack ?? 0} />
                   <StatBar label="def" value={s.baseStats.defence ?? 0} />
@@ -344,7 +347,7 @@ export function PokedexGrid() {
                   <StatBar label="spd" value={s.baseStats.special_defence ?? 0} />
                   <StatBar label="spe" value={s.baseStats.speed ?? 0} />
                 </div>
-                <div className="mt-2 flex items-center justify-between text-[10px] text-muted">
+                <div className="hidden sm:flex mt-2 items-center justify-between text-[10px] text-muted">
                   <span>{t("total")} · <span className="font-mono text-foreground">{total}</span></span>
                   <span>{t("catch")} · <span className="font-mono text-foreground">{s.catchRate}</span></span>
                 </div>

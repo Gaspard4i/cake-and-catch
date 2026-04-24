@@ -331,7 +331,7 @@ async function SpeciesDetail({ params }: { params: Promise<{ slug: string }> }) 
 
 export default function Page({ params }: { params: Promise<{ slug: string }> }) {
   return (
-    <div className="mx-auto max-w-5xl px-6 py-10">
+    <div className="mx-auto max-w-5xl px-4 sm:px-6 py-6 sm:py-10">
       <Suspense fallback={<p className="text-sm text-muted">…</p>}>
         <SpeciesDetail params={params} />
       </Suspense>

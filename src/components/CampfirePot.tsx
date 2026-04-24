@@ -213,6 +213,14 @@ export function CampfirePot() {
   const [kindFilter, setKindFilter] = useState<(typeof KINDS)[number]>("all");
   const [validOnly, setValidOnly] = useState(true);
   const [pantryLoading, setPantryLoading] = useState(true);
+  /** Adaptive 3D snack size: ~180px on phones, 220px on desktop. */
+  const [snack3DSize, setSnack3DSize] = useState(220);
+  useEffect(() => {
+    const update = () => setSnack3DSize(window.innerWidth < 640 ? 180 : 220);
+    update();
+    window.addEventListener("resize", update);
+    return () => window.removeEventListener("resize", update);
+  }, []);
 
   useEffect(() => {
     setPantryLoading(true);
@@ -453,7 +461,7 @@ export function CampfirePot() {
   return (
     <div className="space-y-8">
       <TopProgress active={loading} />
-    <div className="grid gap-8 lg:grid-cols-[auto_1fr]">
+    <div className="grid gap-6 sm:gap-8 lg:grid-cols-[auto_1fr]">
       <aside className="space-y-6">
         <div>
           <h3 className="text-sm font-medium uppercase tracking-wide text-muted">{t("cookingPot")}</h3>
@@ -480,9 +488,12 @@ export function CampfirePot() {
               flavour={dominant}
               berries={snackBerries}
               potColour={potColour.hex}
-              size={220}
+              size={snack3DSize}
             />
-            <p className="text-[10px] text-muted italic text-center max-w-[220px] leading-snug">
+            <p
+              className="text-[10px] text-muted italic text-center leading-snug"
+              style={{ maxWidth: snack3DSize }}
+            >
               {t("previewDisclaimer")}
             </p>
 

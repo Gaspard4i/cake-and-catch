@@ -57,7 +57,7 @@ async function BiomeContent({ params }: { params: Promise<{ key: string }> }) {
 
 export default function BiomePage({ params }: { params: Promise<{ key: string }> }) {
   return (
-    <div className="mx-auto max-w-6xl px-6 py-10">
+    <div className="mx-auto max-w-6xl px-4 sm:px-6 py-6 sm:py-10">
       <Suspense fallback={<p className="text-sm text-muted">…</p>}>
         <BiomeContent params={params} />
       </Suspense>
