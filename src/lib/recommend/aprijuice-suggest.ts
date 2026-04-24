@@ -116,20 +116,28 @@ function buildBerryPool(
   return [...picks.values()];
 }
 
-/** L2 distance between target and actual stat vector. */
+/**
+ * L2 distance between target and actual stat vector. Stats listed in
+ * `ignored` are excluded from BOTH the distance and the negative
+ * penalty — the user explicitly said "I don't care about that stat",
+ * so the solver must neither aim for 0 nor avoid negatives there.
+ */
 function distance(
   target: TargetBoosts,
   actual: Partial<Record<RidingStat, number>>,
+  ignored: Set<RidingStat>,
 ): number {
   let sum = 0;
   for (const stat of RIDE_STATS) {
+    if (ignored.has(stat)) continue;
     const t = target[stat] ?? 0;
     const a = actual[stat] ?? 0;
     sum += (t - a) ** 2;
   }
-  // Gentle penalty for NEGATIVE stats (typical WHITE or −1 apricorns on
-  // off-stats) even when the user didn't target them. Keeps recipes honest.
+  // Gentle penalty for NEGATIVE stats on stats the user didn't target
+  // AND didn't ignore. Prevents WHITE apricorn from winning by alignment.
   for (const stat of RIDE_STATS) {
+    if (ignored.has(stat)) continue;
     const a = actual[stat] ?? 0;
     if (a < 0 && !(stat in target)) sum += a * a * 0.25;
   }
@@ -229,12 +237,13 @@ export function totalAchievableBudget(
 export function suggestAprijuice(
   berries: BerrySeasoning[],
   target: TargetBoosts,
-  opts: { limit?: number; apricorns?: Apricorn[] } = {},
+  opts: { limit?: number; apricorns?: Apricorn[]; ignoredStats?: RidingStat[] } = {},
 ): Suggestion[] {
   const limit = opts.limit ?? 6;
   const apricorns = opts.apricorns ?? DEFAULT_APRICORNS;
   if (apricorns.length === 0) return [];
 
+  const ignored = new Set(opts.ignoredStats ?? []);
   const pool = buildBerryPool(berries);
 
   const bySignature = new Map<string, Suggestion>();
@@ -242,7 +251,7 @@ export function suggestAprijuice(
   for (const apricorn of apricorns) {
     for (const combo of multisetCombos(pool, MAX_SEASONINGS)) {
       const result = cookAprijuice({ apricorn, berries: combo });
-      const d = distance(target, result.statBoosts);
+      const d = distance(target, result.statBoosts, ignored);
       const sig = `${apricorn}|${[...combo]
         .map((b) => b.slug)
         .sort()

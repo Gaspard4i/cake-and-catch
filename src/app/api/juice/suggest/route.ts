@@ -20,6 +20,8 @@ type Body = {
   ownedBerrySlugs?: string[];
   /** Which apricorn colours the user owns. If omitted, all 7 are allowed. */
   ownedApricorns?: Apricorn[];
+  /** Stats the user doesn't care about — excluded from scoring. */
+  ignoredStats?: RidingStat[];
   limit?: number;
 };
 
@@ -57,6 +59,7 @@ export async function POST(req: NextRequest) {
   const suggestions = suggestAprijuice(pool, target, {
     limit: Math.min(Math.max(body.limit ?? 6, 1), 20),
     apricorns,
+    ignoredStats: body.ignoredStats,
   });
 
   return Response.json(

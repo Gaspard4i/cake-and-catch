@@ -54,6 +54,17 @@ const STAT_ICON: Record<RidingStat, LucideIcon> = {
   JUMP: ArrowUp,
 };
 
+const FLAVOURS_ALL: Flavour[] = ["SPICY", "DRY", "SWEET", "SOUR", "BITTER"];
+
+/** Per-flavour colour (matches SnackEffectsSummary / CampfirePot palette). */
+const FLAVOUR_COLORS: Record<Flavour, string> = {
+  SPICY: "#e85a3a",
+  DRY: "#7fb3d5",
+  SWEET: "#f8b3d7",
+  SOUR: "#f4d35e",
+  BITTER: "#735a8a",
+};
+
 const STAT_TONE: Record<RidingStat, string> = {
   ACCELERATION: "text-red-600 dark:text-red-400",
   SKILL: "text-cyan-600 dark:text-cyan-400",
@@ -113,6 +124,8 @@ export function JuiceMaker() {
   const [suggestLoading, setSuggestLoading] = useState(false);
 
   const [berryFilter, setBerryFilter] = useState("");
+  const [activeFlavours, setActiveFlavours] = useState<Set<Flavour>>(new Set());
+  const [ignoredStats, setIgnoredStats] = useState<Set<RidingStat>>(new Set());
 
   useEffect(() => {
     fetch("/api/juice")
@@ -127,9 +140,14 @@ export function JuiceMaker() {
       .finally(() => setBerriesLoading(false));
   }, []);
 
+  // Spent points ignore stats the user explicitly opted out of — those
+  // are not consuming any budget.
   const spentPoints = useMemo(
-    () => Object.values(targetPoints).reduce((s, v) => s + v, 0),
-    [targetPoints],
+    () =>
+      (Object.entries(targetPoints) as Array<[RidingStat, number]>)
+        .filter(([s]) => !ignoredStats.has(s))
+        .reduce((s, [, v]) => s + v, 0),
+    [targetPoints, ignoredStats],
   );
 
   // Budget probe: fetch caps whenever ownership changes.
@@ -178,9 +196,17 @@ export function JuiceMaker() {
           method: "POST",
           headers: { "content-type": "application/json" },
           body: JSON.stringify({
-            target: targetPoints,
+            // Zero-out ignored stats so they don't reach the solver — the
+            // user said "any value is fine" for those.
+            target: (Object.entries(targetPoints) as Array<[RidingStat, number]>)
+              .filter(([s, v]) => !ignoredStats.has(s) && v > 0)
+              .reduce(
+                (acc, [s, v]) => ({ ...acc, [s]: v }),
+                {} as Partial<Record<RidingStat, number>>,
+              ),
             ownedBerrySlugs: [...ownedBerries],
             ownedApricorns: [...ownedApricorns],
+            ignoredStats: [...ignoredStats],
             limit: 6,
           }),
           signal: ctrl.signal,
@@ -203,13 +229,16 @@ export function JuiceMaker() {
       clearTimeout(timer);
       ctrl.abort();
     };
-  }, [targetPoints, ownedBerries, ownedApricorns, spentPoints]);
+  }, [targetPoints, ownedBerries, ownedApricorns, ignoredStats, spentPoints]);
 
   const setStatPoints = (stat: RidingStat, raw: number) => {
+    if (ignoredStats.has(stat)) return;
     setTargetPoints((prev) => {
       const cap = caps[stat] ?? 0;
-      const currentOther = Object.entries(prev)
-        .filter(([s]) => s !== stat)
+      // "Other" points = all non-ignored stats EXCEPT this one. Ignored
+      // stats do not consume budget.
+      const currentOther = (Object.entries(prev) as Array<[RidingStat, number]>)
+        .filter(([s]) => s !== stat && !ignoredStats.has(s))
         .reduce((s, [, v]) => s + v, 0);
       const remaining = Math.max(0, budget - currentOther);
       const next = Math.max(0, Math.min(raw, cap, remaining));
@@ -217,7 +246,23 @@ export function JuiceMaker() {
     });
   };
 
-  const resetPoints = () => setTargetPoints(ZERO_STATS);
+  const toggleIgnoreStat = (stat: RidingStat) => {
+    setIgnoredStats((prev) => {
+      const n = new Set(prev);
+      if (n.has(stat)) n.delete(stat);
+      else {
+        n.add(stat);
+        // Drop any points allocated to the now-ignored stat.
+        setTargetPoints((p) => ({ ...p, [stat]: 0 }));
+      }
+      return n;
+    });
+  };
+
+  const resetPoints = () => {
+    setTargetPoints(ZERO_STATS);
+    setIgnoredStats(new Set());
+  };
 
   const toggleOwnedBerry = (slug: string) =>
     setOwnedBerries((prev) => {
@@ -242,15 +287,36 @@ export function JuiceMaker() {
       return n;
     });
 
+  const toggleFlavourFilter = (f: Flavour) =>
+    setActiveFlavours((prev) => {
+      const n = new Set(prev);
+      if (n.has(f)) n.delete(f);
+      else n.add(f);
+      return n;
+    });
+
   const filteredBerries = useMemo(() => {
     const q = berryFilter.trim().toLowerCase();
-    if (!q) return berries;
-    return berries.filter(
-      (b) =>
-        b.slug.replaceAll("_", " ").toLowerCase().includes(q) ||
-        b.itemId.toLowerCase().includes(q),
-    );
-  }, [berries, berryFilter]);
+    return berries.filter((b) => {
+      if (q) {
+        const hay = `${b.slug.replaceAll("_", " ")} ${b.itemId}`.toLowerCase();
+        if (!hay.includes(q)) return false;
+      }
+      // If any flavour chips are active, the berry must have a POSITIVE
+      // magnitude on at least one of them.
+      if (activeFlavours.size > 0) {
+        let match = false;
+        for (const f of activeFlavours) {
+          if ((b.flavours[f] ?? 0) > 0) {
+            match = true;
+            break;
+          }
+        }
+        if (!match) return false;
+      }
+      return true;
+    });
+  }, [berries, berryFilter, activeFlavours]);
 
   return (
     <div className="space-y-6">
@@ -324,6 +390,44 @@ export function JuiceMaker() {
                   : t("selectAll")}
               </button>
             </div>
+          </div>
+          <div
+            className="mt-2 flex flex-wrap gap-1"
+            role="group"
+            aria-label={t("flavourFilter")}
+          >
+            {FLAVOURS_ALL.map((f) => {
+              const active = activeFlavours.has(f);
+              return (
+                <button
+                  key={f}
+                  type="button"
+                  onClick={() => toggleFlavourFilter(f)}
+                  aria-pressed={active}
+                  className="text-[10px] uppercase tracking-wide px-2 py-0.5 rounded-full border transition-colors"
+                  style={
+                    active
+                      ? {
+                          background: `${FLAVOUR_COLORS[f]}33`,
+                          borderColor: FLAVOUR_COLORS[f],
+                          color: FLAVOUR_COLORS[f],
+                        }
+                      : undefined
+                  }
+                >
+                  {f}
+                </button>
+              );
+            })}
+            {activeFlavours.size > 0 && (
+              <button
+                type="button"
+                onClick={() => setActiveFlavours(new Set())}
+                className="text-[10px] uppercase tracking-wide px-2 py-0.5 rounded-full border border-border bg-card text-muted hover:text-foreground"
+              >
+                {tc("clear")}
+              </button>
+            )}
           </div>
           {berriesLoading && berries.length === 0 ? (
             <ul className="mt-2 grid grid-cols-[repeat(auto-fill,minmax(120px,1fr))] gap-1">
@@ -404,36 +508,59 @@ export function JuiceMaker() {
               const Icon = STAT_ICON[stat];
               const cap = caps[stat] ?? 0;
               const value = targetPoints[stat];
-              const currentOther = spentPoints - value;
+              const ignored = ignoredStats.has(stat);
+              // "remaining" = how many budget points are still free for
+              // this stat, given what's already assigned to the OTHERS
+              // (excluding ignored stats which don't consume budget).
+              const currentOther = (
+                Object.entries(targetPoints) as Array<[RidingStat, number]>
+              )
+                .filter(([s]) => s !== stat && !ignoredStats.has(s))
+                .reduce((s, [, v]) => s + v, 0);
               const remaining = Math.max(0, budget - currentOther);
-              const maxForThis = Math.min(cap, remaining);
+              const maxForThis = ignored ? 0 : Math.min(cap, remaining);
               return (
                 <li key={stat} className="flex items-center gap-2">
                   <Icon
-                    className={`h-4 w-4 ${STAT_TONE[stat]} shrink-0`}
+                    className={`h-4 w-4 ${STAT_TONE[stat]} shrink-0 ${ignored ? "opacity-30" : ""}`}
                     aria-hidden
                   />
-                  <span className="text-[11px] uppercase tracking-wide w-16 shrink-0">
+                  <span
+                    className={`text-[11px] uppercase tracking-wide w-16 shrink-0 ${ignored ? "line-through text-muted" : ""}`}
+                  >
                     {stat.toLowerCase()}
                   </span>
                   <input
                     type="range"
                     min={0}
-                    max={Math.max(cap, 1)}
-                    value={value}
+                    max={Math.max(maxForThis, 1)}
+                    value={ignored ? 0 : value}
                     onChange={(e) =>
                       setStatPoints(stat, Number(e.target.value))
                     }
-                    disabled={cap === 0}
+                    disabled={ignored || cap === 0 || maxForThis === 0}
                     aria-label={stat.toLowerCase()}
                     className="flex-1 accent-accent disabled:opacity-30"
                   />
                   <span className="w-10 text-right text-sm font-mono tabular-nums">
-                    +{value}
+                    {ignored ? "—" : `+${value}`}
                   </span>
                   <span className="text-[10px] text-muted font-mono tabular-nums w-10 text-right">
-                    /{maxForThis}
+                    {ignored ? "" : `/${maxForThis}`}
                   </span>
+                  <button
+                    type="button"
+                    onClick={() => toggleIgnoreStat(stat)}
+                    aria-pressed={ignored}
+                    title={t("ignoreTitle")}
+                    className={`text-[10px] uppercase tracking-wide px-1.5 py-0.5 rounded border transition-colors shrink-0 ${
+                      ignored
+                        ? "border-amber-400 bg-amber-400/10 text-amber-600 dark:text-amber-400"
+                        : "border-border text-muted hover:text-foreground"
+                    }`}
+                  >
+                    {t("ignore")}
+                  </button>
                 </li>
               );
             },
