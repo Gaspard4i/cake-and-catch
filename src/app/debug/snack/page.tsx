@@ -167,27 +167,6 @@ export default function SnackDebugPage() {
           </section>
 
           <section className="rounded-lg border border-border bg-card p-3 space-y-2">
-            <h2 className="text-xs uppercase tracking-wide text-muted">
-              Berries ({berries.length})
-            </h2>
-            <div className="max-h-80 overflow-y-auto space-y-0.5">
-              {berries.map((b) => (
-                <button
-                  key={b.slug}
-                  onClick={() => add(b)}
-                  disabled={slugs.length >= 3}
-                  className="w-full text-left text-xs px-2 py-1 rounded hover:bg-subtle disabled:opacity-40 disabled:cursor-not-allowed"
-                >
-                  <span className="capitalize">{b.slug.replaceAll("_", " ")}</span>
-                  <span className="text-muted ml-1">
-                    ({b.snackPositionings?.length ?? 0})
-                  </span>
-                </button>
-              ))}
-            </div>
-          </section>
-
-          <section className="rounded-lg border border-border bg-card p-3 space-y-2">
             <div className="flex items-center justify-between">
               <h2 className="text-xs uppercase tracking-wide text-muted">
                 Live overrides
@@ -266,6 +245,27 @@ export default function SnackDebugPage() {
             <pre className="text-[9px] text-muted bg-subtle p-1.5 rounded overflow-x-auto">
 {JSON.stringify(overrides, null, 2)}
             </pre>
+          </section>
+
+          <section className="rounded-lg border border-border bg-card p-3 space-y-2">
+            <h2 className="text-xs uppercase tracking-wide text-muted">
+              Berries ({berries.length})
+            </h2>
+            <div className="max-h-80 overflow-y-auto space-y-0.5">
+              {berries.map((b) => (
+                <button
+                  key={b.slug}
+                  onClick={() => add(b)}
+                  disabled={slugs.length >= 3}
+                  className="w-full text-left text-xs px-2 py-1 rounded hover:bg-subtle disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  <span className="capitalize">{b.slug.replaceAll("_", " ")}</span>
+                  <span className="text-muted ml-1">
+                    ({b.snackPositionings?.length ?? 0})
+                  </span>
+                </button>
+              ))}
+            </div>
           </section>
 
           <section className="rounded-lg border border-border bg-card p-3 space-y-2">
