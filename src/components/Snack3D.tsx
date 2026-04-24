@@ -258,26 +258,64 @@ function BerryOnTop({
 
   if (!material) return null;
 
-  // Placement resolution: pick the matching index, with the same fallback
-  // behaviour as the mod (1-berry variant uses index 0 centred, etc.).
+  // Placement resolution — mirrors PokeSnackBlockEntityRenderer.kt.
+  //   1 berry  → pokeSnackPositionings[0].y kept, x/z forced to 8 (centre),
+  //              rotation forced to (180°, 0, 0). This matches the "no
+  //              candle" branch in the renderer (we never render a candle).
+  //   2 berries → both use pokeSnackPositionings[0]; the second is mirrored:
+  //              z' = 16 - z, rotX' = 360 - rotX, y/rotY/rotZ unchanged.
+  //   3 berries → each berry takes pokeSnackPositionings[index] 1-to-1.
   const positionings = berry.snackPositionings ?? [];
-  const placement =
-    positionings[Math.min(index, positionings.length - 1)] ?? null;
+  const base = positionings[0];
+  let px = 0;
+  let py = 0;
+  let pz = 0;
+  let rxDeg = 0;
+  let ryDeg = 0;
+  let rzDeg = 0;
 
-  // MC model units are pixels (16 per block). The model origin in the game
-  // is at the block's local origin; subtract 0.5 blocks to center it on our
-  // snack which is drawn around x=0, z=0. y=0 sits on the snack top face.
-  const px = placement ? placement.position.x / 16 - 0.5 : 0;
-  const py = placement ? placement.position.y / 16 - (7 / 16) : 0;
-  const pz = placement ? placement.position.z / 16 - 0.5 : 0;
+  if (base) {
+    if (totalCount === 1) {
+      px = 8 / 16 - 0.5; // = 0
+      py = base.position.y / 16;
+      pz = 8 / 16 - 0.5; // = 0
+      rxDeg = 180;
+      ryDeg = 0;
+      rzDeg = 0;
+    } else if (totalCount === 2) {
+      const p = base;
+      px = p.position.x / 16 - 0.5;
+      py = p.position.y / 16;
+      pz =
+        (index === 0 ? p.position.z : 16 - p.position.z) / 16 - 0.5;
+      rxDeg = index === 0 ? p.rotation.x : 360 - p.rotation.x;
+      ryDeg = p.rotation.y;
+      rzDeg = p.rotation.z;
+    } else {
+      // 3 or more → 1-to-1 indexing, clamped on the last entry
+      const p = positionings[Math.min(index, positionings.length - 1)] ?? base;
+      px = p.position.x / 16 - 0.5;
+      py = p.position.y / 16;
+      pz = p.position.z / 16 - 0.5;
+      rxDeg = p.rotation.x;
+      ryDeg = p.rotation.y;
+      rzDeg = p.rotation.z;
+    }
+  }
 
-  const rx = placement ? THREE.MathUtils.degToRad(placement.rotation.x) : 0;
-  const ry = placement ? THREE.MathUtils.degToRad(placement.rotation.y) : 0;
-  const rz = placement ? THREE.MathUtils.degToRad(placement.rotation.z) : 0;
+  // Our snack mesh sits in the y range [0, 7/16] (base at y=0). The mod
+  // uses the block's absolute y (0..16 pixels). So a positioning y=9.45
+  // lands at 9.45/16 ≈ 0.59 world units — already above the top face.
+  // Note: SnackMesh translates its cube up by H/2 to put the base at y=0,
+  // so no extra offset is needed here.
+
+  const rx = THREE.MathUtils.degToRad(rxDeg);
+  const ry = THREE.MathUtils.degToRad(ryDeg);
+  const rz = THREE.MathUtils.degToRad(rzDeg);
 
   if (geometry) {
-    // The cube coordinates in the .geo.json are in pixel space, so we scale
-    // the whole mesh by 1/16 to bring it into Three.js block-units.
+    // The .geo.json cubes are in pixel units; scaling the mesh by 1/16
+    // converts them to block units so 1 pixel = 1/16 world unit.
     return (
       <group position={[px, py, pz]} rotation={[rx, ry, rz]}>
         <mesh
