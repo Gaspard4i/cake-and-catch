@@ -26,7 +26,14 @@
     "pokedex": "Pokédex",
     "recipes": "Rezepte",
     "cake": "Snack maker",
-    "about": "Über"
+    "snack": "Snack",
+    "juice": "Juice",
+    "about": "Über",
+    "home": "Start",
+    "search": "Suche",
+    "more": "Mehr",
+    "primary": "Hauptnavigation",
+    "closeMenu": "Menü schließen"
   },
   "cake": {
     "title": "Poké Snack maker",

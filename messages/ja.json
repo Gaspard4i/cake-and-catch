@@ -26,7 +26,14 @@
     "pokedex": "図鑑",
     "recipes": "レシピ",
     "cake": "Snack maker",
-    "about": "このサイトについて"
+    "snack": "Snack",
+    "juice": "Juice",
+    "about": "このサイトについて",
+    "home": "ホーム",
+    "search": "検索",
+    "more": "その他",
+    "primary": "メインナビゲーション",
+    "closeMenu": "メニューを閉じる"
   },
   "cake": {
     "title": "Poké Snack maker",

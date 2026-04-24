@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import Link from "next/link";
 import { NextIntlClientProvider } from "next-intl";
@@ -10,6 +10,7 @@ import { ThemeSwitcher } from "@/components/ThemeSwitcher";
 import { LocaleSwitcher } from "@/components/LocaleSwitcher";
 import { FooterText } from "@/components/FooterText";
 import { HeaderNav } from "@/components/HeaderNav";
+import { MobileBottomNav } from "@/components/MobileBottomNav";
 
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
@@ -17,6 +18,18 @@ const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"]
 export const metadata: Metadata = {
   title: "Snack & Catch",
   description: "Cobblemon assistant — cooking recipes & spawn spots per Pokémon.",
+};
+
+/**
+ * Enables iOS safe-area insets (notch + home indicator) so the sticky
+ * MobileBottomNav can reserve space above the indicator via
+ * `env(safe-area-inset-bottom)`. Without `viewportFit: cover`, iOS
+ * reports the inset as 0.
+ */
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
 };
 
 const THEMES = ["light", "dark", "pokecenter", "grass", "fire", "water"];
@@ -55,12 +68,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                   </div>
                 </div>
               </header>
-              <main className="flex-1">{children}</main>
-              <footer className="border-t border-border text-xs text-muted py-4">
+              <main className="flex-1 pb-20 sm:pb-0">{children}</main>
+              <footer className="border-t border-border text-xs text-muted py-4 pb-[calc(1rem+env(safe-area-inset-bottom)+56px)] sm:pb-4">
                 <div className="mx-auto max-w-5xl px-6">
                   <FooterText />
                 </div>
               </footer>
+              <MobileBottomNav />
             </IntlShell>
           </Suspense>
         </ThemeProvider>

@@ -26,7 +26,14 @@
     "pokedex": "图鉴",
     "recipes": "配方",
     "cake": "Snack maker",
-    "about": "关于"
+    "snack": "Snack",
+    "juice": "Juice",
+    "about": "关于",
+    "home": "首页",
+    "search": "搜索",
+    "more": "更多",
+    "primary": "主导航",
+    "closeMenu": "关闭菜单"
   },
   "cake": {
     "title": "Poké Snack maker",
