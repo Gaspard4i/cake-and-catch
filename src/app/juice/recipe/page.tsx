@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, ArrowRight } from "lucide-react";
 import { listBerries } from "@/lib/db/queries";
 import { ItemIcon } from "@/components/ItemIcon";
 import type { Apricorn, Flavour } from "@/lib/recommend/aprijuice";
@@ -227,19 +227,10 @@ export default async function JuiceRecipePage({
 }
 
 /**
- * Overlay of item icons on top of the cooking-interface GIF background.
- *
- * Coordinate system is the outer panel (the `.interface.cooking-interface`
- * box), top-left = (0,0). Measurements relative to the Cobblemon wiki GIF:
- *   - Panel: 320×146, border 2, padding 8 → content box starts at (10,10)
- *   - GIF rendered at background-position 14,14 inside padding box →
- *     GIF top-left at panel coord (10+14, 10+14) = (24, 24)
- *   - Each slot in the GIF is 18×18, with a 1 px inner padding, so a
- *     16×16 icon sits at slot-corner + (1, 1)
- *   - Left 3×3 grid starts at GIF (4, 4) → panel (28, 28) stride 18
- *   - Seasoning column: 3 slots stacked at GIF (x, 4), (x, 22), (x, 40)
- *     where x ≈ 148 → panel 172
- *   - Result slot (aprijuice): GIF (x, 22) where x ≈ 216 → panel 240
+ * Pure-CSS cooking-pot GUI. No background image: every slot is a
+ * 40×40 bordered box we stamp out in a grid. Matches the reference mock
+ * (3×3 ingredient grid, 3 seasoning slots on the right, arrow, result
+ * slot with the finished aprijuice sprite).
  */
 type BerryRow = { slug: string; itemId: string };
 
@@ -254,60 +245,47 @@ function CookingInterface({
   juiceSprite: string;
   tier: "plain" | "tasty" | "delicious";
 }) {
-  // Left 3×3 grid: only the top row is used by the aprijuice recipe.
-  const gridX = 28;
-  const gridY = 28;
-  // Seasoning column (3 vertical slots).
-  const seasoningX = 172;
-  const seasoningY = 28;
-  // Result slot (finished aprijuice).
-  const resultX = 240;
-  const resultY = 46;
+  // Top row of the 3x3 = apricorn + Pep-Up Flower + Energy Root.
+  // Rows 2 and 3 stay empty (this is an Aprijuice shapeless recipe —
+  // only the 3 fixed ingredients fit in row 0 of the cooking pot).
+  const topRow = [
+    apricornItem,
+    "cobblemon:pep_up_flower",
+    "cobblemon:energy_root",
+  ];
+  const emptySix = Array.from({ length: 6 }, () => null);
 
   return (
-    <div className="interface cooking-interface">
-      {/* Left 3×3 grid, top row populated. */}
-      <div
-        className="cooking-slot"
-        style={{ left: gridX, top: gridY }}
-        title={apricornItem}
-      >
-        <ItemIcon id={apricornItem} size={16} />
-      </div>
-      <div
-        className="cooking-slot"
-        style={{ left: gridX + 18, top: gridY }}
-        title="cobblemon:pep_up_flower"
-      >
-        <ItemIcon id="cobblemon:pep_up_flower" size={16} />
-      </div>
-      <div
-        className="cooking-slot"
-        style={{ left: gridX + 36, top: gridY }}
-        title="cobblemon:energy_root"
-      >
-        <ItemIcon id="cobblemon:energy_root" size={16} />
+    <div className="cooking-panel">
+      {/* 3×3 ingredient grid (top row filled). */}
+      <div className="cooking-grid">
+        {topRow.map((id, i) => (
+          <div className="cooking-slot" key={`top-${i}`} title={id}>
+            <ItemIcon id={id} size={32} />
+          </div>
+        ))}
+        {emptySix.map((_, i) => (
+          <div className="cooking-slot" key={`empty-${i}`} />
+        ))}
       </div>
 
       {/* Seasoning column. */}
-      {Array.from({ length: 3 }).map((_, i) => {
-        const b = berries[i];
-        return (
-          <div
-            key={i}
-            className="cooking-slot"
-            style={{ left: seasoningX, top: seasoningY + i * 18 }}
-            title={b?.slug ?? ""}
-          >
-            {b && <ItemIcon id={b.itemId} size={16} />}
-          </div>
-        );
-      })}
+      <div className="cooking-seasoning">
+        {Array.from({ length: 3 }).map((_, i) => {
+          const b = berries[i];
+          return (
+            <div className="cooking-slot" key={i} title={b?.slug ?? ""}>
+              {b && <ItemIcon id={b.itemId} size={32} />}
+            </div>
+          );
+        })}
+      </div>
 
-      {/* Result slot. */}
+      <ArrowRight className="cooking-arrow h-6 w-6" aria-hidden />
+
+      {/* Result slot — the finished aprijuice with its quality tier. */}
       <div
         className="cooking-slot"
-        style={{ left: resultX, top: resultY }}
         title={`${tier} aprijuice`}
       >
         {/* eslint-disable-next-line @next/next/no-img-element */}

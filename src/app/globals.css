@@ -126,56 +126,74 @@ body {
 }
 
 /* ---------- Cobblemon cooking-pot interface ---------- */
-/* Copy of the wiki's `.interface.cooking-interface` styling. The GIF
- * served from /textures/ui/cooking_interface.gif draws the slot borders.
- * We overlay items in flexbox rows that match the slot grid exactly
- * (8×8 tiles, upscaled 2× → 16px per tile, same as the wiki).
- * Same look in every app theme (no theme vars used). */
+/* Pure-CSS reproduction of the wiki's cooking-pot GUI, drawn without
+ * the upstream GIF so we can align items perfectly on each slot.
+ * Design goals: beveled grey outer panel, white-bordered sunken slots,
+ * pixelated look. Hardcoded greys — the game UI shouldn't reflow when
+ * the user switches app theme. */
 
-.interface {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+.cooking-panel {
   background-color: #c6c6c6;
   border: 2px solid;
   border-color: #ffffff #555555 #555555 #ffffff;
   outline: 2px solid #000000;
-  padding: 8px;
+  padding: 16px;
   image-rendering: pixelated;
-  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 16px;
 }
-.interface * {
+.cooking-panel * {
   image-rendering: pixelated;
 }
 
-.cooking-interface {
-  width: 320px;
-  height: 146px;
-  background-image: url(/textures/ui/cooking_interface.gif);
-  background-repeat: no-repeat;
-  background-position: 14px 14px;
-}
-
-/* Slot grid is part of the background GIF (250×118 px); we overlay the
- * item icons at absolute coordinates measured off the GIF. Each slot is
- * 18×18 in the GIF (stride = 18, first slot's inner padding = 1 px).
- * With background-position = 14px 14px inside the 8px-padded panel, the
- * first slot's top-left at the PANEL coordinate system is (22, 22). */
-
-.cooking-interface {
-  position: relative;
-}
-
+/* Individual slot: 40×40 outer box with a 2 px white border, sunken look
+ * via inner shadow (top-left dark, bottom-right light — standard MC
+ * inverted bevel). Items inside are 32×32 by default. */
 .cooking-slot {
-  position: absolute;
-  width: 16px;
-  height: 16px;
+  width: 40px;
+  height: 40px;
+  background: #8b8b8b;
+  border: 2px solid #ffffff;
+  box-shadow:
+    inset 2px 2px 0 #555555,
+    inset -2px -2px 0 #ffffff;
   display: flex;
   align-items: center;
   justify-content: center;
+  position: relative;
+  flex-shrink: 0;
 }
 .cooking-slot img {
-  width: 16px;
-  height: 16px;
+  width: 32px;
+  height: 32px;
   image-rendering: pixelated;
+}
+.cooking-slot.small {
+  width: 32px;
+  height: 32px;
+}
+.cooking-slot.small img {
+  width: 24px;
+  height: 24px;
+}
+
+/* Ingredient grid: 3×3 slots with 4 px gap. */
+.cooking-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 40px);
+  grid-template-rows: repeat(3, 40px);
+  gap: 4px;
+}
+
+/* Seasoning column: 3 stacked slots. */
+.cooking-seasoning {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.cooking-arrow {
+  color: #000000;
+  opacity: 0.55;
 }
