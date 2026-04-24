@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
 import { createHash } from "node:crypto";
 import { sql } from "drizzle-orm";
-import { db, safe, schema } from "@/lib/db/client";
+import { db, isDbMissing, schema } from "@/lib/db/client";
 
 type Body = {
   stars?: number;
@@ -11,9 +11,8 @@ type Body = {
 
 /**
  * Record a satisfaction rating (1-5 stars + optional comment) and bump
- * the aggregate counter. Client guards against duplicate submissions
- * (localStorage flag) but we also hash the IP server-side so repeated
- * anonymous abuse can be detected later if needed.
+ * the aggregate counter. If the DB is unavailable we still return 200
+ * so the client's thank-you flow works; the rating is just dropped.
  */
 export async function POST(req: NextRequest) {
   let body: Body = {};
@@ -33,6 +32,8 @@ export async function POST(req: NextRequest) {
       : null;
   const locale = typeof body.locale === "string" ? body.locale.slice(0, 10) : null;
 
+  if (isDbMissing()) return Response.json({ ok: true });
+
   const ip =
     req.headers.get("x-forwarded-for")?.split(",")[0].trim() ??
     req.headers.get("x-real-ip") ??
@@ -40,7 +41,7 @@ export async function POST(req: NextRequest) {
   const secret = process.env.RATING_SALT ?? "snack-and-catch";
   const ipHash = createHash("sha256").update(`${secret}:${ip}`).digest("hex");
 
-  await safe(async () => {
+  try {
     await db.insert(schema.siteRatings).values({
       stars,
       comment,
@@ -58,7 +59,9 @@ export async function POST(req: NextRequest) {
           updatedAt: new Date(),
         },
       });
-  }, undefined);
+  } catch (err) {
+    console.warn("[site/rate] failed:", err instanceof Error ? err.message : err);
+  }
 
   return Response.json({ ok: true });
 }

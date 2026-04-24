@@ -1,13 +1,15 @@
 import { sql } from "drizzle-orm";
-import { db, safe, schema } from "@/lib/db/client";
+import { db, isDbMissing, schema } from "@/lib/db/client";
 
 /**
- * POST increments the site-wide visit counter. Called once per session
- * from the Landing page (client ensures idempotency via sessionStorage).
- * Atomic SQL increment — safe under concurrency.
+ * Atomic increment of the site-wide visit counter. Called once per tab
+ * session from the Landing page. Best-effort: if the DB is unavailable
+ * or the table is missing, we swallow the error — the counter is not
+ * critical to the user experience.
  */
 export async function POST() {
-  await safe(async () => {
+  if (isDbMissing()) return Response.json({ ok: true });
+  try {
     await db
       .insert(schema.siteStats)
       .values({ id: 1, visits: 1 })
@@ -18,6 +20,8 @@ export async function POST() {
           updatedAt: new Date(),
         },
       });
-  }, undefined);
+  } catch (err) {
+    console.warn("[site/visit] failed:", err instanceof Error ? err.message : err);
+  }
   return Response.json({ ok: true });
 }
