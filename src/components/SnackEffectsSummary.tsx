@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import { Egg, Heart, Sparkles, Star, Venus, Mars } from "lucide-react";
 import type { FormattedBaitEffect } from "@/lib/recommend/bait-effects";
 
@@ -50,13 +49,14 @@ function pctLabel(chance: number): string {
 }
 
 function TypeIcon({ type }: { type: string }) {
+  // Plain <img>: height-driven aspect ratio, native width. Using Next's
+  // Image here would emit a single-axis override warning because we only
+  // fix height and let width flow.
   return (
-    <Image
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
       src={`/textures/type/${type}.png`}
       alt={type}
-      width={50}
-      height={20}
-      unoptimized
       className="inline-block align-middle h-[18px] w-auto"
     />
   );

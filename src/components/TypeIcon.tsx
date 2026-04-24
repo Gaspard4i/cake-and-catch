@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import { useState } from "react";
 
 const TYPE_COLORS: Record<string, string> = {
@@ -37,19 +36,20 @@ export function TypeIcon({ type, size = 28 }: { type: string; size?: number }) {
       </span>
     );
   }
-  // PokeAPI type icons aren't 2.5:1 exactly (some are 64x28, others 70x28),
-  // so we set explicit pixel height and let the image keep its native ratio.
-  // `max-w-full` prevents the image from overflowing narrow parents.
+  // PokeAPI type icons have varying native ratios (64×28, 70×28…). We fix
+  // the height and let the width auto-derive. Using a plain <img> here
+  // avoids Next's Image aspect-ratio warning (the component requires both
+  // dimensions from the same source, which conflicts with our
+  // height-only sizing). Images are tiny PNGs served from /public so the
+  // Next optimiser would be a no-op anyway.
   return (
-    <Image
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
       src={`/textures/type/${lowered}.png`}
       alt={type}
-      width={size * 2.5}
-      height={size}
-      unoptimized
       onError={() => setErrored(true)}
-      className="inline-block max-w-full shrink"
-      style={{ height: size, width: "auto" }}
+      className="inline-block max-w-full shrink w-auto"
+      style={{ height: `${size}px` }}
       title={type}
     />
   );
