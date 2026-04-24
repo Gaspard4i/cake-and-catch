@@ -708,13 +708,33 @@ export function CampfirePot() {
           <h3 className="text-sm font-medium uppercase tracking-wide text-muted">
             Attracted Pokémon {loading && <Spinner className="ml-2" />}
           </h3>
-          <p className="mt-1 text-xs text-muted">
-            Reproduction of the real Poké Snack spawn pipeline: world pool
-            filtered by biome/time/Y, uncommon ×2.25 / rare ×5.5 bucket
-            multipliers applied inconditionally, then typing/egg-group bait
-            effects multiply matching entries&apos; weight, then rarity_bucket
-            softens inter-bucket ratios. Probability = P(bucket) × weight share.
-          </p>
+          <div className="mt-2 rounded-lg border border-amber-400/50 bg-amber-400/10 p-3 text-xs">
+            <div className="flex items-start gap-2">
+              <span
+                className="mt-0.5 inline-flex items-center justify-center size-5 rounded-full bg-amber-500 text-white font-bold text-[10px] shrink-0"
+                aria-hidden
+              >
+                !
+              </span>
+              <div>
+                <div className="font-semibold text-amber-700 dark:text-amber-300 uppercase tracking-wide text-[10px]">
+                  Work in progress — probabilities are approximate
+                </div>
+                <p className="mt-1 text-muted leading-relaxed">
+                  The ranking below is my best-effort reproduction of the Cobblemon
+                  Poké Snack spawn pipeline (world pool filtered by biome/time/Y,
+                  uncommon ×2.25 / rare & ultra-rare ×5.5 bucket multipliers applied
+                  unconditionally, typing/egg-group bait effects multiplying matching
+                  entries&apos; weight, then <code>rarity_bucket</code> softening
+                  inter-bucket ratios — probability ≈ P(bucket) × weight share).
+                  It is <strong>not yet 1:1 with the mod</strong>. Edge cases around
+                  anticonditions, nested conditions, structure/lunar/skylight gates and
+                  addon-specific spawn rules are still being ironed out, so treat the
+                  numbers as a guide, not a guarantee. Improvements land continuously.
+                </p>
+              </div>
+            </div>
+          </div>
           <div className="mt-3 flex flex-wrap items-center gap-2">
             <input
               type="search"
