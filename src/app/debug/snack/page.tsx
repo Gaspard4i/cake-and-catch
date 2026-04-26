@@ -11,7 +11,8 @@ const ZERO_OVERRIDES: BerryDebugOverrides = {
   rotOffsetX: 0,
   rotOffsetY: 0,
   rotOffsetZ: 0,
-  scaleFactorY: -1,
+  scaleFactorY: 1,
+  targetSlug: null,
 };
 
 const DebugViewer = dynamic(
@@ -160,21 +161,58 @@ export default function SnackDebugPage() {
           </section>
 
           <section className="rounded-lg border border-border bg-card p-3 space-y-2">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between gap-2">
               <h2 className="text-xs uppercase tracking-wide text-muted">
                 Live overrides
               </h2>
-              <button
-                onClick={() => setOverrides(ZERO_OVERRIDES)}
-                className="text-[10px] uppercase text-muted hover:text-foreground"
-              >
-                Reset
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() =>
+                    copyPivotJson(
+                      overrides.targetSlug ?? selected[0]?.slug ?? "",
+                      overrides,
+                    )
+                  }
+                  disabled={!overrides.targetSlug && !selected[0]}
+                  className="text-[10px] uppercase text-muted hover:text-foreground disabled:opacity-30"
+                  title="Copy a {slug: {dx,dy,dz,rx,ry,rz,scale}} JSON line ready to paste into berry-pivots.ts"
+                >
+                  Copy JSON
+                </button>
+                <button
+                  onClick={() =>
+                    setOverrides({ ...ZERO_OVERRIDES, targetSlug: overrides.targetSlug ?? null })
+                  }
+                  className="text-[10px] uppercase text-muted hover:text-foreground"
+                >
+                  Reset
+                </button>
+              </div>
             </div>
+
+            <label className="block text-[10px] text-muted">
+              Editing
+              <select
+                value={overrides.targetSlug ?? ""}
+                onChange={(e) =>
+                  setOv("targetSlug", e.target.value || null)
+                }
+                className="ml-2 text-[11px] bg-subtle border border-border rounded px-1 py-0.5 text-foreground"
+              >
+                <option value="">— all berries —</option>
+                {selected.map((b, i) => (
+                  <option key={`${b.slug}-${i}`} value={b.slug}>
+                    {b.slug.replaceAll("_", " ")}
+                  </option>
+                ))}
+              </select>
+            </label>
+
             <p className="text-[10px] text-muted leading-relaxed">
               Offsets in world units (1 = block = 16 MC px). Rotations in
-              degrees, added on top of JSON. Scale Y sign flips the berry
-              (-1 = mod default, +1 = raw).
+              degrees, added on top of mod-derived placement. Pick a berry
+              above to tune it alone, then Copy JSON and paste into
+              <code className="font-mono"> src/lib/snack/berry-pivots.ts</code>.
             </p>
             <div className="grid grid-cols-2 gap-x-3 gap-y-1">
               <DebugSlider
@@ -230,7 +268,7 @@ export default function SnackDebugPage() {
               />
               <DebugSlider
                 label="scale Y"
-                value={overrides.scaleFactorY ?? -1}
+                value={overrides.scaleFactorY ?? 1}
                 min={-2}
                 max={2}
                 step={0.1}
@@ -310,6 +348,27 @@ export default function SnackDebugPage() {
       </div>
     </div>
   );
+}
+
+function copyPivotJson(slug: string, ov: BerryDebugOverrides) {
+  if (!slug) return;
+  const round = (n: number, p = 4) =>
+    Number.parseFloat(n.toFixed(p));
+  const entry: Record<string, number> = {};
+  if (ov.offsetX) entry.dx = round(ov.offsetX);
+  if (ov.offsetY) entry.dy = round(ov.offsetY);
+  if (ov.offsetZ) entry.dz = round(ov.offsetZ);
+  if (ov.rotOffsetX) entry.rx = round(ov.rotOffsetX, 2);
+  if (ov.rotOffsetY) entry.ry = round(ov.rotOffsetY, 2);
+  if (ov.rotOffsetZ) entry.rz = round(ov.rotOffsetZ, 2);
+  if (ov.scaleFactorY != null && ov.scaleFactorY !== 1) {
+    entry.scale = round(ov.scaleFactorY, 3);
+  }
+  const json = `${slug}: ${JSON.stringify(entry)},`;
+  navigator.clipboard?.writeText(json).catch(() => {});
+  // Also surface visually for users without clipboard permission.
+  // eslint-disable-next-line no-console
+  console.log("[berry-pivots]", json);
 }
 
 function DebugSlider({

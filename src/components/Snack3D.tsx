@@ -4,6 +4,7 @@ import { Canvas, useFrame, useLoader } from "@react-three/fiber";
 import { Suspense, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { TextureLoader, NearestFilter, type Texture } from "three";
 import * as THREE from "three";
+import { getBerryPivot } from "@/lib/snack/berry-pivots";
 
 /**
  * Faithful reproduction of cobblemon's `poke_snack.json` block model:
@@ -200,8 +201,14 @@ export type BerryDebugOverrides = {
   rotOffsetX?: number; // degrees, added to rxDeg
   rotOffsetY?: number; // degrees, added to ryDeg
   rotOffsetZ?: number; // degrees, added to rzDeg
-  /** Multiplier on the 1/16 base scale. Sign of Y lets the debugger flip. */
-  scaleFactorY?: number; // default -1 (flip on for mod parity)
+  /** Multiplier on the 1/16 base scale, Y axis only. Default +1. Set to
+   * -1 to flip a single berry whose source model is upside down. */
+  scaleFactorY?: number;
+  /** Slug of the berry currently being tuned. When set, debug offsets
+   * are applied ONLY to that berry — the others stay untouched. Lets
+   * the operator dial in one berry at a time without disturbing the
+   * already-correct ones. */
+  targetSlug?: string | null;
 };
 
 function BerryOnTop({
@@ -251,7 +258,11 @@ function BerryOnTop({
         const g = doc["minecraft:geometry"]?.[0];
         const bone = g ? firstBone(g) : null;
         if (!g || !bone) return;
-        setGeometry(boneToGeometry(bone, g));
+        // "bottom" anchor: every berry sits on its lowest cube vertex with
+        // X/Z bbox-centered on the origin. Different models can now share
+        // the same world transform without each landing in a different
+        // spot.
+        setGeometry(boneToGeometry(bone, g, "bottom"));
       })
       .catch(() => {
         /* model missing — fall back to plane below */
@@ -276,55 +287,40 @@ function BerryOnTop({
 
   if (!material) return null;
 
-  // Placement resolution — mirrors PokeSnackBlockEntityRenderer.kt.
-  //   1 berry  → pokeSnackPositionings[0].y kept, x/z forced to 8 (centre),
-  //              rotation forced to (180°, 0, 0). This matches the "no
-  //              candle" branch in the renderer (we never render a candle).
-  //   2 berries → both use pokeSnackPositionings[0]; the second is mirrored:
-  //              z' = 16 - z, rotX' = 360 - rotX, y/rotY/rotZ unchanged.
-  //   3 berries → each berry takes pokeSnackPositionings[index] 1-to-1.
+  // X/Z placement mirrors PokeSnackBlockEntityRenderer.kt (1/2/3 berry
+  // distribution on the top face). Y is FORCED to the snack top face
+  // (7/16) — we no longer trust the mod's per-berry pos.y because
+  // every model has a different cube anchor, which is what made
+  // berries land at random heights. Auto-bottom anchoring in
+  // boneToGeometry already aligned every model on its own lowest
+  // vertex, so a uniform y=7/16 puts them all flat on the snack.
+  // The (cosmetic) tilt rotations from the mod are kept.
   const positionings = berry.snackPositionings ?? [];
   const base = positionings[0];
   let px = 0;
-  let py = 0;
   let pz = 0;
   let rxDeg = 0;
   let ryDeg = 0;
   let rzDeg = 0;
-
-  // Minecraft ModelPart coords are y-down inside the block: pos.y is
-  // "pixels below the block top". We convert to Three.js y-up with
-  //   world_y = (16 - pos.y) / 16
-  // The geometry is also rendered with scale.y = -1/16 so cubes with
-  // negative local y (the pivot-is-on-top convention all Cobblemon
-  // berry models use) end up ABOVE the pivot, where the berry body
-  // actually belongs. The combo of flipped geometry and flipped
-  // position Y makes the mod-provided rotations work without extra
-  // sign changes: a pos.y of 9.45 with rot.x=155° lands the berry
-  // body resting on the snack top face (y=7/16), for every berry.
-  const yFromMod = (y: number) => (16 - y) / 16;
+  const py = 7 / 16;
 
   if (base) {
     if (totalCount === 1) {
-      px = 8 / 16 - 0.5; // = 0
-      py = yFromMod(base.position.y);
-      pz = 8 / 16 - 0.5; // = 0
-      rxDeg = 180;
-      ryDeg = 0;
-      rzDeg = 0;
+      px = 0;
+      pz = 0;
     } else if (totalCount === 2) {
       const p = base;
       px = p.position.x / 16 - 0.5;
-      py = yFromMod(p.position.y);
-      pz =
-        (index === 0 ? p.position.z : 16 - p.position.z) / 16 - 0.5;
-      rxDeg = index === 0 ? p.rotation.x : 360 - p.rotation.x;
+      pz = (index === 0 ? p.position.z : 16 - p.position.z) / 16 - 0.5;
+      rxDeg = p.rotation.x;
       ryDeg = p.rotation.y;
       rzDeg = p.rotation.z;
+      // Mirror second berry's Y rotation so it doesn't perfectly clone
+      // the first.
+      if (index === 1) ryDeg = 180 - ryDeg;
     } else {
       const p = positionings[Math.min(index, positionings.length - 1)] ?? base;
       px = p.position.x / 16 - 0.5;
-      py = yFromMod(p.position.y);
       pz = p.position.z / 16 - 0.5;
       rxDeg = p.rotation.x;
       ryDeg = p.rotation.y;
@@ -332,23 +328,26 @@ function BerryOnTop({
     }
   }
 
-  // Apply debug overrides (world units + degrees) on top of the
-  // mod-derived transform.
-  const d = debug ?? {};
-  const finalX = px + (d.offsetX ?? 0);
-  const finalY = py + (d.offsetY ?? 0);
-  const finalZ = pz + (d.offsetZ ?? 0);
-  const rx = THREE.MathUtils.degToRad(rxDeg + (d.rotOffsetX ?? 0));
-  const ry = THREE.MathUtils.degToRad(ryDeg + (d.rotOffsetY ?? 0));
-  const rz = THREE.MathUtils.degToRad(rzDeg + (d.rotOffsetZ ?? 0));
-  const scaleY = (d.scaleFactorY ?? -1) / 16;
+  // Per-berry static pivot override + live debug overrides (debug only
+  // affects the berry currently being tuned; see SnackMesh).
+  const pivot = getBerryPivot(berry.slug);
+  const isTarget =
+    !debug?.targetSlug || debug.targetSlug === berry.slug;
+  const d = isTarget ? (debug ?? {}) : {};
+  const finalX = px + (pivot.dx ?? 0) + (d.offsetX ?? 0);
+  const finalY = py + (pivot.dy ?? 0) + (d.offsetY ?? 0);
+  const finalZ = pz + (pivot.dz ?? 0) + (d.offsetZ ?? 0);
+  const rx = THREE.MathUtils.degToRad(rxDeg + (pivot.rx ?? 0) + (d.rotOffsetX ?? 0));
+  const ry = THREE.MathUtils.degToRad(ryDeg + (pivot.ry ?? 0) + (d.rotOffsetY ?? 0));
+  const rz = THREE.MathUtils.degToRad(rzDeg + (pivot.rz ?? 0) + (d.rotOffsetZ ?? 0));
+  const baseScale = ((pivot.scale ?? 1)) / 16;
+  const scaleY = ((d.scaleFactorY ?? 1) * (pivot.scale ?? 1)) / 16;
 
   if (geometry) {
-    // Scale 1/16 on X/Z converts pixel units to block units. Y uses
-    // -1/16 so the Minecraft ModelPart y-down convention is flipped
-    // into Three.js y-up (matches the `world_y = (16 - pos.y) / 16`
-    // position remap above). DoubleSide material absorbs the inverted
-    // winding caused by the negative scale.
+    // Geometry is already auto-anchored to its own bottom in
+    // boneToGeometry, so we draw it with positive scale on every axis.
+    // scaleFactorY in debug overrides lets you flip a specific berry
+    // if its source model is upside-down (rare).
     return (
       <group
         position={[finalX, finalY, finalZ]}
@@ -357,7 +356,7 @@ function BerryOnTop({
         <mesh
           geometry={geometry}
           material={material}
-          scale={[1 / 16, scaleY, 1 / 16]}
+          scale={[baseScale, scaleY, baseScale]}
         />
       </group>
     );

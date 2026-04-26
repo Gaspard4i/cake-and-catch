@@ -125,14 +125,27 @@ function pushQuad(
   indices.push(base + 1, base + 2, base + 3);
 }
 
+export type AnchorMode = "none" | "bottom" | "center" | "bbox-pivot";
+
 /**
  * Build a BufferGeometry containing all cubes of a given bone, flattened,
  * with UVs derived from the Bedrock box-UV layout. Coordinates are in MC
  * pixels; the caller should divide by 16 when placing in world space.
+ *
+ * `anchor` recenters the geometry so different berry models share a common
+ * reference frame:
+ *   - "none"        : raw cube origins from the JSON (legacy behaviour)
+ *   - "bottom"      : translate so min-Y of the bounding box = 0 and X/Z
+ *                     midpoints = 0. Each berry now sits on its lowest point
+ *                     at the origin, regardless of how the modeler authored
+ *                     it. This is the right default for resting on a snack.
+ *   - "center"      : full XYZ bounding-box centre → origin
+ *   - "bbox-pivot"  : like "bottom" but Y-min only, no X/Z recentering
  */
 export function boneToGeometry(
   bone: BedrockBone,
   geo: BedrockGeometry,
+  anchor: AnchorMode = "bottom",
 ): THREE.BufferGeometry {
   const { texture_width: texW, texture_height: texH } = geo.description;
   const positions: number[] = [];
@@ -257,6 +270,34 @@ export function boneToGeometry(
   g.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
   g.setAttribute("uv", new THREE.Float32BufferAttribute(uvs, 2));
   g.setIndex(indices);
+
+  if (anchor !== "none" && positions.length >= 3) {
+    let minX = Infinity, maxX = -Infinity;
+    let minY = Infinity, maxY = -Infinity;
+    let minZ = Infinity, maxZ = -Infinity;
+    for (let i = 0; i < positions.length; i += 3) {
+      const x = positions[i], y = positions[i + 1], z = positions[i + 2];
+      if (x < minX) minX = x; if (x > maxX) maxX = x;
+      if (y < minY) minY = y; if (y > maxY) maxY = y;
+      if (z < minZ) minZ = z; if (z > maxZ) maxZ = z;
+    }
+    let dx = 0, dy = 0, dz = 0;
+    if (anchor === "bottom") {
+      dx = -(minX + maxX) / 2;
+      dy = -minY;
+      dz = -(minZ + maxZ) / 2;
+    } else if (anchor === "center") {
+      dx = -(minX + maxX) / 2;
+      dy = -(minY + maxY) / 2;
+      dz = -(minZ + maxZ) / 2;
+    } else if (anchor === "bbox-pivot") {
+      dy = -minY;
+    }
+    if (dx || dy || dz) {
+      g.translate(dx, dy, dz);
+    }
+  }
+
   g.computeVertexNormals();
   return g;
 }
