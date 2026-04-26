@@ -258,11 +258,15 @@ function BerryOnTop({
         const g = doc["minecraft:geometry"]?.[0];
         const bone = g ? firstBone(g) : null;
         if (!g || !bone) return;
-        // "bottom" anchor: every berry sits on its lowest cube vertex with
-        // X/Z bbox-centered on the origin. Different models can now share
-        // the same world transform without each landing in a different
-        // spot.
-        setGeometry(boneToGeometry(bone, g, "bottom"));
+        // If the per-berry registry defines a custom pivot, use it —
+        // that's the authored "centre" of the model. Otherwise fall
+        // back to auto-bottom anchoring (lowest vertex on origin).
+        const pv = getBerryPivot(berry.slug);
+        const custom =
+          pv.cx != null || pv.cy != null || pv.cz != null
+            ? { cx: pv.cx ?? 0, cy: pv.cy ?? 0, cz: pv.cz ?? 0 }
+            : null;
+        setGeometry(boneToGeometry(bone, g, "bottom", custom));
       })
       .catch(() => {
         /* model missing — fall back to plane below */
@@ -270,7 +274,7 @@ function BerryOnTop({
     return () => {
       cancelled = true;
     };
-  }, [berry.fruitModel]);
+  }, [berry.fruitModel, berry.slug]);
 
   const material = useMemo(
     () =>

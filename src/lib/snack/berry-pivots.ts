@@ -15,10 +15,19 @@
  */
 
 export type BerryPivot = {
+  /** Pivot of the 3D model in MC pixel units, expressed in the model's
+   * raw cube space. The geometry is translated by `-(cx, cy, cz)` so
+   * this point ends up at the local origin (0,0,0). Tune at
+   * /debug/berry-pivot. If omitted the auto-bottom anchor is used. */
+  cx?: number;
+  cy?: number;
+  cz?: number;
+  /** World-space placement nudge added on top of the snack-positioning
+   * transform, world units (1 = block). Tune at /debug/snack. */
   dx?: number;
   dy?: number;
   dz?: number;
-  rx?: number; // degrees, applied before the snack-positioning rotation
+  rx?: number; // degrees, added to snack-positioning rotation
   ry?: number;
   rz?: number;
   /** Multiplier applied to the geometry scale (default 1). */

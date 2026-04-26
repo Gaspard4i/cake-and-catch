@@ -146,6 +146,10 @@ export function boneToGeometry(
   bone: BedrockBone,
   geo: BedrockGeometry,
   anchor: AnchorMode = "bottom",
+  /** When set, OVERRIDES the anchor: geometry is translated by
+   * -(cx, cy, cz) so this exact pixel point ends up at the local
+   * origin. Used by the per-berry pivot editor. */
+  customPivot?: { cx: number; cy: number; cz: number } | null,
 ): THREE.BufferGeometry {
   const { texture_width: texW, texture_height: texH } = geo.description;
   const positions: number[] = [];
@@ -271,7 +275,9 @@ export function boneToGeometry(
   g.setAttribute("uv", new THREE.Float32BufferAttribute(uvs, 2));
   g.setIndex(indices);
 
-  if (anchor !== "none" && positions.length >= 3) {
+  if (customPivot && positions.length >= 3) {
+    g.translate(-customPivot.cx, -customPivot.cy, -customPivot.cz);
+  } else if (anchor !== "none" && positions.length >= 3) {
     let minX = Infinity, maxX = -Infinity;
     let minY = Infinity, maxY = -Infinity;
     let minZ = Infinity, maxZ = -Infinity;
