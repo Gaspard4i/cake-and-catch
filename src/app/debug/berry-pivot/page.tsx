@@ -43,6 +43,10 @@ export default function BerryPivotPage() {
     min: [number, number, number];
     max: [number, number, number];
   } | null>(null);
+  // Full registry, loaded from the dev API on mount and re-saved on
+  // every edit. The current slug's entry is kept in sync with `pivot`.
+  const [registry, setRegistry] = useState<Record<string, Pivot>>({});
+  const [saveState, setSaveState] = useState<"idle" | "saving" | "saved" | "error">("idle");
 
   useEffect(() => {
     fetch("/api/snack")
@@ -54,8 +58,60 @@ export default function BerryPivotPage() {
         setBerries(list);
         if (!slug && list.length > 0) setSlug(list[0].slug);
       });
+    fetch("/api/debug/berry-pivots")
+      .then((r) => (r.ok ? r.json() : { pivots: {} }))
+      .then((d: { pivots?: Record<string, Pivot> }) => {
+        setRegistry(d.pivots ?? {});
+      })
+      .catch(() => {});
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Load the saved pivot for the currently selected slug.
+  useEffect(() => {
+    if (!slug) return;
+    const saved = registry[slug];
+    if (saved) {
+      setPivot({
+        cx: saved.cx ?? 0,
+        cy: saved.cy ?? 0,
+        cz: saved.cz ?? 0,
+      });
+    } else {
+      setPivot(ZERO_PIVOT);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [slug]);
+
+  // Debounced autosave whenever the pivot for the current slug changes.
+  useEffect(() => {
+    if (!slug) return;
+    const same =
+      registry[slug]?.cx === pivot.cx &&
+      registry[slug]?.cy === pivot.cy &&
+      registry[slug]?.cz === pivot.cz;
+    if (same) return;
+    const next = {
+      ...registry,
+      [slug]: { ...(registry[slug] ?? {}), cx: pivot.cx, cy: pivot.cy, cz: pivot.cz },
+    };
+    setSaveState("saving");
+    const t = setTimeout(() => {
+      fetch("/api/debug/berry-pivots", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ pivots: next }),
+      })
+        .then((r) => {
+          if (!r.ok) throw new Error(String(r.status));
+          setRegistry(next);
+          setSaveState("saved");
+        })
+        .catch(() => setSaveState("error"));
+    }, 400);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pivot.cx, pivot.cy, pivot.cz, slug]);
 
   const berry = useMemo(
     () => berries.find((b) => b.slug === slug) ?? null,
@@ -84,9 +140,18 @@ export default function BerryPivotPage() {
           Berry pivot editor
         </h1>
         <p className="text-[11px] text-muted">
-          Drag to move (cx, cy, cz); the red cross is the origin. Place
-          the cross where you want the berry's centre, then Copy JSON.
+          Move (cx, cy, cz) so the red cross sits where the berry's
+          centre should be. Saves auto to <code className="font-mono">berry-pivots.ts</code>.
+          That centre becomes the point placed on the snack top face.
         </p>
+        <span className="ml-auto text-[10px] uppercase tracking-wide">
+          {saveState === "saving" && <span className="text-muted">saving…</span>}
+          {saveState === "saved" && <span className="text-green-600">saved</span>}
+          {saveState === "error" && <span className="text-red-500">save failed</span>}
+          {saveState === "idle" && (
+            <span className="text-muted">{Object.keys(registry).length} saved</span>
+          )}
+        </span>
       </header>
 
       <div className="flex-1 grid gap-3 min-h-0 lg:grid-cols-[1fr_360px] xl:grid-cols-[1fr_420px]">
@@ -109,21 +174,55 @@ export default function BerryPivotPage() {
 
         <aside className="overflow-y-auto pr-1 grid gap-3 grid-cols-1 auto-rows-min content-start">
           <section className="rounded-lg border border-border bg-card p-2 space-y-2">
-            <label className="block text-[11px]">
+            <div className="flex items-center justify-between">
               <span className="text-muted uppercase tracking-wide text-[10px]">
                 Berry
               </span>
+              <div className="flex gap-1">
+                <button
+                  onClick={() => {
+                    const i = berries.findIndex((b) => b.slug === slug);
+                    if (i > 0) {
+                      setSlug(berries[i - 1].slug);
+                      setBbox(null);
+                    }
+                  }}
+                  disabled={berries.findIndex((b) => b.slug === slug) <= 0}
+                  className="text-[10px] px-1.5 py-0.5 rounded border border-border hover:bg-subtle disabled:opacity-30"
+                >
+                  ← prev
+                </button>
+                <button
+                  onClick={() => {
+                    const i = berries.findIndex((b) => b.slug === slug);
+                    if (i >= 0 && i < berries.length - 1) {
+                      setSlug(berries[i + 1].slug);
+                      setBbox(null);
+                    }
+                  }}
+                  disabled={
+                    berries.findIndex((b) => b.slug === slug) ===
+                    berries.length - 1
+                  }
+                  className="text-[10px] px-1.5 py-0.5 rounded border border-border hover:bg-subtle disabled:opacity-30"
+                >
+                  next →
+                </button>
+              </div>
+            </div>
+            <label className="block text-[11px]">
+              <span className="sr-only">Berry slug</span>
               <select
                 value={slug ?? ""}
                 onChange={(e) => {
                   setSlug(e.target.value);
-                  setPivot(ZERO_PIVOT);
                   setBbox(null);
                 }}
                 className="block w-full mt-0.5 text-[12px] bg-subtle border border-border rounded px-1.5 py-1 text-foreground"
               >
                 {berries.map((b) => (
                   <option key={b.slug} value={b.slug}>
+                    {registry[b.slug] ? "✓ " : "  "}
                     {b.slug.replaceAll("_", " ")}
                   </option>
                 ))}
@@ -145,11 +244,23 @@ export default function BerryPivotPage() {
                 Pivot (cube space, MC pixels)
               </h2>
               <button
-                onClick={() => copyPivotJson(slug ?? "", pivot)}
+                onClick={() => {
+                  if (!slug) return;
+                  const next = { ...registry };
+                  delete next[slug];
+                  setRegistry(next);
+                  setPivot(ZERO_PIVOT);
+                  fetch("/api/debug/berry-pivots", {
+                    method: "POST",
+                    headers: { "content-type": "application/json" },
+                    body: JSON.stringify({ pivots: next }),
+                  }).catch(() => {});
+                }}
                 disabled={!slug}
                 className="text-[10px] uppercase text-muted hover:text-foreground disabled:opacity-30"
+                title="Remove this berry's pivot from the registry"
               >
-                Copy JSON
+                Clear
               </button>
             </div>
 
@@ -260,18 +371,6 @@ export default function BerryPivotPage() {
 
 function round(n: number, p = 4) {
   return Number.parseFloat(n.toFixed(p));
-}
-
-function copyPivotJson(slug: string, p: Pivot) {
-  if (!slug) return;
-  const json = `${slug}: ${JSON.stringify({
-    cx: round(p.cx),
-    cy: round(p.cy),
-    cz: round(p.cz),
-  })},`;
-  navigator.clipboard?.writeText(json).catch(() => {});
-  // eslint-disable-next-line no-console
-  console.log("[berry-pivots]", json);
 }
 
 function PivotSlider({
