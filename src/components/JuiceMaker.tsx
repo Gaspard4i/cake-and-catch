@@ -402,7 +402,7 @@ export function JuiceMaker() {
               </span>
             </h4>
           </div>
-          <div className="mt-2 flex flex-wrap gap-2">
+          <div className="mt-2 flex items-center justify-between gap-1.5 sm:gap-2 sm:justify-start sm:flex-wrap">
             {APRICORNS.map((a) => {
               const active = ownedApricorns.has(a);
               return (
@@ -411,7 +411,8 @@ export function JuiceMaker() {
                   type="button"
                   onClick={() => toggleOwnedApricorn(a)}
                   aria-pressed={active}
-                  className={`size-10 rounded-full border-2 transition-all ${
+                  aria-label={a.toLowerCase()}
+                  className={`size-8 sm:size-10 shrink-0 rounded-full border-2 transition-all ${
                     active
                       ? "border-accent scale-105"
                       : "border-border opacity-40 hover:opacity-70"

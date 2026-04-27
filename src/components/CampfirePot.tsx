@@ -10,6 +10,7 @@ import { PokemonSprite } from "./PokemonSprite";
 import { TypePair } from "./TypeBadge";
 import { Snack3D, type BerryPlacement } from "./Snack3D";
 import { NameRecipeModal } from "./NameRecipeModal";
+import { SeasoningPickerSheet } from "./SeasoningPickerSheet";
 import { MultiSelect, type MultiSelectOption } from "./MultiSelect";
 import { SnackEffectsSummary } from "./SnackEffectsSummary";
 import type { FormattedBaitEffect } from "@/lib/recommend/bait-effects";
@@ -217,6 +218,9 @@ export function CampfirePot() {
   const [pantryLoading, setPantryLoading] = useState(true);
   /** Adaptive 3D snack size: ~180px on phones, 220px on desktop. */
   const [snack3DSize, setSnack3DSize] = useState(220);
+  /** Mobile-only picker sheet. When open, holds the slot index the user
+   *  tapped so the chosen seasoning lands in the right slot. */
+  const [pickerSlotIndex, setPickerSlotIndex] = useState<number | null>(null);
   useEffect(() => {
     const update = () => setSnack3DSize(window.innerWidth < 640 ? 180 : 220);
     update();
@@ -539,8 +543,17 @@ export function CampfirePot() {
                     const s = seasonings.find((x) => x.slug === slug);
                     if (s && s.snackValid) setSlot(idx, s);
                   }}
-                  onClick={() => setSlot(idx, null)}
-                  title={slot ? `Remove ${slot.slug}` : "Drop a bait seasoning here"}
+                  onClick={() => {
+                    // Filled → just empty the slot. Empty → on phones,
+                    // open the picker sheet for THIS slot; on desktop
+                    // keep the no-op (the inline pantry is the source).
+                    if (slot) {
+                      setSlot(idx, null);
+                    } else if (window.matchMedia("(max-width: 639px)").matches) {
+                      setPickerSlotIndex(idx);
+                    }
+                  }}
+                  title={slot ? `Remove ${slot.slug}` : "Tap to pick a seasoning"}
                   className={`size-16 rounded-lg border-2 flex items-center justify-center cursor-pointer transition-colors ${
                     slot
                       ? "border-accent bg-subtle"
@@ -555,7 +568,7 @@ export function CampfirePot() {
                   {slot ? (
                     <ItemIcon id={slot.itemId} size={48} />
                   ) : (
-                    <span className="text-[9px] text-muted uppercase">S{idx + 1}</span>
+                    <span className="text-[9px] text-muted uppercase">+ S{idx + 1}</span>
                   )}
                 </div>
               ))}
@@ -568,7 +581,7 @@ export function CampfirePot() {
       </aside>
 
       <div className="space-y-6">
-        <div>
+        <div className="hidden sm:block">
           <h3 className="text-sm font-medium uppercase tracking-wide text-muted">
             {t("pantry")}
           </h3>
@@ -905,6 +918,20 @@ export function CampfirePot() {
           )}
         </div>
       </div>
+      <SeasoningPickerSheet
+        open={pickerSlotIndex != null}
+        onClose={() => setPickerSlotIndex(null)}
+        seasonings={seasonings}
+        occupiedSlugs={slots
+          .filter((s): s is Seasoning => Boolean(s))
+          .map((s) => s.slug)}
+        onPick={(s) => {
+          if (pickerSlotIndex == null) return;
+          setSlot(pickerSlotIndex, s);
+          setPickerSlotIndex(null);
+        }}
+        flavourColors={FLAVOUR_COLORS}
+      />
     </div>
   );
 }
