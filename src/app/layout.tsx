@@ -78,12 +78,17 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 </div>
               </header>
               <main className="flex-1 pb-20 sm:pb-0">{children}</main>
-              <footer className="border-t border-border text-xs text-muted py-4 pb-[calc(1rem+env(safe-area-inset-bottom)+56px)] sm:pb-4">
+              <footer className="hidden sm:block border-t border-border text-xs text-muted py-4">
                 <div className="mx-auto max-w-5xl px-6">
                   <FooterText />
                 </div>
               </footer>
-              <MobileBottomNav />
+              <MobileBottomNav
+                showDebug={
+                  process.env.NODE_ENV !== "production" ||
+                  process.env.DEBUG_ROUTES === "1"
+                }
+              />
               <FloatingFeedback />
               <SatisfactionModal />
             </IntlShell>

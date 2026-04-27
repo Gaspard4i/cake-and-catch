@@ -5,13 +5,15 @@ import { createPortal } from "react-dom";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { Home, Info, Search, X } from "lucide-react";
+import { ChefHat, FlaskRound, Home, Info, Leaf, Search, X } from "lucide-react";
 
 type Props = {
   open: boolean;
   onClose: () => void;
   /** id the <nav> can reference via aria-controls. */
   id?: string;
+  /** Show /debug link (dev / preview). */
+  showDebug?: boolean;
 };
 
 /**
@@ -28,7 +30,7 @@ type Props = {
  *   - Body scroll lock while open
  *   - Respects prefers-reduced-motion (skips the slide-in translate)
  */
-export function MoreSheet({ open, onClose, id }: Props) {
+export function MoreSheet({ open, onClose, id, showDebug = false }: Props) {
   const t = useTranslations("nav");
   const panelRef = useRef<HTMLDivElement>(null);
 
@@ -53,8 +55,13 @@ export function MoreSheet({ open, onClose, id }: Props) {
   const items: Array<{ href: string; label: string; Icon: typeof Home }> = [
     { href: "/", label: t("home"), Icon: Home },
     { href: "/search", label: t("search"), Icon: Search },
+    { href: "/seasonings", label: t("seasonings"), Icon: Leaf },
+    { href: "/saved", label: t("savedRecipes"), Icon: ChefHat },
     { href: "/about", label: t("about"), Icon: Info },
   ];
+  if (showDebug) {
+    items.push({ href: "/debug", label: "Debug", Icon: FlaskRound });
+  }
 
   return createPortal(
     <div

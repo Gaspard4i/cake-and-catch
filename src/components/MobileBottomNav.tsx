@@ -30,7 +30,7 @@ const TABS: Tab[] = [
  * `viewport: { viewportFit: "cover" }` on layout.tsx so the inset is
  * actually exposed.
  */
-export function MobileBottomNav() {
+export function MobileBottomNav({ showDebug = false }: { showDebug?: boolean }) {
   const t = useTranslations("nav");
   const pathname = usePathname();
   const [moreOpen, setMoreOpen] = useState(false);
@@ -97,6 +97,7 @@ export function MobileBottomNav() {
         id={sheetId}
         open={moreOpen}
         onClose={() => setMoreOpen(false)}
+        showDebug={showDebug}
       />
     </>
   );
