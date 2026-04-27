@@ -62,7 +62,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                     <Link href="/" className="font-semibold tracking-tight">
                       Snack <span className="text-accent">&amp;</span> Catch
                     </Link>
-                    <HeaderNav />
+                    <HeaderNav
+                      showDebug={
+                        process.env.NODE_ENV !== "production" ||
+                        process.env.DEBUG_ROUTES === "1"
+                      }
+                    />
                   </div>
                   <div className="flex items-center gap-2">
                     <LocaleSwitcher />
