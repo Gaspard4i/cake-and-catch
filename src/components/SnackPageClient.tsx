@@ -1,10 +1,11 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import { PageSkeleton } from "./Loader";
 
 const CampfirePot = dynamic(() => import("./CampfirePot").then((m) => m.CampfirePot), {
   ssr: false,
-  loading: () => <div className="text-muted text-sm">…</div>,
+  loading: () => <PageSkeleton variant="snack" />,
 });
 const SnackBaseRecipe = dynamic(
   () => import("./CampfirePot").then((m) => m.SnackBaseRecipe),

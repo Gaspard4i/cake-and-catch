@@ -90,6 +90,101 @@ export function AttractedCardSkeleton() {
   );
 }
 
+/**
+ * Generic full-page skeleton: hero block + a couple of content rows.
+ * Used as the Suspense fallback while a page boundary streams its data,
+ * so the user sees structured shimmer instead of a textual "..." stub.
+ */
+export function PageSkeleton({
+  variant = "generic",
+}: {
+  variant?: "generic" | "snack" | "juice" | "pokedex";
+}) {
+  if (variant === "snack") {
+    return (
+      <div className="space-y-6">
+        <header className="flex flex-col sm:flex-row items-start justify-between gap-4 sm:gap-8">
+          <div className="max-w-2xl space-y-2 flex-1">
+            <Skeleton className="h-7 w-64" />
+            <Skeleton className="h-4 w-full max-w-md" />
+            <Skeleton className="h-4 w-3/4 max-w-sm" />
+          </div>
+          <Skeleton className="size-10 shrink-0" />
+        </header>
+        <div className="grid gap-6 md:grid-cols-[260px_1fr]">
+          <div className="space-y-3">
+            <Skeleton className="aspect-square w-full max-w-[220px] rounded-lg" />
+            <div className="flex gap-2">
+              <Skeleton className="size-16 rounded-lg" />
+              <Skeleton className="size-16 rounded-lg" />
+              <Skeleton className="size-16 rounded-lg" />
+            </div>
+          </div>
+          <div className="space-y-3">
+            <Skeleton className="h-4 w-32" />
+            <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 gap-2">
+              {Array.from({ length: 12 }).map((_, i) => (
+                <Skeleton key={i} className="aspect-square rounded-md" />
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+  if (variant === "juice") {
+    return (
+      <div className="space-y-6">
+        <div className="space-y-2">
+          <Skeleton className="h-7 w-56" />
+          <Skeleton className="h-4 w-full max-w-xl" />
+        </div>
+        <div className="grid gap-4 md:grid-cols-2">
+          <div className="space-y-2">
+            <Skeleton className="h-5 w-32" />
+            {Array.from({ length: 5 }).map((_, i) => (
+              <Skeleton key={i} className="h-3 w-full" />
+            ))}
+          </div>
+          <div className="space-y-2">
+            <Skeleton className="h-5 w-32" />
+            {Array.from({ length: 5 }).map((_, i) => (
+              <Skeleton key={i} className="h-3 w-full" />
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+  if (variant === "pokedex") {
+    return (
+      <div className="space-y-4">
+        <div className="space-y-2">
+          <Skeleton className="h-7 w-48" />
+          <Skeleton className="h-4 w-full max-w-lg" />
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+          {Array.from({ length: 12 }).map((_, i) => (
+            <PokedexCardSkeleton key={i} />
+          ))}
+        </div>
+      </div>
+    );
+  }
+  return (
+    <div className="space-y-4">
+      <Skeleton className="h-7 w-56" />
+      <Skeleton className="h-4 w-full max-w-2xl" />
+      <Skeleton className="h-4 w-5/6 max-w-xl" />
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 mt-4">
+        {Array.from({ length: 6 }).map((_, i) => (
+          <Skeleton key={i} className="h-24 rounded-lg" />
+        ))}
+      </div>
+    </div>
+  );
+}
+
 /** Top-of-page thin progress bar, sticky under the navbar. Use when a
  *  fetch is in flight but the existing content is still visible. */
 export function TopProgress({ active }: { active: boolean }) {

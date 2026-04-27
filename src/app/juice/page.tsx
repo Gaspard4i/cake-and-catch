@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 import dynamic from "next/dynamic";
+import { PageSkeleton } from "@/components/Loader";
 
 const JuiceMaker = dynamic(() =>
   import("@/components/JuiceMaker").then((m) => m.JuiceMaker),
@@ -17,7 +18,7 @@ export default function JuicePage() {
       </p>
 
       <div className="mt-8">
-        <Suspense fallback={<div className="text-muted text-sm">…</div>}>
+        <Suspense fallback={<PageSkeleton variant="juice" />}>
           <JuiceMaker />
         </Suspense>
       </div>

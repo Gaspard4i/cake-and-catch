@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import { getTranslations } from "next-intl/server";
 import { FeedbackCard } from "@/components/Feedback";
+import { PageSkeleton } from "@/components/Loader";
 
 type SourceEntry = {
   name: string;
@@ -182,7 +183,13 @@ async function AboutContent() {
 
 export default function AboutPage() {
   return (
-    <Suspense fallback={<div className="mx-auto max-w-3xl px-4 sm:px-6 py-6 sm:py-10 text-muted">…</div>}>
+    <Suspense
+      fallback={
+        <div className="mx-auto max-w-3xl px-4 sm:px-6 py-6 sm:py-10">
+          <PageSkeleton />
+        </div>
+      }
+    >
       <AboutContent />
     </Suspense>
   );
