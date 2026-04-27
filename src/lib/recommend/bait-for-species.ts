@@ -40,6 +40,14 @@ export type SpeciesCtx = {
    * the nature boost scoring.
    */
   strongestStat?: "atk" | "def" | "spa" | "spd" | "spe" | "hp";
+  /**
+   * Lowest-rarity spawn bucket this species naturally appears in. Used
+   * to weight rarity_bucket effects: a tier boost is essential for
+   * ultra-rare / rare species, marginal for common ones.
+   * Pass undefined when the species has no spawn at all (legendary
+   * without natural spawn) — we treat it as ultra-rare for boosting.
+   */
+  rarestBucket?: "common" | "uncommon" | "rare" | "ultra-rare";
 };
 
 export type RankedBait = {
@@ -87,11 +95,33 @@ function scoreOneEffect(
       // Mismatched nature: not useful for THIS species.
       return { score: 0, reason: null };
 
-    // Generic buffs: score < 100 so they are always behind affinity effects,
-    // but still rank them among themselves. Shown only when no affinity is
-    // available (fallback), or as a secondary reason on an affinity bait.
-    case "rarity_bucket":
-      return { score: 40 + (raw.value ?? 0) * 2, reason: `rarity +${raw.value ?? 0}` };
+    // rarity_bucket boosts the spawn-tier distribution by `value`. Its
+    // usefulness depends ENTIRELY on how rare the target species is:
+    //   - common: barely helps (target is already 86% likely without it)
+    //   - uncommon: nice tier-up but typing/egg still dominate
+    //   - rare / ultra-rare: ESSENTIAL — without a tier-up, the species
+    //     is vanishingly rare even with a typing match. Score >> affinity
+    //     for ultra-rare to surface Enchanted Golden Apple at the top.
+    case "rarity_bucket": {
+      const value = raw.value ?? 0;
+      const bucket = species.rarestBucket ?? "ultra-rare";
+      // Tier-multiplier per bucket. Ultra-rare gets the biggest boost so
+      // an Enchanted Golden Apple (+10 tiers) outranks a typing match.
+      const bucketWeight =
+        bucket === "ultra-rare"
+          ? 600
+          : bucket === "rare"
+            ? 200
+            : bucket === "uncommon"
+              ? 60
+              : 10; // common
+      // Per-tier bonus scales with bucketWeight; a +10 tier on ultra-rare
+      // becomes 600 × 10 / 10 = 600 → on top of 1500 base for ultra-rare,
+      // beats most affinity scores (≈ 3000) only when stacked with one.
+      const score =
+        bucketWeight * (1 + value / 10) + value * 5;
+      return { score, reason: `rarity +${value}` };
+    }
     case "shiny_reroll":
       return { score: 25 + (raw.value ?? 1) * 2, reason: `shiny ×${raw.value ?? 1}` };
     case "ha_chance":

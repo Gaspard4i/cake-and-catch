@@ -499,7 +499,7 @@ export function CampfirePot() {
       <aside className="space-y-6">
         <div>
           <h3 className="text-sm font-medium uppercase tracking-wide text-muted">{t("cookingPot")}</h3>
-          <div className="mt-3 inline-flex flex-col items-center gap-3 p-4 rounded-xl border border-border bg-card">
+          <div className="mt-3 flex w-full sm:inline-flex sm:w-auto flex-col items-center gap-3 p-4 rounded-xl border border-border bg-card">
             <div className="flex items-center gap-1">
               {POT_COLOURS.map((c) => (
                 <button
@@ -753,11 +753,8 @@ export function CampfirePot() {
               >
                 !
               </span>
-              <div>
-                <div className="font-semibold text-amber-700 dark:text-amber-300 uppercase tracking-wide text-[10px]">
-                  {t("attractedWip")}
-                </div>
-                <p className="mt-1 text-muted leading-relaxed">{t("attractedWipBody")}</p>
+              <div className="font-semibold text-amber-700 dark:text-amber-300 uppercase tracking-wide text-[10px]">
+                {t("attractedWip")}
               </div>
             </div>
           </div>

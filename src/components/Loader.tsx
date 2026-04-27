@@ -98,7 +98,7 @@ export function AttractedCardSkeleton() {
 export function PageSkeleton({
   variant = "generic",
 }: {
-  variant?: "generic" | "snack" | "juice" | "pokedex";
+  variant?: "generic" | "snack" | "juice" | "pokedex" | "pokemon";
 }) {
   if (variant === "snack") {
     return (
@@ -168,6 +168,47 @@ export function PageSkeleton({
             <PokedexCardSkeleton key={i} />
           ))}
         </div>
+      </div>
+    );
+  }
+  if (variant === "pokemon") {
+    return (
+      <div className="space-y-6">
+        {/* Hero: sprite + name + types */}
+        <header className="flex flex-col sm:flex-row gap-4 sm:gap-6 items-start">
+          <Skeleton className="size-24 sm:size-32 rounded-xl shrink-0" />
+          <div className="flex-1 space-y-2 min-w-0">
+            <Skeleton className="h-4 w-16" />
+            <Skeleton className="h-8 w-48" />
+            <div className="flex gap-2">
+              <Skeleton className="h-6 w-20" />
+              <Skeleton className="h-6 w-20" />
+            </div>
+            <Skeleton className="h-4 w-full max-w-md" />
+            <Skeleton className="h-4 w-3/4 max-w-sm" />
+          </div>
+        </header>
+        {/* Stats grid */}
+        <section className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <Skeleton key={i} className="h-12 rounded-lg" />
+          ))}
+        </section>
+        {/* Spawns + baits */}
+        <section className="grid gap-4 lg:grid-cols-2">
+          <div className="space-y-2">
+            <Skeleton className="h-5 w-32" />
+            {Array.from({ length: 4 }).map((_, i) => (
+              <Skeleton key={i} className="h-16 rounded-lg" />
+            ))}
+          </div>
+          <div className="space-y-2">
+            <Skeleton className="h-5 w-32" />
+            {Array.from({ length: 4 }).map((_, i) => (
+              <Skeleton key={i} className="h-16 rounded-lg" />
+            ))}
+          </div>
+        </section>
       </div>
     );
   }

@@ -21,9 +21,9 @@ export function SnackPageClient({
 }) {
   return (
     <>
-      <header className="flex flex-col sm:flex-row items-start justify-between gap-4 sm:gap-8">
-        <div className="max-w-2xl">
-          <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight">{title}</h1>
+      <header className="flex flex-row items-start justify-between gap-3 sm:gap-8">
+        <div className="max-w-2xl flex-1 min-w-0">
+          <h1 className="text-xl sm:text-3xl font-semibold tracking-tight">{title}</h1>
           <p className="mt-2 text-sm sm:text-base text-muted">{intro}</p>
         </div>
         <div className="shrink-0">

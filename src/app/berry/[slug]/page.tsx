@@ -160,8 +160,8 @@ export default async function BerryPage({ params }: { params: Promise<Params> })
               <>
                 {" · "}
                 <span
-                  className="inline-block text-[10px] uppercase tracking-wide px-1.5 py-0.5 rounded text-white align-middle"
-                  style={{ background: tint ?? "#999" }}
+                  className="inline-block text-[10px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded text-stone-900 align-middle"
+                  style={{ background: tint ?? "#bbb" }}
                 >
                   {berry.dominantFlavour.toLowerCase()}
                 </span>

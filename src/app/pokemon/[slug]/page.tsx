@@ -38,6 +38,7 @@ import {
 import { formatBaitEffects, type RawBaitEffect } from "@/lib/recommend/bait-effects";
 import { BAIT_VANILLA_ITEMS } from "@/lib/recommend/bait-effects";
 import { listAllSeasonings } from "@/lib/db/queries";
+import { PageSkeleton } from "@/components/Loader";
 
 function formatBiome(biome: string) {
   return biome.replace(/^#?cobblemon:/, "").replace(/is_/, "").replace(/_/g, " ");
@@ -128,6 +129,22 @@ async function SpeciesDetail({ params }: { params: Promise<{ slug: string }> }) 
   }
   const rawSpecies = (species.raw ?? {}) as Record<string, unknown>;
   const eggGroups = (rawSpecies.eggGroups as string[] | undefined) ?? [];
+  // Pick the RAREST bucket among this species' spawns: that's the floor
+  // the player will hit when looking for a dropping. Ultra-rare > rare >
+  // uncommon > common. When no spawn exists at all (legendary not yet
+  // ingested), treat as ultra-rare so we surface tier-up baits.
+  const BUCKET_RANK: Record<string, number> = {
+    common: 0,
+    uncommon: 1,
+    rare: 2,
+    "ultra-rare": 3,
+  };
+  const rarestBucket = spawns.length === 0
+    ? "ultra-rare"
+    : (spawns.reduce<typeof spawns[number]["bucket"]>(
+        (acc, s) => (BUCKET_RANK[s.bucket] > BUCKET_RANK[acc] ? s.bucket : acc),
+        "common",
+      ));
   const rankedSeasonings = rankBaitsForSpecies(
     pool,
     {
@@ -135,6 +152,7 @@ async function SpeciesDetail({ params }: { params: Promise<{ slug: string }> }) 
       secondaryType: species.secondaryType,
       eggGroups,
       strongestStat: strongestStatOf(species.baseStats),
+      rarestBucket,
     },
     { limit: 24 },
   );
@@ -332,7 +350,7 @@ async function SpeciesDetail({ params }: { params: Promise<{ slug: string }> }) 
 export default function Page({ params }: { params: Promise<{ slug: string }> }) {
   return (
     <div className="mx-auto max-w-5xl px-4 sm:px-6 py-6 sm:py-10">
-      <Suspense fallback={<p className="text-sm text-muted">…</p>}>
+      <Suspense fallback={<PageSkeleton variant="pokemon" />}>
         <SpeciesDetail params={params} />
       </Suspense>
     </div>

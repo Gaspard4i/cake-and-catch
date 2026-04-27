@@ -172,8 +172,8 @@ function SeasoningCard({
         <div className="flex items-center gap-1 flex-wrap justify-center">
           {row.dominantFlavour && (
             <span
-              className="text-[9px] uppercase tracking-wide px-1.5 py-0.5 rounded text-white"
-              style={{ background: tint ?? "#999" }}
+              className="text-[9px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded text-stone-900"
+              style={{ background: tint ?? "#bbb" }}
             >
               {row.dominantFlavour.toLowerCase()}
             </span>
