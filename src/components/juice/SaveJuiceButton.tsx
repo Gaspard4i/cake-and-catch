@@ -24,7 +24,7 @@ export function SaveJuiceButton({ apricorn, berrySlugs }: Props) {
           const defaultName = `${apricorn.toLowerCase()} · ${berrySlugs
             .map((s) => s.replace(/_berry$/, ""))
             .join(", ")}`;
-          const name = window.prompt("Name this juice:", defaultName);
+          const name = window.prompt("Name this aprijuice:", defaultName);
           if (!name) return;
           const { saveJuice } = await import("@/lib/saved-recipes");
           saveJuice({
@@ -36,7 +36,7 @@ export function SaveJuiceButton({ apricorn, berrySlugs }: Props) {
         }}
         className="text-[10px] uppercase tracking-wide px-2 py-1 rounded border border-border hover:bg-subtle disabled:opacity-30"
       >
-        Save juice
+        Save aprijuice
       </button>
       <Link
         href="/saved"

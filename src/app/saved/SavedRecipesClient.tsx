@@ -37,7 +37,7 @@ export function SavedRecipesClient() {
         </Link>{" "}
         or pick a juice on{" "}
         <Link href="/juice" className="text-foreground hover:underline">
-          Juice maker
+          Aprijuice maker
         </Link>{" "}
         and hit the Save button.
       </div>
@@ -107,7 +107,7 @@ export function SavedRecipesClient() {
       {juices.length > 0 && (
         <section>
           <h2 className="text-xs uppercase tracking-wide text-muted mb-2">
-            Juices ({juices.length})
+            Aprijuices ({juices.length})
           </h2>
           <ul className="grid gap-2">
             {juices.map((j) => (
