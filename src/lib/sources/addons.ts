@@ -168,15 +168,24 @@ export const ADDONS: AddonSource[] = [
   // for the mythicals (Mew, Celebi, Jirachi, Victini, …) — they're
   // event-only in the games. These datapacks give them a habitat.
   {
-    name: "cobblemon-legendary-encounters",
-    modrinthSlug: "cobblemon-legendary-encounters",
+    name: "cobblemon-legendary",
+    modrinthSlug: "cobblemon-legendary",
     license: "ARR",
-    pageUrl: "https://modrinth.com/datapack/cobblemon-legendary-encounters",
+    pageUrl: "https://modrinth.com/datapack/cobblemon-legendary",
     versionZipUrl: "",
     versionName: "",
   },
   {
-    name: "cobblemon-legendary-structures",
+    name: "ccc-legendary-spawns",
+    modrinthSlug: "complete-cobblemon-collection-w-legendary-spawns",
+    license: "ARR",
+    pageUrl:
+      "https://modrinth.com/datapack/complete-cobblemon-collection-w-legendary-spawns",
+    versionZipUrl: "",
+    versionName: "",
+  },
+  {
+    name: "cobblemon-legends-untold",
     modrinthSlug: "cobblemon-legendary-structures",
     license: "ARR",
     pageUrl: "https://modrinth.com/datapack/cobblemon-legendary-structures",
