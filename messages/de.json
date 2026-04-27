@@ -67,7 +67,7 @@
     },
     "kindsHelp": {
       "cake": "Gemeinsamer Cake, der Begegnungen verschiebt (Farbe hängt vom Seasoning ab).",
-      "bait": "Angelköder — passt Seltenheit / Wesen / HA je nach verwendetem Seasoning an.",
+      "bait": "Angelköder. passt Seltenheit / Wesen / HA je nach verwendetem Seasoning an.",
       "snack": "Snack, der ein Cobblemon nach Geschmackstyp anzieht.",
       "aprijuice": "Apricorn-Beeren-Saft zur Steigerung der Reit-Stats."
     }
@@ -98,7 +98,7 @@
     "noSpawn": "Kein natürlicher Spawn für diese Spezies dokumentiert.",
     "captureRate": "Fangrate {value}",
     "friendship": "Freundschaft {value}",
-    "levelRange": "Lv. {min}–{max}",
+    "levelRange": "Lv. {min}-{max}",
     "weight": "Gewicht {value}",
     "biomes": "Biome: ",
     "condition": {
@@ -107,7 +107,7 @@
       "raining": "Regen",
       "thundering": "Gewitter",
       "y": "Y: {min} → {max}",
-      "skyLight": "Himmelslicht: {min}–{max}",
+      "skyLight": "Himmelslicht: {min}-{max}",
       "structures": "Strukturen: {value}",
       "blocks": "Erforderliche Blöcke: {value}"
     }
@@ -151,7 +151,7 @@
   },
   "feedback": {
     "title": "Feedback oder Bug?",
-    "body": "Dieses Projekt wird nebenbei von einer Person gepflegt. Jede Meldung, Idee oder Kritik ist willkommen — öffne ein GitHub-Issue oder schreib mir auf Discord.",
+    "body": "Dieses Projekt wird nebenbei von einer Person gepflegt. Jede Meldung, Idee oder Kritik ist willkommen. öffne ein GitHub-Issue oder schreib mir auf Discord.",
     "bodyShort": "GitHub-Issue öffnen oder DM auf Discord.",
     "ctaGithub": "GitHub-Issue öffnen",
     "buttonLabel": "Feedback",
@@ -181,7 +181,7 @@
     "modeCook": "Einen Saft kochen",
     "modeSuggest": "Ich will eine Stat → vorschlagen",
     "targetTitle": "Reit-Stats nach Priorität ordnen",
-    "targetHelp": "Klicke auf eine Stat, um sie zur Prioritätsliste hinzuzufügen. Mit den Pfeilen umsortieren — Rang 1 zählt am meisten, Rang 5 am wenigsten. Nicht geordnete Stats ignoriert der Solver.",
+    "targetHelp": "Klicke auf eine Stat, um sie zur Prioritätsliste hinzuzufügen. Mit den Pfeilen umsortieren. Rang 1 zählt am meisten, Rang 5 am wenigsten. Nicht geordnete Stats ignoriert der Solver.",
     "ownedApricorns": "Deine Apricorns",
     "ownedBerries": "Deine Beeren",
     "selectAll": "Alle auswählen",
@@ -194,7 +194,7 @@
     "distributeTitle": "Punkte auf Reit-Stats verteilen",
     "stepRecipes": "Schritt 3 · Beste Rezepte",
     "ignore": "Ignorieren",
-    "ignoreTitle": "Ignorieren — beliebiger Wert erlaubt (auch negativ)",
+    "ignoreTitle": "Ignorieren. beliebiger Wert erlaubt (auch negativ)",
     "flavourFilter": "Nach Geschmack filtern",
     "distanceTitle": "Abstand zum Ziel (kleiner = näher)",
     "openRecipe": "{kind} Aprijuice-Rezept öffnen",
@@ -207,7 +207,7 @@
     "howtoStep2": "Lege einen {apricorn} Apricorn oben links ab.",
     "howtoStep3": "Ergänze eine Pep-Up Flower (Mitte oben) und eine Energy Root (oben rechts).",
     "howtoStep4": "Lege diese Beeren in die seitlichen Seasoning-Slots:",
-    "howtoStep4NoSeasoning": "Lasse die Seasoning-Slots leer — dieses Rezept braucht keine Beeren.",
+    "howtoStep4NoSeasoning": "Lasse die Seasoning-Slots leer. dieses Rezept braucht keine Beeren.",
     "howtoStep5": "Rechtsklick auf den Pot mit einer Glasflasche, um den fertigen Aprijuice zu holen.",
     "apricornColour": "{kind}",
     "qualityLabel": "Qualität",
@@ -221,7 +221,7 @@
     "flavourThresholds": "Geschmacksschwellen",
     "seasoningSlots": "Seasoning-Slots",
     "slotsCap": "{count} / {max} · Cobblemon Campfire-Pot-Limit",
-    "pantryBerries": "Speisekammer — Beeren",
+    "pantryBerries": "Speisekammer. Beeren",
     "filterBerries": "Beeren filtern…",
     "noBerry": "Keine Beere passt.",
     "flavourTotals": "Geschmackssummen",
@@ -240,7 +240,7 @@
     "dominant": "Dominant:",
     "seasoningSlotsCount": "{count} Seasoning-Slots",
     "baseRecipe": "Poké-Snack-Basisrezept",
-    "pantry": "Speisekammer — Bait Seasonings",
+    "pantry": "Speisekammer. Bait Seasonings",
     "filterSeasonings": "Seasonings filtern…",
     "baitValidOnly": "Nur Bait-gültig",
     "noSeasoningMatch": "Kein Seasoning passt zu diesen Filtern.",
@@ -257,8 +257,8 @@
     "minY": "Min Y",
     "maxY": "Max Y",
     "attracted": "Angelockte Cobblemon",
-    "attractedWip": "In Arbeit — Wahrscheinlichkeiten sind ungefähr",
-    "attractedWipBody": "Das Ranking unten ist meine bestmögliche Nachbildung der Cobblemon Poké Snack Spawn-Pipeline (Weltenpool gefiltert nach Biom/Zeit/Y, unbedingte Bucket-Multiplikatoren uncommon ×2,25 / rare & ultra-rare ×5,5, Typing/Egg-Group-Bait-Effekte multiplizieren passende Einträge, rarity_bucket glättet Inter-Bucket-Verhältnisse — Wahrscheinlichkeit ≈ P(Bucket) × Gewichtanteil). Noch nicht 1:1 mit dem Mod. Edge-Cases bei Anticonditions, verschachtelten Bedingungen, Struktur-/Mond-/Skylight-Gates und addon-spezifischen Spawn-Regeln werden noch ausgefeilt, also als Orientierung verstehen, nicht als Garantie. Verbesserungen folgen laufend.",
+    "attractedWip": "In Arbeit. Wahrscheinlichkeiten sind ungefähr",
+    "attractedWipBody": "Das Ranking unten ist meine bestmögliche Nachbildung der Cobblemon Poké Snack Spawn-Pipeline (Weltenpool gefiltert nach Biom/Zeit/Y, unbedingte Bucket-Multiplikatoren uncommon ×2,25 / rare & ultra-rare ×5,5, Typing/Egg-Group-Bait-Effekte multiplizieren passende Einträge, rarity_bucket glättet Inter-Bucket-Verhältnisse. Wahrscheinlichkeit ≈ P(Bucket) × Gewichtanteil). Noch nicht 1:1 mit dem Mod. Edge-Cases bei Anticonditions, verschachtelten Bedingungen, Struktur-/Mond-/Skylight-Gates und addon-spezifischen Spawn-Regeln werden noch ausgefeilt, also als Orientierung verstehen, nicht als Garantie. Verbesserungen folgen laufend.",
     "searchAttracted": "Nach Name oder Dex suchen…",
     "types": "Typen",
     "typesAny": "Beliebiger Typ",
@@ -272,7 +272,7 @@
     "shiny": "Shiny",
     "noAttracted": "Kein Cobblemon passt. Entferne Filter.",
     "dropHint": "Hier ein Bait Seasoning ablegen",
-    "previewDisclaimer": "Nur Vorschau — der Snack im Spiel kann abweichen."
+    "previewDisclaimer": "Nur Vorschau. der Snack im Spiel kann abweichen."
   },
   "pokedexUi": {
     "searchPlaceholder": "Cobblemon nach Name suchen…",

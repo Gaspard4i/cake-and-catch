@@ -85,7 +85,7 @@ export default function SnackDebugPage() {
       <header className="flex items-baseline gap-3 flex-wrap mb-2">
         <h1 className="text-lg font-semibold tracking-tight">Snack 3D debug</h1>
         <p className="text-[11px] text-muted">
-          drag=rotate · scroll=zoom · right-drag=pan — tune placements live
+          drag=rotate · scroll=zoom · right-drag=pan. tune placements live
           with the sliders on the right.
         </p>
       </header>
@@ -199,7 +199,7 @@ export default function SnackDebugPage() {
                 }
                 className="ml-2 text-[11px] bg-subtle border border-border rounded px-1 py-0.5 text-foreground"
               >
-                <option value="">— all berries —</option>
+                <option value="">,  all berries , </option>
                 {selected.map((b, i) => (
                   <option key={`${b.slug}-${i}`} value={b.slug}>
                     {b.slug.replaceAll("_", " ")}

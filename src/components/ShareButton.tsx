@@ -50,7 +50,7 @@ export function ShareButton({ className = "" }: { className?: string }) {
     }
 
     // Clipboard fallback.
-    const fallback = `${SHARE_TITLE} — ${SHARE_TEXT}\n${url}`;
+    const fallback = `${SHARE_TITLE}. ${SHARE_TEXT}\n${url}`;
     try {
       await navigator.clipboard.writeText(fallback);
       setCopied(true);

@@ -67,7 +67,7 @@
     },
     "kindsHelp": {
       "cake": "Cake compartilhado que enviesa encontros (cor depende do seasoning).",
-      "bait": "Isca de pesca — ajusta raridade / natureza / HA conforme o seasoning.",
+      "bait": "Isca de pesca. ajusta raridade / natureza / HA conforme o seasoning.",
       "snack": "Snack que atrai um Cobblemon por tipo de sabor.",
       "aprijuice": "Suco de apricorn para boostar stats de montaria."
     }
@@ -98,7 +98,7 @@
     "noSpawn": "Nenhum spawn natural documentado para esta espécie.",
     "captureRate": "Taxa de captura {value}",
     "friendship": "Amizade {value}",
-    "levelRange": "Nv. {min}–{max}",
+    "levelRange": "Nv. {min}-{max}",
     "weight": "peso {value}",
     "biomes": "Biomas: ",
     "condition": {
@@ -107,7 +107,7 @@
       "raining": "Chuva",
       "thundering": "Trovoada",
       "y": "Y: {min} → {max}",
-      "skyLight": "Luz do céu: {min}–{max}",
+      "skyLight": "Luz do céu: {min}-{max}",
       "structures": "Estruturas: {value}",
       "blocks": "Blocos necessários: {value}"
     }
@@ -151,7 +151,7 @@
   },
   "feedback": {
     "title": "Feedback ou um bug?",
-    "body": "Projeto mantido por uma só pessoa nas horas vagas. Qualquer relato, ideia ou crítica é bem-vindo — abra um issue no GitHub ou me chame no Discord.",
+    "body": "Projeto mantido por uma só pessoa nas horas vagas. Qualquer relato, ideia ou crítica é bem-vindo. abra um issue no GitHub ou me chame no Discord.",
     "bodyShort": "Abra um issue no GitHub ou DM no Discord.",
     "ctaGithub": "Abrir um issue no GitHub",
     "buttonLabel": "Feedback",
@@ -181,7 +181,7 @@
     "modeCook": "Cozinhar um suco",
     "modeSuggest": "Quero uma stat → sugerir",
     "targetTitle": "Classifica as stats de montaria por prioridade",
-    "targetHelp": "Clica numa stat para adicioná-la à lista de prioridade. Usa as setas para reordenar — rank 1 pesa mais, rank 5 menos. Stats sem classificação são ignoradas pelo solver.",
+    "targetHelp": "Clica numa stat para adicioná-la à lista de prioridade. Usa as setas para reordenar. rank 1 pesa mais, rank 5 menos. Stats sem classificação são ignoradas pelo solver.",
     "ownedApricorns": "Apricorns que você tem",
     "ownedBerries": "Bagas que você tem",
     "selectAll": "Selecionar tudo",
@@ -194,7 +194,7 @@
     "distributeTitle": "Aloque pontos nas stats de montaria",
     "stepRecipes": "Passo 3 · Melhores receitas",
     "ignore": "Ignorar",
-    "ignoreTitle": "Ignorar — aceita qualquer valor (mesmo negativo)",
+    "ignoreTitle": "Ignorar. aceita qualquer valor (mesmo negativo)",
     "flavourFilter": "Filtrar por sabor",
     "distanceTitle": "Distância do seu alvo (menor = mais perto)",
     "openRecipe": "Abrir a receita do aprijuice {kind}",
@@ -207,7 +207,7 @@
     "howtoStep2": "Coloque um Apricorn {apricorn} no slot superior esquerdo.",
     "howtoStep3": "Adicione uma Pep-Up Flower (topo central) e uma Energy Root (topo direito).",
     "howtoStep4": "Coloque estas bagas nos slots laterais de seasoning:",
-    "howtoStep4NoSeasoning": "Deixe os slots laterais vazios — esta receita não usa bagas.",
+    "howtoStep4NoSeasoning": "Deixe os slots laterais vazios. esta receita não usa bagas.",
     "howtoStep5": "Clique direito no pot com uma Garrafa de vidro para recolher o aprijuice.",
     "apricornColour": "{kind}",
     "qualityLabel": "Qualidade",
@@ -221,7 +221,7 @@
     "flavourThresholds": "Patamares de sabor",
     "seasoningSlots": "Slots de seasoning",
     "slotsCap": "{count} / {max} · limite campfire pot Cobblemon",
-    "pantryBerries": "Despensa — bagas",
+    "pantryBerries": "Despensa. bagas",
     "filterBerries": "Filtrar bagas…",
     "noBerry": "Nenhuma baga corresponde.",
     "flavourTotals": "Totais de sabor",
@@ -240,7 +240,7 @@
     "dominant": "Dominante:",
     "seasoningSlotsCount": "{count} slots de seasoning",
     "baseRecipe": "Receita base do Poké Snack",
-    "pantry": "Despensa — bait seasonings",
+    "pantry": "Despensa. bait seasonings",
     "filterSeasonings": "Filtrar seasonings…",
     "baitValidOnly": "Só bait válidos",
     "noSeasoningMatch": "Nenhum seasoning corresponde a estes filtros.",
@@ -257,8 +257,8 @@
     "minY": "Y mín",
     "maxY": "Y máx",
     "attracted": "Cobblemon atraídos",
-    "attractedWip": "Em desenvolvimento — probabilidades aproximadas",
-    "attractedWipBody": "O ranking abaixo é minha melhor reprodução do pipeline de spawn do Poké Snack Cobblemon (pool mundial filtrado por bioma/hora/Y, multiplicadores uncommon ×2,25 / rare & ultra-rare ×5,5 aplicados incondicionalmente, efeitos bait de tipo/grupo-ovo multiplicando o peso das entradas correspondentes, e rarity_bucket suavizando razões entre buckets — probabilidade ≈ P(bucket) × parcela do peso). Ainda não é 1:1 com o mod. Casos limite em anticonditions, condições aninhadas, gates de estrutura/lua/skylight e regras de spawn de addons ainda estão em ajuste, então trata os números como um guia, não uma garantia. Melhorias chegam continuamente.",
+    "attractedWip": "Em desenvolvimento. probabilidades aproximadas",
+    "attractedWipBody": "O ranking abaixo é minha melhor reprodução do pipeline de spawn do Poké Snack Cobblemon (pool mundial filtrado por bioma/hora/Y, multiplicadores uncommon ×2,25 / rare & ultra-rare ×5,5 aplicados incondicionalmente, efeitos bait de tipo/grupo-ovo multiplicando o peso das entradas correspondentes, e rarity_bucket suavizando razões entre buckets. probabilidade ≈ P(bucket) × parcela do peso). Ainda não é 1:1 com o mod. Casos limite em anticonditions, condições aninhadas, gates de estrutura/lua/skylight e regras de spawn de addons ainda estão em ajuste, então trata os números como um guia, não uma garantia. Melhorias chegam continuamente.",
     "searchAttracted": "Pesquisar por nome ou dex…",
     "types": "Tipos",
     "typesAny": "Qualquer tipo",
@@ -272,7 +272,7 @@
     "shiny": "Shiny",
     "noAttracted": "Nenhum Cobblemon corresponde. Retira filtros.",
     "dropHint": "Coloca um bait seasoning aqui",
-    "previewDisclaimer": "Prévia indicativa — o snack no jogo pode ser diferente."
+    "previewDisclaimer": "Prévia indicativa. o snack no jogo pode ser diferente."
   },
   "pokedexUi": {
     "searchPlaceholder": "Pesquisar Cobblemon por nome…",

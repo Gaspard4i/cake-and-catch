@@ -67,7 +67,7 @@
     },
     "kindsHelp": {
       "cake": "共享蛋糕,偏向遭遇(颜色由 seasoning 决定)。",
-      "bait": "钓鱼饵 — 按所用 seasoning 调整稀有度 / 性格 / HA。",
+      "bait": "钓鱼饵. 按所用 seasoning 调整稀有度 / 性格 / HA。",
       "snack": "按味道类型吸引一只宝可梦的 snack。",
       "aprijuice": "由 Apricorn 果汁提升坐骑属性。"
     }
@@ -98,7 +98,7 @@
     "noSpawn": "该种类未记录自然刷新。",
     "captureRate": "捕获率 {value}",
     "friendship": "亲密度 {value}",
-    "levelRange": "Lv. {min}–{max}",
+    "levelRange": "Lv. {min}-{max}",
     "weight": "权重 {value}",
     "biomes": "生物群系: ",
     "condition": {
@@ -107,7 +107,7 @@
       "raining": "下雨",
       "thundering": "雷暴",
       "y": "Y: {min} → {max}",
-      "skyLight": "天空亮度: {min}–{max}",
+      "skyLight": "天空亮度: {min}-{max}",
       "structures": "结构: {value}",
       "blocks": "必需方块: {value}"
     }
@@ -151,7 +151,7 @@
   },
   "feedback": {
     "title": "反馈或报告 bug?",
-    "body": "本项目由一人业余维护。欢迎任何反馈、想法或意见 — 在 GitHub 提交 issue 或在 Discord 私信我。",
+    "body": "本项目由一人业余维护。欢迎任何反馈、想法或意见. 在 GitHub 提交 issue 或在 Discord 私信我。",
     "bodyShort": "在 GitHub 提交 issue 或 Discord 私信我。",
     "ctaGithub": "提交 GitHub issue",
     "buttonLabel": "反馈",
@@ -181,7 +181,7 @@
     "modeCook": "烹饪果汁",
     "modeSuggest": "我想要某个属性 → 推荐",
     "targetTitle": "按优先级对坐骑属性排序",
-    "targetHelp": "点击某个属性以加入优先级列表。用箭头重新排序 — 第 1 位权重最高,第 5 位最低。未列出的属性将被求解器忽略。",
+    "targetHelp": "点击某个属性以加入优先级列表。用箭头重新排序. 第 1 位权重最高,第 5 位最低。未列出的属性将被求解器忽略。",
     "ownedApricorns": "你拥有的 Apricorn",
     "ownedBerries": "你拥有的果实",
     "selectAll": "全选",
@@ -194,7 +194,7 @@
     "distributeTitle": "给坐骑属性分配点数",
     "stepRecipes": "步骤 3 · 最佳配方",
     "ignore": "忽略",
-    "ignoreTitle": "忽略 — 接受任意值(包括负数)",
+    "ignoreTitle": "忽略. 接受任意值(包括负数)",
     "flavourFilter": "按味道筛选",
     "distanceTitle": "距目标的差距(越小越接近)",
     "openRecipe": "打开 {kind} Aprijuice 配方",
@@ -207,7 +207,7 @@
     "howtoStep2": "把 {apricorn} Apricorn 放在左上格。",
     "howtoStep3": "加入 Pep-Up Flower(顶部中央)和 Energy Root(顶部右侧)。",
     "howtoStep4": "把这些果实放到侧边 seasoning 槽:",
-    "howtoStep4NoSeasoning": "让侧边槽保持空白 — 此配方不使用果实。",
+    "howtoStep4NoSeasoning": "让侧边槽保持空白. 此配方不使用果实。",
     "howtoStep5": "手持玻璃瓶右键点击 pot 取出成品 aprijuice。",
     "apricornColour": "{kind}",
     "qualityLabel": "品质",
@@ -221,7 +221,7 @@
     "flavourThresholds": "风味门槛",
     "seasoningSlots": "Seasoning 槽",
     "slotsCap": "{count} / {max} · Cobblemon campfire pot 上限",
-    "pantryBerries": "储藏 — 果实",
+    "pantryBerries": "储藏. 果实",
     "filterBerries": "筛选果实…",
     "noBerry": "没有果实匹配。",
     "flavourTotals": "风味合计",
@@ -240,7 +240,7 @@
     "dominant": "主导:",
     "seasoningSlotsCount": "{count} 个 seasoning 槽",
     "baseRecipe": "Poké Snack 基础配方",
-    "pantry": "储藏 — bait seasoning",
+    "pantry": "储藏. bait seasoning",
     "filterSeasonings": "筛选 seasoning…",
     "baitValidOnly": "仅有效 bait",
     "noSeasoningMatch": "没有 seasoning 匹配这些筛选。",
@@ -257,8 +257,8 @@
     "minY": "Y 最小",
     "maxY": "Y 最大",
     "attracted": "被吸引的宝可梦",
-    "attractedWip": "开发中 — 概率为近似值",
-    "attractedWipBody": "下方排名是我对 Cobblemon Poké Snack 刷新流程的尽力还原(按生物群系/时间/Y 过滤的世界池、uncommon ×2.25 / rare & ultra-rare ×5.5 的 bucket 乘数无条件应用、typing/egg-group bait 效果为匹配项的权重相乘、再用 rarity_bucket 缓和 bucket 间比例 — 概率 ≈ P(bucket) × 权重占比)。尚未与 Mod 完全一致。关于 anticondition、嵌套条件、structure/lunar/skylight 限制及扩展特有刷新规则的边缘情形仍在打磨,数字仅供参考,并非保证。改进持续推送。",
+    "attractedWip": "开发中. 概率为近似值",
+    "attractedWipBody": "下方排名是我对 Cobblemon Poké Snack 刷新流程的尽力还原(按生物群系/时间/Y 过滤的世界池、uncommon ×2.25 / rare & ultra-rare ×5.5 的 bucket 乘数无条件应用、typing/egg-group bait 效果为匹配项的权重相乘、再用 rarity_bucket 缓和 bucket 间比例. 概率 ≈ P(bucket) × 权重占比)。尚未与 Mod 完全一致。关于 anticondition、嵌套条件、structure/lunar/skylight 限制及扩展特有刷新规则的边缘情形仍在打磨,数字仅供参考,并非保证。改进持续推送。",
     "searchAttracted": "按名称或 dex 搜索…",
     "types": "属性",
     "typesAny": "任意属性",
@@ -272,7 +272,7 @@
     "shiny": "闪光",
     "noAttracted": "没有宝可梦匹配。请移除部分筛选。",
     "dropHint": "将 bait seasoning 放在这里",
-    "previewDisclaimer": "仅为预览 — 游戏中的 snack 可能不同。"
+    "previewDisclaimer": "仅为预览. 游戏中的 snack 可能不同。"
   },
   "pokedexUi": {
     "searchPlaceholder": "按名称搜索…",

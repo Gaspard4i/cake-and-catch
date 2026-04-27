@@ -67,7 +67,7 @@
     },
     "kindsHelp": {
       "cake": "Shared cake that biases encounters (color depends on seasoning).",
-      "bait": "Fishing bait — tweaks rarity / nature / HA according to the seasoning used.",
+      "bait": "Fishing bait. tweaks rarity / nature / HA according to the seasoning used.",
       "snack": "Snack that attracts a Cobblemon by flavor type.",
       "aprijuice": "Apricorn berry juice to boost mount stats."
     }
@@ -98,7 +98,7 @@
     "noSpawn": "No natural spawn documented for this species.",
     "captureRate": "Capture rate {value}",
     "friendship": "Friendship {value}",
-    "levelRange": "Lv. {min}–{max}",
+    "levelRange": "Lv. {min}-{max}",
     "weight": "weight {value}",
     "biomes": "Biomes: ",
     "condition": {
@@ -107,7 +107,7 @@
       "raining": "Rain",
       "thundering": "Thunderstorm",
       "y": "Y: {min} → {max}",
-      "skyLight": "Sky light: {min}–{max}",
+      "skyLight": "Sky light: {min}-{max}",
       "structures": "Structures: {value}",
       "blocks": "Required blocks: {value}"
     }
@@ -151,7 +151,7 @@
   },
   "feedback": {
     "title": "Got feedback or a bug?",
-    "body": "This project is built by one person on the side. Any report, idea or complaint is welcome — open a GitHub issue or ping me on Discord.",
+    "body": "This project is built by one person on the side. Any report, idea or complaint is welcome. open a GitHub issue or ping me on Discord.",
     "bodyShort": "Open a GitHub issue or DM me on Discord.",
     "ctaGithub": "Open a GitHub issue",
     "buttonLabel": "Feedback",
@@ -181,7 +181,7 @@
     "modeCook": "Cook a juice",
     "modeSuggest": "I want a stat → suggest",
     "targetTitle": "Rank ride stats by priority",
-    "targetHelp": "Click a stat to add it to your priority list. Use the arrows to reorder — rank 1 weighs the most, rank 5 the least. Unranked stats are ignored by the solver.",
+    "targetHelp": "Click a stat to add it to your priority list. Use the arrows to reorder. rank 1 weighs the most, rank 5 the least. Unranked stats are ignored by the solver.",
     "ownedApricorns": "Apricorns you own",
     "ownedBerries": "Berries you own",
     "selectAll": "Select all",
@@ -194,7 +194,7 @@
     "distributeTitle": "Allocate ride stat points",
     "stepRecipes": "Step 3 · Best recipes",
     "ignore": "Ignore",
-    "ignoreTitle": "Ignore — accept any value (including negative)",
+    "ignoreTitle": "Ignore. accept any value (including negative)",
     "flavourFilter": "Filter by flavour",
     "distanceTitle": "Distance to your target (lower is closer)",
     "openRecipe": "Open the {kind} aprijuice recipe",
@@ -207,7 +207,7 @@
     "howtoStep2": "Place a {apricorn} Apricorn in the top-left slot.",
     "howtoStep3": "Add one Pep-Up Flower (middle top) and one Energy Root (top right).",
     "howtoStep4": "Drop these berries on the side seasoning slots:",
-    "howtoStep4NoSeasoning": "Leave the side seasoning slots empty — this recipe uses no berries.",
+    "howtoStep4NoSeasoning": "Leave the side seasoning slots empty. this recipe uses no berries.",
     "howtoStep5": "Right-click the pot with a Glass Bottle to collect the finished aprijuice.",
     "apricornColour": "{kind}",
     "qualityLabel": "Quality",
@@ -221,7 +221,7 @@
     "flavourThresholds": "Flavour thresholds",
     "seasoningSlots": "Seasoning slots",
     "slotsCap": "{count} / {max} · Cobblemon campfire pot cap",
-    "pantryBerries": "Pantry — berries",
+    "pantryBerries": "Pantry. berries",
     "filterBerries": "Filter berries…",
     "noBerry": "No berry matches.",
     "flavourTotals": "Flavour totals",
@@ -240,7 +240,7 @@
     "dominant": "Dominant:",
     "seasoningSlotsCount": "{count} seasoning slots",
     "baseRecipe": "Poké Snack base recipe",
-    "pantry": "Pantry — bait seasonings",
+    "pantry": "Pantry. bait seasonings",
     "filterSeasonings": "Filter seasonings…",
     "baitValidOnly": "Bait-valid only",
     "noSeasoningMatch": "No seasoning matches these filters.",
@@ -257,8 +257,8 @@
     "minY": "Min Y",
     "maxY": "Max Y",
     "attracted": "Attracted Cobblemon",
-    "attractedWip": "Work in progress — probabilities are approximate",
-    "attractedWipBody": "The ranking below is my best-effort reproduction of the Cobblemon Poké Snack spawn pipeline (world pool filtered by biome/time/Y, uncommon ×2.25 / rare & ultra-rare ×5.5 bucket multipliers applied unconditionally, typing/egg-group bait effects multiplying matching entries' weight, then rarity_bucket softening inter-bucket ratios — probability ≈ P(bucket) × weight share). It is not yet 1:1 with the mod. Edge cases around anticonditions, nested conditions, structure/lunar/skylight gates and addon-specific spawn rules are still being ironed out, so treat the numbers as a guide, not a guarantee. Improvements land continuously.",
+    "attractedWip": "Work in progress. probabilities are approximate",
+    "attractedWipBody": "The ranking below is my best-effort reproduction of the Cobblemon Poké Snack spawn pipeline (world pool filtered by biome/time/Y, uncommon ×2.25 / rare & ultra-rare ×5.5 bucket multipliers applied unconditionally, typing/egg-group bait effects multiplying matching entries' weight, then rarity_bucket softening inter-bucket ratios. probability ≈ P(bucket) × weight share). It is not yet 1:1 with the mod. Edge cases around anticonditions, nested conditions, structure/lunar/skylight gates and addon-specific spawn rules are still being ironed out, so treat the numbers as a guide, not a guarantee. Improvements land continuously.",
     "searchAttracted": "Search by name or dex…",
     "types": "Types",
     "typesAny": "Any type",
@@ -272,7 +272,7 @@
     "shiny": "Shiny",
     "noAttracted": "No Cobblemon match. Try removing filters.",
     "dropHint": "Drop a bait seasoning here",
-    "previewDisclaimer": "Preview only — the in-game snack may look different."
+    "previewDisclaimer": "Preview only. the in-game snack may look different."
   },
   "pokedexUi": {
     "searchPlaceholder": "Search Cobblemon by name…",

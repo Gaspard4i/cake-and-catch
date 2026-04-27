@@ -67,7 +67,7 @@
     },
     "kindsHelp": {
       "cake": "Pastel compartido que sesga los encuentros (color depende del seasoning).",
-      "bait": "Cebo de pesca — ajusta rareza / naturaleza / HA según el seasoning usado.",
+      "bait": "Cebo de pesca. ajusta rareza / naturaleza / HA según el seasoning usado.",
       "snack": "Snack que atrae a un Cobblemon por tipo de sabor.",
       "aprijuice": "Jugo de apricorn para potenciar stats de montura."
     }
@@ -98,7 +98,7 @@
     "noSpawn": "No hay apariciones naturales documentadas para esta especie.",
     "captureRate": "Tasa de captura {value}",
     "friendship": "Amistad {value}",
-    "levelRange": "Niv. {min}–{max}",
+    "levelRange": "Niv. {min}-{max}",
     "weight": "peso {value}",
     "biomes": "Biomas: ",
     "condition": {
@@ -107,7 +107,7 @@
       "raining": "Lluvia",
       "thundering": "Tormenta",
       "y": "Y: {min} → {max}",
-      "skyLight": "Luz celeste: {min}–{max}",
+      "skyLight": "Luz celeste: {min}-{max}",
       "structures": "Estructuras: {value}",
       "blocks": "Bloques requeridos: {value}"
     }
@@ -151,7 +151,7 @@
   },
   "feedback": {
     "title": "¿Comentarios o un bug?",
-    "body": "Proyecto mantenido por una sola persona en su tiempo libre. Cualquier reporte, idea o queja es bienvenido — abre un issue en GitHub o escríbeme por Discord.",
+    "body": "Proyecto mantenido por una sola persona en su tiempo libre. Cualquier reporte, idea o queja es bienvenido. abre un issue en GitHub o escríbeme por Discord.",
     "bodyShort": "Abre un issue en GitHub o DM por Discord.",
     "ctaGithub": "Abrir un issue en GitHub",
     "buttonLabel": "Feedback",
@@ -181,7 +181,7 @@
     "modeCook": "Cocinar un jugo",
     "modeSuggest": "Quiero una stat → sugerir",
     "targetTitle": "Ordena las stats de montura por prioridad",
-    "targetHelp": "Haz clic en una stat para añadirla a tu lista de prioridad. Usa las flechas para reordenar — el rango 1 pesa más, el rango 5 menos. Las stats no clasificadas son ignoradas por el solver.",
+    "targetHelp": "Haz clic en una stat para añadirla a tu lista de prioridad. Usa las flechas para reordenar. el rango 1 pesa más, el rango 5 menos. Las stats no clasificadas son ignoradas por el solver.",
     "ownedApricorns": "Apricorns que tienes",
     "ownedBerries": "Bayas que tienes",
     "selectAll": "Seleccionar todo",
@@ -194,7 +194,7 @@
     "distributeTitle": "Asigna puntos a las stats de montura",
     "stepRecipes": "Paso 3 · Mejores recetas",
     "ignore": "Ignorar",
-    "ignoreTitle": "Ignorar — acepta cualquier valor (incluso negativo)",
+    "ignoreTitle": "Ignorar. acepta cualquier valor (incluso negativo)",
     "flavourFilter": "Filtrar por sabor",
     "distanceTitle": "Distancia a tu objetivo (menor = más cerca)",
     "openRecipe": "Abrir la receta del aprijuice {kind}",
@@ -207,7 +207,7 @@
     "howtoStep2": "Coloca un Apricorn {apricorn} en el slot superior izquierdo.",
     "howtoStep3": "Añade una Pep-Up Flower (arriba centro) y una Energy Root (arriba derecha).",
     "howtoStep4": "Coloca estas bayas en los slots laterales de seasoning:",
-    "howtoStep4NoSeasoning": "Deja los slots laterales vacíos — esta receta no usa bayas.",
+    "howtoStep4NoSeasoning": "Deja los slots laterales vacíos. esta receta no usa bayas.",
     "howtoStep5": "Haz clic derecho en el pot con una Botella de vidrio para recoger el aprijuice.",
     "apricornColour": "{kind}",
     "qualityLabel": "Calidad",
@@ -221,7 +221,7 @@
     "flavourThresholds": "Umbrales de sabor",
     "seasoningSlots": "Slots de seasoning",
     "slotsCap": "{count} / {max} · límite campfire pot Cobblemon",
-    "pantryBerries": "Despensa — bayas",
+    "pantryBerries": "Despensa. bayas",
     "filterBerries": "Filtrar bayas…",
     "noBerry": "Ninguna baya coincide.",
     "flavourTotals": "Totales de sabor",
@@ -240,7 +240,7 @@
     "dominant": "Dominante:",
     "seasoningSlotsCount": "{count} slots de seasoning",
     "baseRecipe": "Receta base del Poké Snack",
-    "pantry": "Despensa — bait seasonings",
+    "pantry": "Despensa. bait seasonings",
     "filterSeasonings": "Filtrar seasonings…",
     "baitValidOnly": "Solo bait válidos",
     "noSeasoningMatch": "Ningún seasoning coincide con estos filtros.",
@@ -257,8 +257,8 @@
     "minY": "Y min",
     "maxY": "Y max",
     "attracted": "Cobblemon atraídos",
-    "attractedWip": "En desarrollo — las probabilidades son aproximadas",
-    "attractedWipBody": "El ranking de abajo es mi mejor reproducción del pipeline de spawn del Poké Snack de Cobblemon (pool mundial filtrado por bioma/hora/Y, multiplicadores uncommon ×2.25 / rare & ultra-rare ×5.5 aplicados incondicionalmente, efectos bait de tipo/grupo-huevo multiplicando el peso de las entradas coincidentes, luego rarity_bucket suavizando los ratios entre buckets — probabilidad ≈ P(bucket) × parte del peso). Todavía no es 1:1 con el mod. Los casos límite con anticonditions, condiciones anidadas, gates de estructura/luna/skylight y reglas de spawn específicas de addons siguen en ajuste, así que toma los números como guía, no como garantía. Las mejoras llegan continuamente.",
+    "attractedWip": "En desarrollo. las probabilidades son aproximadas",
+    "attractedWipBody": "El ranking de abajo es mi mejor reproducción del pipeline de spawn del Poké Snack de Cobblemon (pool mundial filtrado por bioma/hora/Y, multiplicadores uncommon ×2.25 / rare & ultra-rare ×5.5 aplicados incondicionalmente, efectos bait de tipo/grupo-huevo multiplicando el peso de las entradas coincidentes, luego rarity_bucket suavizando los ratios entre buckets. probabilidad ≈ P(bucket) × parte del peso). Todavía no es 1:1 con el mod. Los casos límite con anticonditions, condiciones anidadas, gates de estructura/luna/skylight y reglas de spawn específicas de addons siguen en ajuste, así que toma los números como guía, no como garantía. Las mejoras llegan continuamente.",
     "searchAttracted": "Buscar por nombre o dex…",
     "types": "Tipos",
     "typesAny": "Cualquier tipo",
@@ -272,7 +272,7 @@
     "shiny": "Shiny",
     "noAttracted": "Ningún Cobblemon coincide. Quita filtros.",
     "dropHint": "Coloca un bait seasoning aquí",
-    "previewDisclaimer": "Vista previa orientativa — el snack en juego puede diferir."
+    "previewDisclaimer": "Vista previa orientativa. el snack en juego puede diferir."
   },
   "pokedexUi": {
     "searchPlaceholder": "Buscar Cobblemon por nombre…",

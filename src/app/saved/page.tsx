@@ -13,7 +13,7 @@ export default function SavedRecipesPage() {
           My recipes
         </h1>
         <p className="text-sm text-muted mt-1">
-          Locally saved snacks and juices. Stored in your browser only — clear
+          Locally saved snacks and juices. Stored in your browser only. clear
           your site data and they're gone.
         </p>
       </header>

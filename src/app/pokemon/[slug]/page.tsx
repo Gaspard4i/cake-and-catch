@@ -15,7 +15,7 @@ export async function generateMetadata({
   const types = [species.primaryType, species.secondaryType].filter(Boolean).join(" / ");
   return {
     title: species.name,
-    description: `#${String(species.dexNo).padStart(4, "0")} ${species.name} — ${types}. Spawns, recettes et appâts pour Cobblemon.`,
+    description: `#${String(species.dexNo).padStart(4, "0")} ${species.name}. ${types}. Spawns, recettes et appâts pour Cobblemon.`,
   };
 }
 import {
@@ -253,7 +253,7 @@ async function SpeciesDetail({ params }: { params: Promise<{ slug: string }> }) 
           Best bait seasonings for {species.name}
         </h2>
         <p className="mt-1 text-xs text-muted">
-          Ranked by how much they bias the encounter toward this Cobblemon —
+          Ranked by how much they bias the encounter toward this Cobblemon , 
           type, egg-group, and nature alignment come first, rarity and shiny
           boosts next.
         </p>

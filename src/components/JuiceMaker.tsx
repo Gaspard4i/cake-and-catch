@@ -564,7 +564,7 @@ export function JuiceMaker() {
                     className="flex-1 accent-accent disabled:opacity-30"
                   />
                   <span className="w-10 text-right text-sm font-mono tabular-nums">
-                    {ignored ? "—" : `+${value}`}
+                    {ignored ? ", " : `+${value}`}
                   </span>
                   <span className="text-[10px] text-muted font-mono tabular-nums w-10 text-right">
                     {ignored ? "" : `/${maxForThis}`}

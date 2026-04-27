@@ -278,7 +278,7 @@ export default async function BerryPage({ params }: { params: Promise<Params> })
             {attracted.length === 0 ? (
               <p className="text-sm text-muted">
                 {types.size === 0 && eggGroups.size === 0
-                  ? "No type / egg-group bias — this berry boosts generic stats only."
+                  ? "No type / egg-group bias. this berry boosts generic stats only."
                   : "No matching species in the world pool."}
               </p>
             ) : (

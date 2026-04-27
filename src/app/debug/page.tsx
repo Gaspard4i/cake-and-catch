@@ -86,7 +86,7 @@ export default async function DebugIndexPage() {
             ))}
             {berries.length > sample.length && (
               <span className="text-[11px] text-muted self-center">
-                + {berries.length - sample.length} more — type the slug in the URL
+                + {berries.length - sample.length} more. type the slug in the URL
               </span>
             )}
           </div>

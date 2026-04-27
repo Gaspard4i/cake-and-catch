@@ -247,7 +247,7 @@ export function BiomeSpawnList({ entries }: { entries: BiomeSpawnEntry[] }) {
 
                 <div className="flex items-center justify-between text-[10px] text-muted">
                   <span>
-                    Lv {s.levelMin}–{s.levelMax} · w {s.weight}
+                    Lv {s.levelMin}-{s.levelMax} · w {s.weight}
                   </span>
                   <SourceBadge
                     kind={s.sourceKind === "addon" ? "addon" : "mod"}

@@ -18,7 +18,7 @@ const DATA_SOURCES: SourceEntry[] = [
     license: "MPL 2.0",
     url: "https://gitlab.com/cable-mc/cobblemon",
     purpose:
-      "Source of truth — species JSON, spawn_pool_world, recipes, seasonings, spawn_bait_effects, tags. All Poké Snack / Aprijuice / bait / spawn logic is reproduced from the mod's Kotlin sources.",
+      "Source of truth. species JSON, spawn_pool_world, recipes, seasonings, spawn_bait_effects, tags. All Poké Snack / Aprijuice / bait / spawn logic is reproduced from the mod's Kotlin sources.",
   },
   {
     name: "Cobblemon Wiki",
@@ -36,7 +36,7 @@ const DATA_SOURCES: SourceEntry[] = [
     name: "Better Cobblemon Spawns",
     license: "MIT",
     url: "https://modrinth.com/mod/better-cobblemon-spawns",
-    purpose: "Addon spawn rebalance — extends the biome/weight catalog.",
+    purpose: "Addon spawn rebalance. extends the biome/weight catalog.",
   },
   {
     name: "Cobblemon Integrations",
