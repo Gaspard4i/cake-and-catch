@@ -86,6 +86,10 @@ export function ItemIcon({
       width={size}
       height={size}
       unoptimized
+      // Prevent the inner <img> from hijacking drag events: without
+      // this, the browser starts dragging just the sprite (and shows a
+      // no-drop cursor) instead of the parent button's drag preview.
+      draggable={false}
       onError={() => setErrored(true)}
       className={`pixel inline-block ${className}`}
       title={id}

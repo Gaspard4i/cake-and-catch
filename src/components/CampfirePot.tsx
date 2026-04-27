@@ -543,10 +543,18 @@ export function CampfirePot() {
               {slots.map((slot, idx) => (
                 <div
                   key={idx}
-                  onDragOver={(e) => e.preventDefault()}
+                  onDragOver={(e) => {
+                    // Both calls are required for the slot to be a valid
+                    // drop target on Chromium and Firefox; without
+                    // dropEffect the cursor stays "no-entry".
+                    e.preventDefault();
+                    e.dataTransfer.dropEffect = "copy";
+                  }}
                   onDrop={(e) => {
                     e.preventDefault();
-                    const slug = e.dataTransfer.getData("text/seasoning");
+                    const slug =
+                      e.dataTransfer.getData("text/seasoning") ||
+                      e.dataTransfer.getData("text/plain");
                     const s = seasonings.find((x) => x.slug === slug);
                     if (s && s.snackValid) setSlot(idx, s);
                   }}
@@ -1003,6 +1011,21 @@ function SeasoningChip({
             return;
           }
           e.dataTransfer.setData("text/seasoning", seasoning.slug);
+          e.dataTransfer.setData("text/plain", seasoning.slug);
+          // Without effectAllowed the browser falls back to "none" and
+          // the cursor turns into a no-entry sign over every drop zone.
+          e.dataTransfer.effectAllowed = "copy";
+          // Use the entire card as the drag preview instead of letting
+          // the browser pick the inner <img> (which gives a tiny ghost
+          // sprite and the no-drop cursor on most setups).
+          if (anchorRef.current) {
+            const rect = anchorRef.current.getBoundingClientRect();
+            e.dataTransfer.setDragImage(
+              anchorRef.current,
+              rect.width / 2,
+              rect.height / 2,
+            );
+          }
         }}
         onClick={onPick}
         onMouseEnter={() => setHovered(true)}
