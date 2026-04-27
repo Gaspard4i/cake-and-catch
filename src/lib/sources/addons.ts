@@ -152,4 +152,47 @@ export const ADDONS: AddonSource[] = [
     versionZipUrl: "",
     versionName: "",
   },
+  // Recommended by the spawn-addons research report (April 2026):
+  // most-downloaded packs that add species or rewrite spawn pools.
+  {
+    name: "allthemons",
+    modrinthSlug: "allthemons",
+    license: "ARR",
+    pageUrl: "https://modrinth.com/datapack/allthemons",
+    versionZipUrl: "",
+    versionName: "",
+  },
+  {
+    name: "cobblemon-pokemans",
+    modrinthSlug: "cobblemon-pokemans",
+    license: "CC-BY-NC-4.0",
+    pageUrl: "https://modrinth.com/datapack/cobblemon-pokemans",
+    versionZipUrl: "",
+    versionName: "",
+  },
+  {
+    name: "genomons",
+    modrinthSlug: "genomons",
+    license: "ARR",
+    pageUrl: "https://modrinth.com/datapack/genomons",
+    versionZipUrl: "",
+    versionName: "",
+  },
+  {
+    name: "cobblemon-expanded-spawns",
+    modrinthSlug: "cobblemon-expanded-spawns",
+    license: "ARR",
+    pageUrl: "https://modrinth.com/datapack/cobblemon-expanded-spawns",
+    versionZipUrl: "",
+    versionName: "",
+  },
+  {
+    name: "complete-cobblemon-collection",
+    modrinthSlug: "complete-cobblemon-collection-myths-and-legends-compat",
+    license: "ARR",
+    pageUrl:
+      "https://modrinth.com/datapack/complete-cobblemon-collection-myths-and-legends-compat",
+    versionZipUrl: "",
+    versionName: "",
+  },
 ];

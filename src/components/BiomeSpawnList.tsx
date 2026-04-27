@@ -109,7 +109,7 @@ export function BiomeSpawnList({ entries }: { entries: BiomeSpawnEntry[] }) {
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Filter by name…"
-          className="flex-1 min-w-52 rounded-md border border-border bg-card px-3 py-1.5 text-sm outline-none focus:border-accent"
+          className="flex-1 min-w-0 sm:min-w-52 rounded-md border border-border bg-card px-3 py-1.5 text-sm outline-none focus:border-accent"
         />
         <label className="text-xs flex items-center gap-1 text-muted">
           <span>Sort</span>
