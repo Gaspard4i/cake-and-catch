@@ -19,9 +19,6 @@ export function HeaderNav({ showDebug = false }: { showDebug?: boolean }) {
       <Link href="/juice" className="hover:text-foreground transition-colors">
         {t("juice")}
       </Link>
-      <Link href="/saved" className="hover:text-foreground transition-colors">
-        {t("savedRecipes")}
-      </Link>
       <Link href="/about" className="hover:text-foreground transition-colors">
         {t("about")}
       </Link>

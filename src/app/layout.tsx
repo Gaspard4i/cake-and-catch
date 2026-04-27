@@ -10,6 +10,7 @@ import { ThemeSwitcher } from "@/components/ThemeSwitcher";
 import { LocaleSwitcher } from "@/components/LocaleSwitcher";
 import { FooterText } from "@/components/FooterText";
 import { HeaderNav } from "@/components/HeaderNav";
+import { SavedRecipesIcon } from "@/components/SavedRecipesIcon";
 import { MobileBottomNav } from "@/components/MobileBottomNav";
 import { FloatingFeedback } from "@/components/FloatingFeedback";
 import { SatisfactionModal } from "@/components/SatisfactionModal";
@@ -69,7 +70,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                       }
                     />
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1 sm:gap-2">
+                    <SavedRecipesIcon />
                     <LocaleSwitcher />
                     <ThemeSwitcher />
                   </div>

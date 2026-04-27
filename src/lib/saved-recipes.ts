@@ -54,6 +54,9 @@ function write(store: Store) {
   if (typeof window === "undefined") return;
   try {
     window.localStorage.setItem(KEY, JSON.stringify(store));
+    // Notify same-tab listeners (storage events only fire across tabs).
+    // The header badge reacts to this so the count updates immediately.
+    window.dispatchEvent(new CustomEvent("snc:saved-changed"));
   } catch {
     /* quota exceeded — ignore, the user can clean up via the UI */
   }
