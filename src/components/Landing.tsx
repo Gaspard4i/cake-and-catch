@@ -265,19 +265,16 @@ function RandomApricornBadge() {
   }, []);
   if (!colour) return null;
   return (
-    <span
+    <Image
       aria-hidden
-      className="pointer-events-none absolute -top-2 -right-2 w-7 h-7 rounded-full bg-card border border-border flex items-center justify-center shadow-sm"
-    >
-      <Image
-        src={`/textures/cobblemon/item/${colour}_apricorn.png`}
-        alt=""
-        width={20}
-        height={20}
-        style={{ imageRendering: "pixelated" }}
-        unoptimized
-      />
-    </span>
+      src={`/textures/cobblemon/item/${colour}_apricorn.png`}
+      alt=""
+      width={26}
+      height={26}
+      className="pointer-events-none absolute -top-2 -right-2"
+      style={{ imageRendering: "pixelated" }}
+      unoptimized
+    />
   );
 }
 
@@ -295,18 +292,15 @@ function RandomBerryBadge({ pool }: { pool: Seasoning[] }) {
   }, [pool]);
   if (!pick) return null;
   return (
-    <span
+    <Image
       aria-hidden
-      className="pointer-events-none absolute -top-2 -right-2 w-7 h-7 rounded-full bg-card border border-border flex items-center justify-center shadow-sm"
-    >
-      <Image
-        src={`/textures/cobblemon/item/berries/${pick.slug}.png`}
-        alt=""
-        width={20}
-        height={20}
-        style={{ imageRendering: "pixelated" }}
-        unoptimized
-      />
-    </span>
+      src={`/textures/cobblemon/item/berries/${pick.slug}.png`}
+      alt=""
+      width={26}
+      height={26}
+      className="pointer-events-none absolute -top-2 -right-2"
+      style={{ imageRendering: "pixelated" }}
+      unoptimized
+    />
   );
 }
