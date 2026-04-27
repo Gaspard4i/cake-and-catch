@@ -521,31 +521,11 @@ export function CampfirePot() {
               interactive
             />
             <p
-              className="text-[10px] text-muted italic text-center leading-snug"
+              className="text-[8px] text-muted italic text-center leading-tight"
               style={{ maxWidth: snack3DSize }}
             >
-              {t("previewDisclaimer")}
+              the in-game snack may look different.
             </p>
-            <p
-              className="text-[9px] text-muted text-center leading-tight"
-              style={{ maxWidth: snack3DSize }}
-            >
-              drag to rotate · scroll to zoom
-            </p>
-
-            <div className="flex items-center gap-2 text-xs text-muted">
-              <span>{t("dominant")}</span>
-              {dominant ? (
-                <span
-                  className="px-2 py-0.5 rounded-full font-mono text-[10px] uppercase text-foreground"
-                  style={{ background: `${FLAVOUR_COLORS[dominant]}33` }}
-                >
-                  {dominant}
-                </span>
-              ) : (
-                <span className="font-mono">—</span>
-              )}
-            </div>
 
             <div className="flex gap-2 mt-1">
               {slots.map((slot, idx) => (
