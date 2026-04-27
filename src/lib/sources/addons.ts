@@ -164,4 +164,23 @@ export const ADDONS: AddonSource[] = [
     versionZipUrl: "",
     versionName: "",
   },
+  // Legendary / mythical spawns. Vanilla Cobblemon ships zero spawns
+  // for the mythicals (Mew, Celebi, Jirachi, Victini, …) — they're
+  // event-only in the games. These datapacks give them a habitat.
+  {
+    name: "cobblemon-legendary-encounters",
+    modrinthSlug: "cobblemon-legendary-encounters",
+    license: "ARR",
+    pageUrl: "https://modrinth.com/datapack/cobblemon-legendary-encounters",
+    versionZipUrl: "",
+    versionName: "",
+  },
+  {
+    name: "cobblemon-legendary-structures",
+    modrinthSlug: "cobblemon-legendary-structures",
+    license: "ARR",
+    pageUrl: "https://modrinth.com/datapack/cobblemon-legendary-structures",
+    versionZipUrl: "",
+    versionName: "",
+  },
 ];
