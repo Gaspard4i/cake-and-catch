@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { NameRecipeModal } from "../NameRecipeModal";
 
 type Props = {
   apricorn: string;
@@ -14,26 +15,18 @@ type Props = {
  */
 export function SaveJuiceButton({ apricorn, berrySlugs }: Props) {
   const [savedAt, setSavedAt] = useState<number | null>(null);
+  const [modalOpen, setModalOpen] = useState(false);
   const disabled = berrySlugs.length === 0;
+  const defaultName = `${apricorn.toLowerCase()} · ${berrySlugs
+    .map((s) => s.replace(/_berry$/, ""))
+    .join(", ")}`;
+
   return (
     <div className="mt-4 flex items-center gap-2">
       <button
         type="button"
         disabled={disabled}
-        onClick={async () => {
-          const defaultName = `${apricorn.toLowerCase()} · ${berrySlugs
-            .map((s) => s.replace(/_berry$/, ""))
-            .join(", ")}`;
-          const name = window.prompt("Name this aprijuice:", defaultName);
-          if (!name) return;
-          const { saveJuice } = await import("@/lib/saved-recipes");
-          saveJuice({
-            name: name.trim().slice(0, 80),
-            apricorn,
-            seasoningSlugs: berrySlugs,
-          });
-          setSavedAt(Date.now());
-        }}
+        onClick={() => setModalOpen(true)}
         className="text-[10px] uppercase tracking-wide px-2 py-1 rounded border border-border hover:bg-subtle disabled:opacity-30"
       >
         Save aprijuice
@@ -45,6 +38,20 @@ export function SaveJuiceButton({ apricorn, berrySlugs }: Props) {
         My recipes
       </Link>
       {savedAt && <span className="text-[10px] text-green-600">saved</span>}
+
+      <NameRecipeModal
+        open={modalOpen}
+        title="Name this aprijuice"
+        hint="Saved locally in your browser."
+        defaultValue={defaultName}
+        onCancel={() => setModalOpen(false)}
+        onConfirm={async (name) => {
+          const { saveJuice } = await import("@/lib/saved-recipes");
+          saveJuice({ name, apricorn, seasoningSlugs: berrySlugs });
+          setSavedAt(Date.now());
+          setModalOpen(false);
+        }}
+      />
     </div>
   );
 }

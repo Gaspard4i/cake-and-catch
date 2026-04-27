@@ -592,7 +592,7 @@ export function Snack3D({
               berries={berries}
               fallbackFlavour={flavour ?? null}
               potColour={potColour ?? null}
-              spin={!interactive}
+              spin
             />
           </Suspense>
           {interactive && (
