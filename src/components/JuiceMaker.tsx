@@ -14,6 +14,7 @@ import {
 import { useTranslations } from "next-intl";
 import { ItemIcon } from "./ItemIcon";
 import { Spinner, TopProgress, Skeleton } from "./Loader";
+import { OwnedBerriesPicker } from "./juice/OwnedBerriesPicker";
 import type {
   Apricorn,
   Flavour,
@@ -424,109 +425,21 @@ export function JuiceMaker() {
         </div>
 
         <div>
-          <div className="flex items-center justify-between gap-2 flex-wrap">
-            <h4 className="text-xs uppercase tracking-wide text-muted">
-              {t("ownedBerries")}{" "}
-              <span className="ml-1 normal-case text-muted">
-                ({ownedBerries.size}/{berries.length})
-              </span>
-            </h4>
-            <div className="flex items-center gap-2">
-              <input
-                value={berryFilter}
-                onChange={(e) => setBerryFilter(e.target.value)}
-                placeholder={t("filterBerries")}
-                className="rounded-md border border-border bg-card px-2 py-1 text-xs w-40"
-              />
-              <button
-                type="button"
-                onClick={toggleAllBerries}
-                className="text-[10px] uppercase tracking-wide px-2 py-1 rounded-md border border-border text-muted hover:text-foreground"
-              >
-                {ownedBerries.size === berries.length
-                  ? tc("clear")
-                  : t("selectAll")}
-              </button>
-            </div>
-          </div>
-          <div
-            className="mt-2 flex flex-wrap gap-1"
-            role="group"
-            aria-label={t("flavourFilter")}
-          >
-            {FLAVOURS_ALL.map((f) => {
-              const active = activeFlavours.has(f);
-              return (
-                <button
-                  key={f}
-                  type="button"
-                  onClick={() => toggleFlavourFilter(f)}
-                  aria-pressed={active}
-                  className="text-[10px] uppercase tracking-wide px-2 py-0.5 rounded-full border transition-colors"
-                  style={
-                    active
-                      ? {
-                          background: `${FLAVOUR_COLORS[f]}33`,
-                          borderColor: FLAVOUR_COLORS[f],
-                          color: FLAVOUR_COLORS[f],
-                        }
-                      : undefined
-                  }
-                >
-                  {f}
-                </button>
-              );
-            })}
-            {activeFlavours.size > 0 && (
-              <button
-                type="button"
-                onClick={() => setActiveFlavours(new Set())}
-                className="text-[10px] uppercase tracking-wide px-2 py-0.5 rounded-full border border-border bg-card text-muted hover:text-foreground"
-              >
-                {tc("clear")}
-              </button>
-            )}
-          </div>
-          {berriesLoading && berries.length === 0 ? (
-            <ul className="mt-2 grid grid-cols-[repeat(auto-fill,minmax(120px,1fr))] gap-1">
-              {Array.from({ length: 18 }).map((_, i) => (
-                <li key={i}>
-                  <Skeleton className="h-8 w-full" />
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <div className="mt-2 max-h-52 overflow-y-auto rounded-md border border-border p-2 bg-subtle">
-              <ul className="grid grid-cols-[repeat(auto-fill,minmax(120px,1fr))] gap-1">
-                {filteredBerries.map((b) => {
-                  const active = ownedBerries.has(b.slug);
-                  return (
-                    <li key={b.slug}>
-                      <button
-                        type="button"
-                        onClick={() => toggleOwnedBerry(b.slug)}
-                        aria-pressed={active}
-                        className={`w-full flex items-center gap-1.5 rounded px-1.5 py-1 text-left transition-colors ${
-                          active ? "bg-card" : "opacity-40 hover:opacity-70"
-                        }`}
-                        title={b.slug}
-                      >
-                        <ItemIcon id={b.itemId} size={20} />
-                        <span className="text-[11px] truncate capitalize flex-1">
-                          {b.slug.replaceAll("_", " ")}
-                        </span>
-                      </button>
-                    </li>
-                  );
-                })}
-                {filteredBerries.length === 0 && (
-                  <li className="col-span-full text-center text-xs text-muted py-2">
-                    {t("noBerry")}
-                  </li>
-                )}
-              </ul>
-            </div>
-          )}
+          <OwnedBerriesPicker
+            berries={berries}
+            loading={berriesLoading}
+            ownedBerries={ownedBerries}
+            onToggle={toggleOwnedBerry}
+            onSelectAll={toggleAllBerries}
+            filter={berryFilter}
+            onFilterChange={setBerryFilter}
+            activeFlavours={activeFlavours as Set<string>}
+            onToggleFlavour={(f) => toggleFlavourFilter(f as Flavour)}
+            onClearFlavours={() => setActiveFlavours(new Set())}
+            flavoursAll={FLAVOURS_ALL}
+            flavourColors={FLAVOUR_COLORS}
+            filteredBerries={filteredBerries}
+          />
         </div>
       </section>
 
@@ -559,6 +472,30 @@ export function JuiceMaker() {
           </div>
           <p className="mt-1 text-xs text-muted">{t("distributeHelp")}</p>
         </header>
+
+        {/* Mobile-only legend: icon → label, since the per-row label is
+            hidden below to free horizontal space for the slider. */}
+        <ul
+          className="sm:hidden flex flex-wrap gap-x-3 gap-y-1 text-[10px] text-muted"
+          aria-label="Stats legend"
+        >
+          {(["ACCELERATION", "SKILL", "SPEED", "STAMINA", "JUMP"] as RidingStat[]).map(
+            (stat) => {
+              const Icon = STAT_ICON[stat];
+              return (
+                <li key={stat} className="inline-flex items-center gap-1">
+                  <Icon
+                    className={`h-3.5 w-3.5 ${STAT_TONE[stat]}`}
+                    aria-hidden
+                  />
+                  <span className="uppercase tracking-wide">
+                    {stat.toLowerCase()}
+                  </span>
+                </li>
+              );
+            },
+          )}
+        </ul>
 
         <ul className="space-y-3">
           {(["ACCELERATION", "SKILL", "SPEED", "STAMINA", "JUMP"] as RidingStat[]).map(
@@ -606,10 +543,10 @@ export function JuiceMaker() {
                 <li key={stat} className="flex items-center gap-2">
                   <Icon
                     className={`h-4 w-4 ${STAT_TONE[stat]} shrink-0 ${ignored ? "opacity-30" : ""}`}
-                    aria-hidden
+                    aria-label={stat.toLowerCase()}
                   />
                   <span
-                    className={`text-[11px] uppercase tracking-wide w-16 shrink-0 ${ignored ? "line-through text-muted" : ""}`}
+                    className={`hidden sm:inline text-[11px] uppercase tracking-wide w-16 shrink-0 ${ignored ? "line-through text-muted" : ""}`}
                   >
                     {stat.toLowerCase()}
                   </span>

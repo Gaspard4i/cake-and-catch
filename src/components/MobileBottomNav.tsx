@@ -4,7 +4,7 @@ import { useId, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { Cookie, FlaskConical, Library, Menu } from "lucide-react";
+import { Cookie, FlaskConical, FlaskRound, Library, Menu } from "lucide-react";
 import { MoreSheet } from "./MoreSheet";
 
 type Tab = {
@@ -47,7 +47,9 @@ export function MobileBottomNav({ showDebug = false }: { showDebug?: boolean }) 
         aria-label={t("primary")}
         className="sm:hidden fixed inset-x-0 bottom-0 z-50 border-t border-border bg-card/95 backdrop-blur-md pb-[env(safe-area-inset-bottom)]"
       >
-        <ul className="mx-auto max-w-5xl grid grid-cols-4 h-14">
+        <ul
+          className={`mx-auto max-w-5xl grid h-14 ${showDebug ? "grid-cols-5" : "grid-cols-4"}`}
+        >
           {TABS.map(({ href, labelKey, Icon }) => {
             const active = isActive(href);
             return (
@@ -71,6 +73,28 @@ export function MobileBottomNav({ showDebug = false }: { showDebug?: boolean }) 
               </li>
             );
           })}
+          {showDebug && (
+            <li className="contents">
+              <Link
+                href="/debug"
+                aria-current={isActive("/debug") ? "page" : undefined}
+                className={`flex flex-col items-center justify-center gap-0.5 min-h-[44px] px-2 touch-manipulation transition-colors ${
+                  isActive("/debug")
+                    ? "text-amber-500"
+                    : "text-amber-500/70 hover:text-amber-500"
+                }`}
+              >
+                <FlaskRound
+                  className="h-[22px] w-[22px]"
+                  aria-hidden
+                  strokeWidth={isActive("/debug") ? 2.5 : 2}
+                />
+                <span className="text-[10px] leading-none tracking-wide">
+                  debug
+                </span>
+              </Link>
+            </li>
+          )}
           <li className="contents">
             <button
               type="button"
