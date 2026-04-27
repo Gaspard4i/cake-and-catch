@@ -1,7 +1,7 @@
 {
   "app": {
     "title": "Snack & Catch",
-    "tagline": "Cobblemon のすべてのポケモンについて:どの Poké Snack を作れば引き寄せられるか、どこでスポーンするか、どんな条件か。",
+    "tagline": "すべての Cobblemon について:どの Poké Snack を作れば引き寄せられるか、どこでスポーンするか、どんな条件か。",
     "indexedSpecies": "{count} 種を登録済み。"
   },
   "footer": {
@@ -50,8 +50,8 @@
     "sources": "データソース",
     "api": "公開 API",
     "apiIntro": "読み取り専用 JSON エンドポイント、キャッシュ 60 秒、レート制限 60 req/min/IP。",
-    "pokemon": "ポケモン商標",
-    "pokemonNotice": "ポケモンおよびクリーチャー名は任天堂・ゲームフリーク・株式会社ポケモンの商標です。本プロジェクトは非公式で、提携関係はありません。"
+    "pokemon": "商標について",
+    "pokemonNotice": "ここで表示されるクリーチャー名およびフランチャイズ用語の権利は各権利者に帰属します。本プロジェクトはファンによる非公式プロジェクトで、データはオープンソース MOD「Cobblemon」およびそのコミュニティ Wiki から取得しています。"
   },
   "recipes": {
     "title": "料理レシピ",

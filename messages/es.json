@@ -1,7 +1,7 @@
 {
   "app": {
     "title": "Snack & Catch",
-    "tagline": "Para cada Pokémon de Cobblemon: qué Poké Snack cocinar para atraerlo, dónde aparece y bajo qué condiciones.",
+    "tagline": "Para cada Cobblemon: qué Poké Snack cocinar para atraerlo, dónde aparece y bajo qué condiciones.",
     "indexedSpecies": "{count} especies indexadas."
   },
   "footer": {
@@ -12,18 +12,18 @@
     "builtBy": "Hecho por"
   },
   "home": {
-    "pokedexPreview": "Vista previa de la Pokédex",
-    "ctaPokedex": "Abrir la Pokédex",
+    "pokedexPreview": "Vista previa de la Cobbledex",
+    "ctaPokedex": "Abrir la Cobbledex",
     "ctaCake": "Snack maker",
     "ctaRecipes": "Recetas",
-    "recentlyIndexed": "Muestra de la Pokédex"
+    "recentlyIndexed": "Muestra de la Cobbledex"
   },
   "pokedex": {
-    "title": "Pokédex de Cobblemon",
+    "title": "Cobbledex de Cobblemon",
     "intro": "Todas las especies indexadas por el mod y sus addons, con sus stats reales. Filtra por tipo o generación, desplaza para cargar más."
   },
   "nav": {
-    "pokedex": "Pokédex",
+    "pokedex": "Cobbledex",
     "recipes": "Recetas",
     "cake": "Snack maker",
     "snack": "Snack",
@@ -39,7 +39,7 @@
   },
   "cake": {
     "title": "Poké Snack maker",
-    "intro": "Coloca un bait seasoning en un slot. Según el seasoning, el Snack sesga la atracción por tipo, grupo huevo, naturaleza o IVs; algunos aumentan probabilidad shiny, habilidad oculta o rarity bucket. Deja el Snack en el suelo para atraer Pokémon en un radio de 8 bloques."
+    "intro": "Coloca un bait seasoning en un slot. Según el seasoning, el Snack sesga la atracción por tipo, grupo huevo, naturaleza o IVs; algunos aumentan probabilidad shiny, habilidad oculta o rarity bucket. Deja el Snack en el suelo para atraer Cobblemon en un radio de 8 bloques."
   },
   "biome": {
     "spawnsHere": "Apariciones listadas ({count})"
@@ -50,8 +50,8 @@
     "sources": "Fuentes de datos",
     "api": "API pública",
     "apiIntro": "Endpoint JSON de solo lectura, caché 60s, límite 60 req/min/IP.",
-    "pokemon": "Marca Pokémon",
-    "pokemonNotice": "Pokémon y los nombres de las criaturas son marcas de Nintendo / Game Freak / The Pokémon Company. Este proyecto es no oficial y no afiliado."
+    "pokemon": "Marcas",
+    "pokemonNotice": "Los nombres de criaturas y términos de la franquicia mostrados aquí pertenecen a sus respectivos titulares de derechos. Proyecto no oficial hecho por fans; los datos provienen del mod open-source Cobblemon y de su wiki comunitaria."
   },
   "recipes": {
     "title": "Recetas de cocina",
@@ -68,14 +68,14 @@
     "kindsHelp": {
       "cake": "Pastel compartido que sesga los encuentros (color depende del seasoning).",
       "bait": "Cebo de pesca — ajusta rareza / naturaleza / HA según el seasoning usado.",
-      "snack": "Snack que atrae a un Pokémon por tipo de sabor.",
+      "snack": "Snack que atrae a un Cobblemon por tipo de sabor.",
       "aprijuice": "Jugo de apricorn para potenciar stats de montura."
     }
   },
   "search": {
-    "placeholder": "Busca un Pokémon (ej. pikachu, victini…)",
+    "placeholder": "Busca un Cobblemon (ej. pikachu, victini…)",
     "submit": "Buscar",
-    "title": "Buscar un Pokémon",
+    "title": "Buscar un Cobblemon",
     "noResults": "Sin resultados para «{q}».",
     "loading": "Cargando…"
   },
@@ -84,7 +84,7 @@
     "stats": "Stats",
     "notes": "Notas",
     "cakeSection": "Snack óptimo",
-    "cakeHelp": "Bait seasonings que sesgan los encuentros hacia este Pokémon vía su tipo ({flavour}). Coloca uno en un slot del Snack.",
+    "cakeHelp": "Bait seasonings que sesgan los encuentros hacia este Cobblemon vía su tipo ({flavour}). Coloca uno en un slot del Snack.",
     "baitsTitle": "Bait seasonings relevantes",
     "baitsHelp": "Efectos de bait documentados (bite time, shiny reroll, HA, sesgo de tipo).",
     "reason": {
@@ -226,7 +226,7 @@
     "noBerry": "Ninguna baya coincide.",
     "flavourTotals": "Totales de sabor",
     "rideBoosts": "Boosts de stats de montura",
-    "rideBoostsHelp": "Resultado = puntos de sabor (convertidos desde los totales) + base del apricorn. Portado por un Pokémon montable, potencia las stats de su ride controller.",
+    "rideBoostsHelp": "Resultado = puntos de sabor (convertidos desde los totales) + base del apricorn. Portado por un Cobblemon montable, potencia las stats de su ride controller.",
     "noNetBoost": "Sin boost neto. Añade más bayas para cruzar el siguiente umbral.",
     "moveUp": "Subir",
     "moveDown": "Bajar",
@@ -256,7 +256,7 @@
     "timeAny": "Cualquier hora",
     "minY": "Y min",
     "maxY": "Y max",
-    "attracted": "Pokémon atraídos",
+    "attracted": "Cobblemon atraídos",
     "attractedWip": "En desarrollo — las probabilidades son aproximadas",
     "attractedWipBody": "El ranking de abajo es mi mejor reproducción del pipeline de spawn del Poké Snack de Cobblemon (pool mundial filtrado por bioma/hora/Y, multiplicadores uncommon ×2.25 / rare & ultra-rare ×5.5 aplicados incondicionalmente, efectos bait de tipo/grupo-huevo multiplicando el peso de las entradas coincidentes, luego rarity_bucket suavizando los ratios entre buckets — probabilidad ≈ P(bucket) × parte del peso). Todavía no es 1:1 con el mod. Los casos límite con anticonditions, condiciones anidadas, gates de estructura/luna/skylight y reglas de spawn específicas de addons siguen en ajuste, así que toma los números como guía, no como garantía. Las mejoras llegan continuamente.",
     "searchAttracted": "Buscar por nombre o dex…",
@@ -270,12 +270,12 @@
     "sortName": "Nombre (A→Z)",
     "sortNameDesc": "Nombre (Z→A)",
     "shiny": "Shiny",
-    "noAttracted": "Ningún Pokémon coincide. Quita filtros.",
+    "noAttracted": "Ningún Cobblemon coincide. Quita filtros.",
     "dropHint": "Coloca un bait seasoning aquí",
     "previewDisclaimer": "Vista previa orientativa — el snack en juego puede diferir."
   },
   "pokedexUi": {
-    "searchPlaceholder": "Buscar Pokémon por nombre…",
+    "searchPlaceholder": "Buscar Cobblemon por nombre…",
     "types": "Tipos",
     "typesAny": "Cualquier tipo",
     "gens": "Gens",

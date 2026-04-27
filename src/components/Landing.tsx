@@ -87,7 +87,7 @@ export function Landing({ labels }: { labels: Labels }) {
 
   const berries = useRandomSnack(pool);
 
-  // Background Pokémon floaters are generated client-side only. Using
+  // Background Cobblemon floaters are generated client-side only. Using
   // Math.random() during render would produce different values on SSR vs
   // hydration, causing a hydration mismatch. We defer to useEffect so
   // both SSR and the first client render produce an empty set.
@@ -148,7 +148,7 @@ export function Landing({ labels }: { labels: Labels }) {
           <h1 className="mt-4 text-3xl sm:text-4xl md:text-5xl font-semibold tracking-tight leading-tight">
             Cook the right snack.
             <br />
-            <span className="text-accent">Catch the right Pokémon.</span>
+            <span className="text-accent">Catch the right Cobblemon.</span>
           </h1>
           <p className="mt-3 sm:mt-4 text-sm sm:text-base text-muted max-w-xl">
             {labels.tagline}
@@ -181,7 +181,7 @@ export function Landing({ labels }: { labels: Labels }) {
               href="/pokedex"
               className="flex-1 sm:flex-none text-center rounded-lg bg-accent text-accent-foreground px-5 py-3 sm:py-2.5 text-sm font-medium hover:opacity-90 transition"
             >
-              Open the Pokédex →
+              Open the Cobbledex →
             </Link>
             <Link
               href="/snack"

@@ -145,7 +145,7 @@ export function formatBaitEffect(raw: RawBaitEffect): FormattedBaitEffect {
       return {
         kind: "ha_chance",
         title: "Hidden Ability",
-        description: "Attracts Pokémon with their hidden ability.",
+        description: "Attracts Cobblemon with their hidden ability.",
         chance,
         tone: "buff",
         ...base,
@@ -165,7 +165,7 @@ export function formatBaitEffect(raw: RawBaitEffect): FormattedBaitEffect {
       return {
         kind: "level_raise",
         title: `Level +${value}`,
-        description: `Boosts lured Pokémon level by ${value}.`,
+        description: `Boosts lured Cobblemon level by ${value}.`,
         chance,
         tone: "buff",
         ...base,
@@ -176,7 +176,7 @@ export function formatBaitEffect(raw: RawBaitEffect): FormattedBaitEffect {
       return {
         kind: "ev",
         title: `${stat} EV yield`,
-        description: `Attracts Pokémon with ${stat} EV yield.`,
+        description: `Attracts Cobblemon with ${stat} EV yield.`,
         chance,
         tone: "offense",
         ...base,
@@ -187,7 +187,7 @@ export function formatBaitEffect(raw: RawBaitEffect): FormattedBaitEffect {
       return {
         kind: "iv",
         title: `${stat} IV +${value}`,
-        description: `Boosts lured Pokémon ${stat} IV by ${value}.`,
+        description: `Boosts lured Cobblemon ${stat} IV by ${value}.`,
         chance,
         tone: "offense",
         ...base,
@@ -198,7 +198,7 @@ export function formatBaitEffect(raw: RawBaitEffect): FormattedBaitEffect {
       return {
         kind: "nature",
         title: `${stat}-nature`,
-        description: `Attracts Pokémon with ${stat}-boosting natures.`,
+        description: `Attracts Cobblemon with ${stat}-boosting natures.`,
         chance,
         tone: "offense",
         ...base,
@@ -209,7 +209,7 @@ export function formatBaitEffect(raw: RawBaitEffect): FormattedBaitEffect {
       return {
         kind: "egg_group",
         title: `${eg} egg group ×10`,
-        description: `Increases chance of ${eg} Egg Group Pokémon by 10×.`,
+        description: `Increases chance of ${eg} Egg Group Cobblemon by 10×.`,
         chance,
         tone: "utility",
         ...base,
@@ -220,7 +220,7 @@ export function formatBaitEffect(raw: RawBaitEffect): FormattedBaitEffect {
       return {
         kind: "typing",
         title: `${t}-type ×10`,
-        description: `Increases chance of ${t}-type Pokémon by 10×.`,
+        description: `Increases chance of ${t}-type Cobblemon by 10×.`,
         chance,
         tone: "offense",
         ...base,
@@ -230,8 +230,8 @@ export function formatBaitEffect(raw: RawBaitEffect): FormattedBaitEffect {
       const which = sub.toLowerCase() === "female" ? "female" : "male";
       return {
         kind: "gender_chance",
-        title: `${which} Pokémon`,
-        description: `Attracts ${which} Pokémon.`,
+        title: `${which} Cobblemon`,
+        description: `Attracts ${which} Cobblemon.`,
         chance,
         tone: "utility",
         ...base,
@@ -241,7 +241,7 @@ export function formatBaitEffect(raw: RawBaitEffect): FormattedBaitEffect {
       return {
         kind: "friendship",
         title: `Friendship +${value}`,
-        description: `Boosts lured Pokémon's friendship by ${value}.`,
+        description: `Boosts lured Cobblemon's friendship by ${value}.`,
         chance,
         tone: "friendship",
         ...base,
@@ -251,7 +251,7 @@ export function formatBaitEffect(raw: RawBaitEffect): FormattedBaitEffect {
       return {
         kind: "mark_chance",
         title: "Mark chance",
-        description: "Attracts Pokémon with special marks.",
+        description: "Attracts Cobblemon with special marks.",
         chance,
         tone: "utility",
         ...base,

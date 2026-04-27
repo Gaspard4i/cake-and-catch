@@ -1,7 +1,7 @@
 {
   "app": {
     "title": "Snack & Catch",
-    "tagline": "对于每只 Cobblemon 宝可梦:该烹饪哪款 Poké Snack 吸引它、它在哪里刷新、需要什么条件。",
+    "tagline": "对于每只 Cobblemon:该烹饪哪款 Poké Snack 吸引它、它在哪里刷新、需要什么条件。",
     "indexedSpecies": "已收录 {count} 种。"
   },
   "footer": {
@@ -51,7 +51,7 @@
     "api": "公共 API",
     "apiIntro": "只读 JSON 端点,60 秒缓存,限流 60 req/min/IP。",
     "pokemon": "宝可梦商标",
-    "pokemonNotice": "宝可梦及生物名称为任天堂 / Game Freak / 株式会社宝可梦的商标。本项目非官方、无隶属关系。"
+    "pokemonNotice": "此处展示的生物名称及相关用语归各自权利所有者。本项目为粉丝制作的非官方项目;数据来自开源模组 Cobblemon 及其社区 wiki。"
   },
   "recipes": {
     "title": "烹饪配方",

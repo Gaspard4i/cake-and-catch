@@ -97,7 +97,7 @@ async function SpeciesDetail({ params }: { params: Promise<{ slug: string }> }) 
   const primarySource = sources[0];
 
   // Build the pool of valid bait seasonings with their raw effects, and rank
-  // them by how much they actually help catch THIS Pokémon.
+  // them by how much they actually help catch THIS Cobblemon.
   const baitByItem = new Map<string, RawBaitEffect[]>();
   for (const b of baits as Array<{ itemId: string; effects: RawBaitEffect[] }>) {
     baitByItem.set(b.itemId, b.effects as RawBaitEffect[]);
@@ -231,14 +231,14 @@ async function SpeciesDetail({ params }: { params: Promise<{ slug: string }> }) 
           Best bait seasonings for {species.name}
         </h2>
         <p className="mt-1 text-xs text-muted">
-          Ranked by how much they bias the encounter toward this Pokémon —
+          Ranked by how much they bias the encounter toward this Cobblemon —
           type, egg-group, and nature alignment come first, rarity and shiny
           boosts next.
         </p>
         {rankedSeasonings.length === 0 ? (
           <p className="mt-3 text-sm text-muted">
             No documented bait seasoning biases the encounter toward this
-            Pokémon yet.
+            Cobblemon yet.
           </p>
         ) : (
           <ul className="mt-3 flex flex-wrap gap-3">

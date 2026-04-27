@@ -1,5 +1,5 @@
 /**
- * Rank bait seasonings by how useful they are to catch a specific Pokémon.
+ * Rank bait seasonings by how useful they are to catch a specific Cobblemon.
  *
  * Scoring is intentionally blunt — we want the UI to surface the berries that
  * actually biais the encounter toward this species, not generic shiny boosters.
@@ -68,7 +68,7 @@ function scoreOneEffect(
 
   switch (type) {
     // Affinity-class effects: the ONLY ones that actually bias the spawn pool
-    // toward this specific Pokémon. Scored 1000-3000 so they always rank
+    // toward this specific Cobblemon. Scored 1000-3000 so they always rank
     // above any generic buff (shiny/rarity/HA) that applies to every species.
     case "typing":
       if (types.includes(sub)) {

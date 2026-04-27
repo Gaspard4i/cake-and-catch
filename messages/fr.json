@@ -1,7 +1,7 @@
 {
   "app": {
     "title": "Snack & Catch",
-    "tagline": "Pour chaque Pokémon Cobblemon : quel snack cuisiner pour l'attirer, où le spawner, dans quelles conditions.",
+    "tagline": "Pour chaque Cobblemon : quel snack cuisiner pour l'attirer, où le spawner, dans quelles conditions.",
     "indexedSpecies": "{count} espèces indexées."
   },
   "footer": {
@@ -12,18 +12,18 @@
     "builtBy": "Réalisé par"
   },
   "home": {
-    "pokedexPreview": "Aperçu du Pokédex",
-    "ctaPokedex": "Ouvrir le Pokédex",
+    "pokedexPreview": "Aperçu du Cobbledex",
+    "ctaPokedex": "Ouvrir le Cobbledex",
     "ctaCake": "Snack maker",
     "ctaRecipes": "Recettes",
-    "recentlyIndexed": "Extrait du Pokédex"
+    "recentlyIndexed": "Extrait du Cobbledex"
   },
   "pokedex": {
-    "title": "Pokédex Cobblemon",
+    "title": "Cobbledex Cobblemon",
     "intro": "Toutes les espèces indexées par le mod et ses addons, avec leurs stats réelles. Filtre par type ou génération, scrolle pour charger la suite."
   },
   "nav": {
-    "pokedex": "Pokédex",
+    "pokedex": "Cobbledex",
     "recipes": "Recettes",
     "cake": "Snack maker",
     "snack": "Snack",
@@ -39,7 +39,7 @@
   },
   "cake": {
     "title": "Poké Snack maker",
-    "intro": "Compose un Poké Snack en faisant glisser un bait seasoning dans un slot. Selon le seasoning absorbé, le Snack attire des Pokémon selon leur type, egg group, nature ou IV ; d'autres seasonings boostent le shiny, le talent caché, ou la rarity bucket. Place le Snack au sol pour attirer les Pokémon dans un rayon de 8 blocs."
+    "intro": "Compose un Poké Snack en faisant glisser un bait seasoning dans un slot. Selon le seasoning absorbé, le Snack attire des Cobblemon selon leur type, egg group, nature ou IV ; d'autres seasonings boostent le shiny, le talent caché, ou la rarity bucket. Place le Snack au sol pour attirer les Cobblemon dans un rayon de 8 blocs."
   },
   "biome": {
     "spawnsHere": "Spawns répertoriés ({count})"
@@ -50,8 +50,8 @@
     "sources": "Sources de données",
     "api": "API publique",
     "apiIntro": "Endpoint JSON read-only, cache 60s, rate limit 60 req/min/IP.",
-    "pokemon": "Marque Pokémon",
-    "pokemonNotice": "Pokémon et les noms des créatures sont des marques de Nintendo / Game Freak / The Pokémon Company. Ce projet est non officiel et non affilié."
+    "pokemon": "Marques",
+    "pokemonNotice": "Les noms de créatures et les termes de la franchise affichés ici appartiennent à leurs détenteurs de droits respectifs. Projet non officiel, fait par des fans ; les données proviennent du mod open-source Cobblemon et de son wiki communautaire."
   },
   "recipes": {
     "title": "Recettes de cuisine",
@@ -68,14 +68,14 @@
     "kindsHelp": {
       "cake": "Gâteau partagé. Prend un flavour seasoning (berry) qui colore le résultat.",
       "bait": "Appât de pêche. Prend un bait seasoning qui oriente la rencontre.",
-      "snack": "Encas posé au sol qui attire les Pokémon alentour. Prend un bait seasoning.",
+      "snack": "Encas posé au sol qui attire les Cobblemon alentour. Prend un bait seasoning.",
       "aprijuice": "Jus de baies Apricorn pour booster les stats de monture (flavour seasoning)."
     }
   },
   "search": {
-    "placeholder": "Cherche un Pokémon (ex: pikachu, victini…)",
+    "placeholder": "Cherche un Cobblemon (ex: pikachu, victini…)",
     "submit": "Chercher",
-    "title": "Rechercher un Pokémon",
+    "title": "Rechercher un Cobblemon",
     "noResults": "Aucun résultat pour « {q} ».",
     "loading": "Chargement…"
   },
@@ -84,7 +84,7 @@
     "stats": "Stats",
     "notes": "Notes",
     "cakeSection": "Snack optimal",
-    "cakeHelp": "Bait seasonings qui biaisent la rencontre vers ce Pokémon selon son type ({flavour}). Place un Snack avec un de ces seasonings.",
+    "cakeHelp": "Bait seasonings qui biaisent la rencontre vers ce Cobblemon selon son type ({flavour}). Place un Snack avec un de ces seasonings.",
     "baitsTitle": "Bait seasonings utiles",
     "baitsHelp": "Effets de bait documentés par le mod (bite time, shiny reroll, HA, type bias).",
     "reason": {
@@ -226,7 +226,7 @@
     "noBerry": "Aucune baie ne correspond.",
     "flavourTotals": "Totaux de flavour",
     "rideBoosts": "Boosts de stats de monture",
-    "rideBoostsHelp": "Résultat = points de flavour (convertis depuis les totaux) + base de l'apricorn. Tenu par un Pokémon montable, boost les stats de son ride controller.",
+    "rideBoostsHelp": "Résultat = points de flavour (convertis depuis les totaux) + base de l'apricorn. Tenu par un Cobblemon montable, boost les stats de son ride controller.",
     "noNetBoost": "Aucun boost net. Ajoute plus de baies pour franchir le prochain palier.",
     "moveUp": "Monter",
     "moveDown": "Descendre",
@@ -256,7 +256,7 @@
     "timeAny": "Toute heure",
     "minY": "Y min",
     "maxY": "Y max",
-    "attracted": "Pokémon attirés",
+    "attracted": "Cobblemon attirés",
     "attractedWip": "En cours — les probabilités sont approximatives",
     "attractedWipBody": "Le classement ci-dessous est ma meilleure reproduction du pipeline de spawn du Poké Snack Cobblemon (pool mondial filtré par biome/time/Y, multiplicateurs uncommon ×2.25 / rare & ultra-rare ×5.5 appliqués inconditionnellement, effets bait typing/egg-group multipliant le poids des entrées correspondantes, puis rarity_bucket adoucissant les ratios inter-bucket — probabilité ≈ P(bucket) × part du poids). Ce n'est pas encore 1:1 avec le mod. Les cas limites liés aux anticonditions, conditions imbriquées, gates structures/lunaires/skylight et règles de spawn d'addons sont encore en cours de fignolage, donc prends les chiffres comme un guide, pas une garantie. Les améliorations arrivent en continu.",
     "searchAttracted": "Rechercher par nom ou dex…",
@@ -270,12 +270,12 @@
     "sortName": "Nom (A→Z)",
     "sortNameDesc": "Nom (Z→A)",
     "shiny": "Shiny",
-    "noAttracted": "Aucun Pokémon ne correspond. Retire des filtres.",
+    "noAttracted": "Aucun Cobblemon ne correspond. Retire des filtres.",
     "dropHint": "Dépose un bait seasoning ici",
     "previewDisclaimer": "Prévisu indicative — le snack en jeu peut être différent."
   },
   "pokedexUi": {
-    "searchPlaceholder": "Rechercher un Pokémon…",
+    "searchPlaceholder": "Rechercher un Cobblemon…",
     "types": "Types",
     "typesAny": "Tous types",
     "gens": "Gens",

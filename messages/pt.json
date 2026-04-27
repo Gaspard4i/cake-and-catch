@@ -1,7 +1,7 @@
 {
   "app": {
     "title": "Snack & Catch",
-    "tagline": "Para cada Pokémon do Cobblemon: que Poké Snack cozinhar para atrair, onde aparece e sob quais condições.",
+    "tagline": "Para cada Cobblemon: que Poké Snack cozinhar para atrair, onde aparece e sob quais condições.",
     "indexedSpecies": "{count} espécies indexadas."
   },
   "footer": {
@@ -12,18 +12,18 @@
     "builtBy": "Feito por"
   },
   "home": {
-    "pokedexPreview": "Prévia da Pokédex",
-    "ctaPokedex": "Abrir a Pokédex",
+    "pokedexPreview": "Prévia da Cobbledex",
+    "ctaPokedex": "Abrir a Cobbledex",
     "ctaCake": "Snack maker",
     "ctaRecipes": "Receitas",
-    "recentlyIndexed": "Amostra da Pokédex"
+    "recentlyIndexed": "Amostra da Cobbledex"
   },
   "pokedex": {
-    "title": "Pokédex Cobblemon",
+    "title": "Cobbledex Cobblemon",
     "intro": "Todas as espécies indexadas pelo mod e seus addons, com stats reais. Filtra por tipo ou geração, rola para carregar mais."
   },
   "nav": {
-    "pokedex": "Pokédex",
+    "pokedex": "Cobbledex",
     "recipes": "Receitas",
     "cake": "Snack maker",
     "snack": "Snack",
@@ -39,7 +39,7 @@
   },
   "cake": {
     "title": "Poké Snack maker",
-    "intro": "Coloca um bait seasoning em um slot. Conforme o seasoning, o Snack enviesa a atração por tipo, grupo-ovo, natureza ou IVs; alguns aumentam shiny, habilidade oculta ou rarity bucket. Coloca o Snack no chão para atrair Pokémon num raio de 8 blocos."
+    "intro": "Coloca um bait seasoning em um slot. Conforme o seasoning, o Snack enviesa a atração por tipo, grupo-ovo, natureza ou IVs; alguns aumentam shiny, habilidade oculta ou rarity bucket. Coloca o Snack no chão para atrair Cobblemon num raio de 8 blocos."
   },
   "biome": {
     "spawnsHere": "Spawns listados ({count})"
@@ -50,8 +50,8 @@
     "sources": "Fontes de dados",
     "api": "API pública",
     "apiIntro": "Endpoint JSON somente-leitura, cache 60s, limite 60 req/min/IP.",
-    "pokemon": "Marca Pokémon",
-    "pokemonNotice": "Pokémon e os nomes das criaturas são marcas da Nintendo / Game Freak / The Pokémon Company. Este projeto é não oficial e sem afiliação."
+    "pokemon": "Marcas",
+    "pokemonNotice": "Nomes de criaturas e termos da franquia exibidos aqui pertencem aos respectivos titulares de direitos. Projeto não oficial feito por fãs; os dados vêm do mod open-source Cobblemon e da sua wiki comunitária."
   },
   "recipes": {
     "title": "Receitas de cozinha",
@@ -68,14 +68,14 @@
     "kindsHelp": {
       "cake": "Cake compartilhado que enviesa encontros (cor depende do seasoning).",
       "bait": "Isca de pesca — ajusta raridade / natureza / HA conforme o seasoning.",
-      "snack": "Snack que atrai um Pokémon por tipo de sabor.",
+      "snack": "Snack que atrai um Cobblemon por tipo de sabor.",
       "aprijuice": "Suco de apricorn para boostar stats de montaria."
     }
   },
   "search": {
-    "placeholder": "Pesquise um Pokémon (ex: pikachu, victini…)",
+    "placeholder": "Pesquise um Cobblemon (ex: pikachu, victini…)",
     "submit": "Pesquisar",
-    "title": "Pesquisar um Pokémon",
+    "title": "Pesquisar um Cobblemon",
     "noResults": "Nenhum resultado para «{q}».",
     "loading": "Carregando…"
   },
@@ -84,7 +84,7 @@
     "stats": "Stats",
     "notes": "Notas",
     "cakeSection": "Snack ideal",
-    "cakeHelp": "Bait seasonings que enviesam encontros para este Pokémon via seu tipo ({flavour}). Coloca um em um slot do Snack.",
+    "cakeHelp": "Bait seasonings que enviesam encontros para este Cobblemon via seu tipo ({flavour}). Coloca um em um slot do Snack.",
     "baitsTitle": "Bait seasonings relevantes",
     "baitsHelp": "Efeitos de bait documentados (bite time, shiny reroll, HA, viés de tipo).",
     "reason": {
@@ -226,7 +226,7 @@
     "noBerry": "Nenhuma baga corresponde.",
     "flavourTotals": "Totais de sabor",
     "rideBoosts": "Boosts de stats de montaria",
-    "rideBoostsHelp": "Resultado = pontos de sabor (convertidos dos totais) + base do apricorn. Carregado por um Pokémon montável, potencia as stats do ride controller.",
+    "rideBoostsHelp": "Resultado = pontos de sabor (convertidos dos totais) + base do apricorn. Carregado por um Cobblemon montável, potencia as stats do ride controller.",
     "noNetBoost": "Sem boost líquido. Adiciona mais bagas para cruzar o próximo patamar.",
     "moveUp": "Subir",
     "moveDown": "Descer",
@@ -256,7 +256,7 @@
     "timeAny": "Qualquer hora",
     "minY": "Y mín",
     "maxY": "Y máx",
-    "attracted": "Pokémon atraídos",
+    "attracted": "Cobblemon atraídos",
     "attractedWip": "Em desenvolvimento — probabilidades aproximadas",
     "attractedWipBody": "O ranking abaixo é minha melhor reprodução do pipeline de spawn do Poké Snack Cobblemon (pool mundial filtrado por bioma/hora/Y, multiplicadores uncommon ×2,25 / rare & ultra-rare ×5,5 aplicados incondicionalmente, efeitos bait de tipo/grupo-ovo multiplicando o peso das entradas correspondentes, e rarity_bucket suavizando razões entre buckets — probabilidade ≈ P(bucket) × parcela do peso). Ainda não é 1:1 com o mod. Casos limite em anticonditions, condições aninhadas, gates de estrutura/lua/skylight e regras de spawn de addons ainda estão em ajuste, então trata os números como um guia, não uma garantia. Melhorias chegam continuamente.",
     "searchAttracted": "Pesquisar por nome ou dex…",
@@ -270,12 +270,12 @@
     "sortName": "Nome (A→Z)",
     "sortNameDesc": "Nome (Z→A)",
     "shiny": "Shiny",
-    "noAttracted": "Nenhum Pokémon corresponde. Retira filtros.",
+    "noAttracted": "Nenhum Cobblemon corresponde. Retira filtros.",
     "dropHint": "Coloca um bait seasoning aqui",
     "previewDisclaimer": "Prévia indicativa — o snack no jogo pode ser diferente."
   },
   "pokedexUi": {
-    "searchPlaceholder": "Pesquisar Pokémon por nome…",
+    "searchPlaceholder": "Pesquisar Cobblemon por nome…",
     "types": "Tipos",
     "typesAny": "Qualquer tipo",
     "gens": "Gens",

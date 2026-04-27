@@ -20,7 +20,7 @@ const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"]
 
 export const metadata: Metadata = {
   title: "Snack & Catch",
-  description: "Cobblemon assistant — cooking recipes & spawn spots per Pokémon.",
+  description: "Cobblemon assistant — cooking recipes & spawn spots per Cobblemon.",
 };
 
 /**

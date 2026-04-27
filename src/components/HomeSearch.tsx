@@ -23,7 +23,7 @@ type BiomeSuggestion = {
 type Suggestion = PokemonSuggestion | BiomeSuggestion;
 
 /**
- * Universal search bar for the landing page. Searches both Pokémon (via
+ * Universal search bar for the landing page. Searches both Cobblemon (via
  * /api/suggest) and biomes (static list derived from Cobblemon biome tags).
  * Selecting a result navigates to the relevant page.
  */
@@ -150,7 +150,7 @@ export function HomeSearch() {
           }}
           onFocus={() => setOpen(true)}
           onKeyDown={onKeyDown}
-          placeholder="Search a Pokémon or a biome — pikachu, victini, savanna…"
+          placeholder="Search a Cobblemon or a biome — pikachu, victini, savanna…"
           autoComplete="off"
           className="w-full rounded-xl border border-border bg-card pl-11 pr-4 py-3.5 text-base outline-none focus:border-accent focus:ring-4 focus:ring-ring/20 transition-colors"
         />

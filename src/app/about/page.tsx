@@ -22,13 +22,13 @@ const DATA_SOURCES: SourceEntry[] = [
     name: "Cobblemon Wiki",
     license: "CC BY 4.0",
     url: "https://wiki.cobblemon.com",
-    purpose: "Cross-checks on mechanics, seasoning pages, Pokémon notes.",
+    purpose: "Cross-checks on mechanics, seasoning pages, Cobblemon notes.",
   },
   {
     name: "MysticMons",
     license: "MIT",
     url: "https://modrinth.com/datapack/mysticmons",
-    purpose: "Addon species + spawns merged into the Pokédex and snack attraction pool.",
+    purpose: "Addon species + spawns merged into the Cobbledex and snack attraction pool.",
   },
   {
     name: "Better Cobblemon Spawns",
@@ -75,7 +75,7 @@ const ASSET_SOURCES: SourceEntry[] = [
     license: "MIT / public",
     url: "https://github.com/PokeAPI/sprites",
     purpose:
-      "Pokémon sprites (default + shiny) served through jsdelivr from the official PokeAPI sprites repository.",
+      "Creature sprites (default + shiny) served through jsdelivr from the official PokeAPI sprites repository.",
   },
   {
     name: "PokeAPI type icons",
@@ -153,9 +153,9 @@ async function AboutContent() {
             .
           </p>
           <p className="mt-2 text-muted text-xs">
-            Unofficial Cobblemon companion. Not affiliated with Cobblemon, its
-            authors, Nintendo, Game Freak or The Pokémon Company. All
-            trademarks belong to their respective owners.
+            Unofficial Cobblemon companion. Not affiliated with the mod
+            authors or any rights holder of the franchise. All trademarks
+            belong to their respective owners.
           </p>
         </div>
       </section>

@@ -100,7 +100,7 @@ export default async function BerryPage({ params }: { params: Promise<Params> })
     .sort((a, b) => a.dexNo - b.dexNo)
     .slice(0, 60);
 
-  // Cake match: which Pokémon types this berry's dominant flavour pairs well with.
+  // Cake match: which Cobblemon types this berry's dominant flavour pairs well with.
   const cakeTypes = berry.dominantFlavour
     ? Object.entries(TYPE_TO_FLAVOUR)
         .filter(([, f]) => f === berry.dominantFlavour)
@@ -312,7 +312,7 @@ export default async function BerryPage({ params }: { params: Promise<Params> })
               </h2>
               <p className="text-xs text-muted mb-2">
                 A {berry.dominantFlavour?.toLowerCase()} cake biases encounters
-                toward Pokémon of these types:
+                toward Cobblemon of these types:
               </p>
               <div className="flex flex-wrap gap-1">
                 {cakeTypes.map((t) => (

@@ -1,7 +1,7 @@
 {
   "app": {
     "title": "Snack & Catch",
-    "tagline": "Für jedes Cobblemon-Pokémon: welchen Poké Snack kochen, um es anzulocken, wo es spawnt und unter welchen Bedingungen.",
+    "tagline": "Für jedes Cobblemon: welchen Poké Snack kochen, um es anzulocken, wo es spawnt und unter welchen Bedingungen.",
     "indexedSpecies": "{count} Spezies indexiert."
   },
   "footer": {
@@ -12,18 +12,18 @@
     "builtBy": "Gebaut von"
   },
   "home": {
-    "pokedexPreview": "Pokédex-Vorschau",
-    "ctaPokedex": "Pokédex öffnen",
+    "pokedexPreview": "Cobbledex-Vorschau",
+    "ctaPokedex": "Cobbledex öffnen",
     "ctaCake": "Snack maker",
     "ctaRecipes": "Rezepte",
-    "recentlyIndexed": "Pokédex-Auszug"
+    "recentlyIndexed": "Cobbledex-Auszug"
   },
   "pokedex": {
-    "title": "Cobblemon Pokédex",
+    "title": "Cobblemon Cobbledex",
     "intro": "Alle vom Mod und seinen Addons indexierten Spezies mit echten Stats. Nach Typ oder Generation filtern, scrollen zum Nachladen."
   },
   "nav": {
-    "pokedex": "Pokédex",
+    "pokedex": "Cobbledex",
     "recipes": "Rezepte",
     "cake": "Snack maker",
     "snack": "Snack",
@@ -39,7 +39,7 @@
   },
   "cake": {
     "title": "Poké Snack maker",
-    "intro": "Lege ein Bait Seasoning in einen Slot. Je nach Seasoning lenkt der Snack die Anziehung über Typ, Egg-Gruppe, Wesen oder IVs; einige erhöhen Shiny-Chance, versteckte Fähigkeit oder Rarity-Bucket. Platziere den Snack auf dem Boden, um Pokémon im Umkreis von 8 Blöcken anzuziehen."
+    "intro": "Lege ein Bait Seasoning in einen Slot. Je nach Seasoning lenkt der Snack die Anziehung über Typ, Egg-Gruppe, Wesen oder IVs; einige erhöhen Shiny-Chance, versteckte Fähigkeit oder Rarity-Bucket. Platziere den Snack auf dem Boden, um Cobblemon im Umkreis von 8 Blöcken anzuziehen."
   },
   "biome": {
     "spawnsHere": "Aufgeführte Spawns ({count})"
@@ -50,8 +50,8 @@
     "sources": "Datenquellen",
     "api": "Öffentliche API",
     "apiIntro": "Schreibgeschützter JSON-Endpoint, 60s Cache, Rate Limit 60 req/min/IP.",
-    "pokemon": "Pokémon-Markenzeichen",
-    "pokemonNotice": "Pokémon und die Namen der Kreaturen sind Marken von Nintendo / Game Freak / The Pokémon Company. Dieses Projekt ist inoffiziell und nicht verbunden."
+    "pokemon": "Markenzeichen",
+    "pokemonNotice": "Hier gezeigte Kreaturnamen und Franchise-Begriffe gehören ihren jeweiligen Rechteinhabern. Inoffizielles Fan-Projekt; Daten stammen aus dem Open-Source-Mod Cobblemon und seinem Community-Wiki."
   },
   "recipes": {
     "title": "Kochrezepte",
@@ -68,14 +68,14 @@
     "kindsHelp": {
       "cake": "Gemeinsamer Cake, der Begegnungen verschiebt (Farbe hängt vom Seasoning ab).",
       "bait": "Angelköder — passt Seltenheit / Wesen / HA je nach verwendetem Seasoning an.",
-      "snack": "Snack, der ein Pokémon nach Geschmackstyp anzieht.",
+      "snack": "Snack, der ein Cobblemon nach Geschmackstyp anzieht.",
       "aprijuice": "Apricorn-Beeren-Saft zur Steigerung der Reit-Stats."
     }
   },
   "search": {
-    "placeholder": "Pokémon suchen (z. B. pikachu, victini…)",
+    "placeholder": "Cobblemon suchen (z. B. pikachu, victini…)",
     "submit": "Suchen",
-    "title": "Pokémon suchen",
+    "title": "Cobblemon suchen",
     "noResults": "Kein Ergebnis für „{q}“.",
     "loading": "Lade…"
   },
@@ -84,7 +84,7 @@
     "stats": "Stats",
     "notes": "Notizen",
     "cakeSection": "Optimaler Snack",
-    "cakeHelp": "Bait Seasonings, die Begegnungen zu diesem Pokémon über seinen Typ ({flavour}) verschieben. Lege eines in einen Snack-Slot.",
+    "cakeHelp": "Bait Seasonings, die Begegnungen zu diesem Cobblemon über seinen Typ ({flavour}) verschieben. Lege eines in einen Snack-Slot.",
     "baitsTitle": "Relevante Bait Seasonings",
     "baitsHelp": "Dokumentierte Bait-Effekte (Bite Time, Shiny Reroll, HA, Typ-Bias).",
     "reason": {
@@ -226,7 +226,7 @@
     "noBerry": "Keine Beere passt.",
     "flavourTotals": "Geschmackssummen",
     "rideBoosts": "Reit-Stat-Boosts",
-    "rideBoostsHelp": "Ergebnis = Geschmackspunkte (aus Summen) + Apricorn-Basis. Von einem reitbaren Pokémon getragen, steigert dies seine Ride-Controller-Stats.",
+    "rideBoostsHelp": "Ergebnis = Geschmackspunkte (aus Summen) + Apricorn-Basis. Von einem reitbaren Cobblemon getragen, steigert dies seine Ride-Controller-Stats.",
     "noNetBoost": "Kein Nettoboost. Füge mehr Beeren hinzu, um die nächste Schwelle zu überschreiten.",
     "moveUp": "Hoch",
     "moveDown": "Runter",
@@ -256,7 +256,7 @@
     "timeAny": "Beliebige Zeit",
     "minY": "Min Y",
     "maxY": "Max Y",
-    "attracted": "Angelockte Pokémon",
+    "attracted": "Angelockte Cobblemon",
     "attractedWip": "In Arbeit — Wahrscheinlichkeiten sind ungefähr",
     "attractedWipBody": "Das Ranking unten ist meine bestmögliche Nachbildung der Cobblemon Poké Snack Spawn-Pipeline (Weltenpool gefiltert nach Biom/Zeit/Y, unbedingte Bucket-Multiplikatoren uncommon ×2,25 / rare & ultra-rare ×5,5, Typing/Egg-Group-Bait-Effekte multiplizieren passende Einträge, rarity_bucket glättet Inter-Bucket-Verhältnisse — Wahrscheinlichkeit ≈ P(Bucket) × Gewichtanteil). Noch nicht 1:1 mit dem Mod. Edge-Cases bei Anticonditions, verschachtelten Bedingungen, Struktur-/Mond-/Skylight-Gates und addon-spezifischen Spawn-Regeln werden noch ausgefeilt, also als Orientierung verstehen, nicht als Garantie. Verbesserungen folgen laufend.",
     "searchAttracted": "Nach Name oder Dex suchen…",
@@ -270,12 +270,12 @@
     "sortName": "Name (A→Z)",
     "sortNameDesc": "Name (Z→A)",
     "shiny": "Shiny",
-    "noAttracted": "Kein Pokémon passt. Entferne Filter.",
+    "noAttracted": "Kein Cobblemon passt. Entferne Filter.",
     "dropHint": "Hier ein Bait Seasoning ablegen",
     "previewDisclaimer": "Nur Vorschau — der Snack im Spiel kann abweichen."
   },
   "pokedexUi": {
-    "searchPlaceholder": "Pokémon nach Name suchen…",
+    "searchPlaceholder": "Cobblemon nach Name suchen…",
     "types": "Typen",
     "typesAny": "Beliebiger Typ",
     "gens": "Gens",

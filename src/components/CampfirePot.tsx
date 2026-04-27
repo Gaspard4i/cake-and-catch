@@ -9,6 +9,7 @@ import { ItemIcon } from "./ItemIcon";
 import { PokemonSprite } from "./PokemonSprite";
 import { TypePair } from "./TypeBadge";
 import { Snack3D, type BerryPlacement } from "./Snack3D";
+import { NameRecipeModal } from "./NameRecipeModal";
 import { MultiSelect, type MultiSelectOption } from "./MultiSelect";
 import { SnackEffectsSummary } from "./SnackEffectsSummary";
 import type { FormattedBaitEffect } from "@/lib/recommend/bait-effects";
@@ -411,7 +412,7 @@ export function CampfirePot() {
         if (!hay.includes(q)) return false;
       }
       if (attTypes.length > 0) {
-        // Intersection, capped at 2 (a Pokémon has at most 2 types).
+        // Intersection, capped at 2 (a Cobblemon has at most 2 types).
         const own = [p.primaryType, p.secondaryType].filter(
           (t): t is string => !!t,
         );
@@ -822,7 +823,7 @@ export function CampfirePot() {
 
           {attractedView.length === 0 ? (
             loading && attracted.length === 0 ? (
-              <ul className="mt-3 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-2 auto-rows-fr">
+              <ul className="mt-3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 auto-rows-fr">
                 {Array.from({ length: 12 }).map((_, i) => (
                   <li key={`sk-att-${i}`}>
                     <AttractedCardSkeleton />
@@ -833,17 +834,17 @@ export function CampfirePot() {
               <p className="mt-3 text-sm text-muted">{t("noAttracted")}</p>
             )
           ) : (
-            <ul className="mt-3 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-2 auto-rows-fr">
+            <ul className="mt-3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 auto-rows-fr">
               {attractedView.slice(0, attractedVisible).map((p) => (
                 <li key={p.slug} className="h-full">
                   <Link
                     href={`/pokemon/${p.slug}`}
-                    className="h-full rounded-lg border border-border bg-card p-2 flex items-center gap-2 hover:border-accent/60 hover:bg-subtle transition-colors"
+                    className="h-full rounded-xl border border-border bg-card p-3 flex items-center gap-3 hover:border-accent/60 hover:bg-subtle transition-colors"
                   >
                     <PokemonSprite
                       dexNo={p.dexNo}
                       name={p.name}
-                      size={44}
+                      size={64}
                       shiny={showShiny && hasShinyBoost}
                     />
                   <div className="min-w-0 flex-1 self-stretch flex flex-col">
@@ -858,7 +859,7 @@ export function CampfirePot() {
                         const digits = prob >= 0.01 ? 2 : prob >= 0.0001 ? 4 : 6;
                         return (
                           <span
-                            className={`ml-auto text-[10px] font-mono font-medium ${
+                            className={`ml-auto text-xs font-mono font-medium ${
                               showShiny && hasShinyBoost ? "text-amber-600 dark:text-amber-400" : "text-accent"
                             }`}
                             title={
@@ -872,16 +873,16 @@ export function CampfirePot() {
                         );
                       })()}
                     </div>
-                    <div className="font-medium text-sm truncate">{p.name}</div>
-                    <div className="mt-0.5 min-w-0 max-w-full overflow-hidden">
-                      <TypePair primary={p.primaryType} secondary={p.secondaryType} size={16} />
+                    <div className="font-semibold text-base truncate">{p.name}</div>
+                    <div className="mt-1 min-w-0 max-w-full overflow-hidden">
+                      <TypePair primary={p.primaryType} secondary={p.secondaryType} size={18} />
                     </div>
-                    <div className="text-[10px] text-muted uppercase mt-0.5">
+                    <div className="text-[11px] text-muted uppercase mt-1">
                       {p.bucket}
                     </div>
                     {p.reasons.length > 0 && (
                       <div
-                        className="text-[9px] text-accent/80 truncate"
+                        className="text-[10px] text-accent/80 truncate mt-0.5"
                         title={p.reasons.join(" · ")}
                       >
                         {p.reasons.slice(0, 2).join(" · ")}
@@ -1058,28 +1059,19 @@ function SaveSnackButton({
   potColour: string;
 }) {
   const [savedAt, setSavedAt] = useState<number | null>(null);
+  const [modalOpen, setModalOpen] = useState(false);
   const filled = slots.filter((s): s is Seasoning => Boolean(s));
   const disabled = filled.length === 0;
+  const defaultName = filled
+    .map((s) => s.slug.replace(/_berry$/, "").replace(/_/g, " "))
+    .join(" + ");
 
   return (
     <div className="mt-2 flex items-center gap-2">
       <button
         type="button"
         disabled={disabled}
-        onClick={async () => {
-          const defaultName = filled
-            .map((s) => s.slug.replace(/_berry$/, "").replace(/_/g, " "))
-            .join(" + ");
-          const name = window.prompt("Name this snack:", defaultName);
-          if (!name) return;
-          const { saveSnack } = await import("@/lib/saved-recipes");
-          saveSnack({
-            name: name.trim().slice(0, 80),
-            seasoningSlugs: filled.map((s) => s.slug),
-            potColour,
-          });
-          setSavedAt(Date.now());
-        }}
+        onClick={() => setModalOpen(true)}
         className="text-[10px] uppercase tracking-wide px-2 py-1 rounded border border-border hover:bg-subtle disabled:opacity-30"
       >
         Save snack
@@ -1093,6 +1085,24 @@ function SaveSnackButton({
       {savedAt && (
         <span className="text-[10px] text-green-600">saved</span>
       )}
+
+      <NameRecipeModal
+        open={modalOpen}
+        title="Name this snack"
+        hint="Saved locally in your browser."
+        defaultValue={defaultName}
+        onCancel={() => setModalOpen(false)}
+        onConfirm={async (name) => {
+          const { saveSnack } = await import("@/lib/saved-recipes");
+          saveSnack({
+            name,
+            seasoningSlugs: filled.map((s) => s.slug),
+            potColour,
+          });
+          setSavedAt(Date.now());
+          setModalOpen(false);
+        }}
+      />
     </div>
   );
 }
