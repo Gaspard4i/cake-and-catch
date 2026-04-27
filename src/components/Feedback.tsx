@@ -1,6 +1,7 @@
 import { useTranslations } from "next-intl";
 import { MessageCircleHeart } from "lucide-react";
 import { RatingForm } from "./RatingForm";
+import { ShareButton } from "./ShareButton";
 
 export const DISCORD_HANDLE = "Gaz4i";
 export const GITHUB_ISSUES_URL =
@@ -36,6 +37,7 @@ export function FeedbackCard({ className = "" }: { className?: string }) {
           </div>
 
           <div className="mt-3 flex flex-wrap gap-2">
+            <ShareButton />
             <a
               href={GITHUB_ISSUES_URL}
               target="_blank"
