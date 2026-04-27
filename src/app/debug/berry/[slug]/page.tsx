@@ -5,7 +5,7 @@ import { BerryDebugClient } from "./BerryDebugClient";
 type Params = { slug: string };
 
 export const metadata = {
-  title: "Berry debug — Snack & Catch",
+  title: "Berry debug",
 };
 
 export default async function BerryDebugPage({

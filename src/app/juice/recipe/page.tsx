@@ -63,7 +63,7 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const p = await searchParams;
   const apricorn = parseApricorn(p.apricorn) ?? "RED";
-  return { title: `${apricorn} Aprijuice recipe — Snack & Catch` };
+  return { title: `${apricorn} Aprijuice` };
 }
 
 export default async function JuiceRecipePage({

@@ -14,7 +14,7 @@ export async function generateMetadata({
   if (!species) return { title: "Snack & Catch" };
   const types = [species.primaryType, species.secondaryType].filter(Boolean).join(" / ");
   return {
-    title: `${species.name} · Snack & Catch`,
+    title: species.name,
     description: `#${String(species.dexNo).padStart(4, "0")} ${species.name} — ${types}. Spawns, recettes et appâts pour Cobblemon.`,
   };
 }

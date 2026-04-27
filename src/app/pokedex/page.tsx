@@ -3,6 +3,8 @@ import { PokedexGrid } from "@/components/PokedexGrid";
 import { Skeleton } from "@/components/Loader";
 import { Suspense } from "react";
 
+export const metadata = { title: "Cobbledex" };
+
 async function PokedexHeader() {
   const t = await getTranslations("pokedex");
   return (

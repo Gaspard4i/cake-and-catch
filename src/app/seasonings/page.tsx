@@ -3,7 +3,7 @@ import { BAIT_VANILLA_ITEMS } from "@/lib/recommend/bait-effects";
 import { SeasoningDexClient, type SeasoningRow } from "./SeasoningDexClient";
 
 export const metadata = {
-  title: "Seasoning Dex — Snack & Catch",
+  title: "Seasoning Dex",
   description:
     "All Cobblemon berries and bait seasonings: dominant flavour, colour, snack-eligibility, effects.",
 };

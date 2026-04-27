@@ -7,6 +7,8 @@ import { TypePair } from "@/components/TypeBadge";
 import { PokemonSprite } from "@/components/PokemonSprite";
 import { Skeleton } from "@/components/Loader";
 
+export const metadata = { title: "Search" };
+
 const TYPES = [
   "normal",
   "fire",

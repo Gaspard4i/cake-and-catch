@@ -19,7 +19,14 @@ const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Snack & Catch",
+  // `default` is what shows on the home page; `template` lets child
+  // pages provide just their own short title (e.g. "Aprijuice") and
+  // skip the long " — Snack & Catch" suffix. `absolute` on a child
+  // overrides the template entirely.
+  title: {
+    default: "Snack & Catch",
+    template: "%s",
+  },
   description: "Cobblemon assistant — cooking recipes & spawn spots per Cobblemon.",
 };
 

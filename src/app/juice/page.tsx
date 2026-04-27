@@ -2,6 +2,8 @@ import { Suspense } from "react";
 import dynamic from "next/dynamic";
 import { PageSkeleton } from "@/components/Loader";
 
+export const metadata = { title: "Aprijuice maker" };
+
 const JuiceMaker = dynamic(() =>
   import("@/components/JuiceMaker").then((m) => m.JuiceMaker),
 );

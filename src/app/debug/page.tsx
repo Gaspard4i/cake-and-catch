@@ -2,7 +2,7 @@ import Link from "next/link";
 import { listBerries } from "@/lib/db/queries";
 
 export const metadata = {
-  title: "Debug index — Snack & Catch",
+  title: "Debug",
 };
 
 /**

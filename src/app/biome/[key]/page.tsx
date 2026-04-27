@@ -5,6 +5,15 @@ import { listSpawnsForBiome } from "@/lib/db/queries";
 import { BiomeSpawnList, type BiomeSpawnEntry } from "@/components/BiomeSpawnList";
 import { PageSkeleton } from "@/components/Loader";
 
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ key: string }>;
+}) {
+  const { key } = await params;
+  return { title: prettifyBiome(decodeURIComponent(key)) };
+}
+
 function prettifyBiome(key: string): string {
   return key
     .replace(/^#?/, "")

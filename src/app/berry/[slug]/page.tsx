@@ -20,7 +20,7 @@ export async function generateMetadata({ params }: { params: Promise<Params> }) 
   const { slug } = await params;
   const pretty = slug.replace(/_/g, " ");
   return {
-    title: `${pretty} — Snack & Catch`,
+    title: pretty,
     description: `Cobblemon ${pretty}: 3D model, flavours, bait effects and what it attracts.`,
   };
 }

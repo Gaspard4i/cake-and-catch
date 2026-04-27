@@ -3,6 +3,8 @@ import { getTranslations } from "next-intl/server";
 import { FeedbackCard } from "@/components/Feedback";
 import { PageSkeleton } from "@/components/Loader";
 
+export const metadata = { title: "About" };
+
 type SourceEntry = {
   name: string;
   license: string;

@@ -3,6 +3,8 @@ import { getTranslations } from "next-intl/server";
 import { SnackPageClient } from "@/components/SnackPageClient";
 import { PageSkeleton } from "@/components/Loader";
 
+export const metadata = { title: "Snack maker" };
+
 async function SnackShell() {
   const t = await getTranslations("cake");
   return <SnackPageClient title={t("title")} intro={t("intro")} />;

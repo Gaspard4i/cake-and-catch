@@ -1,7 +1,7 @@
 import { SavedRecipesClient } from "./SavedRecipesClient";
 
 export const metadata = {
-  title: "My recipes — Snack & Catch",
+  title: "My recipes",
   description: "Your locally-saved Poké Snacks and Aprijuices.",
 };
 
