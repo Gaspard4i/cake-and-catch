@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { PokemonSprite } from "./PokemonSprite";
 import { TypePair } from "./TypeBadge";
+import { Spinner } from "./Loader";
 
 type PokemonSuggestion = {
   kind: "pokemon";
@@ -162,7 +163,9 @@ export function HomeSearch() {
           className="absolute left-0 right-0 mt-1 z-40 rounded-xl border border-border bg-card shadow-xl overflow-hidden max-h-[28rem] overflow-y-auto"
         >
           {loading && results.length === 0 && (
-            <li className="px-4 py-3 text-sm text-muted">…</li>
+            <li className="flex items-center justify-center px-4 py-4">
+              <Spinner size={16} />
+            </li>
           )}
           {results.map((r, i) => {
             const active = highlight === i;

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { TypePair } from "./TypeBadge";
+import { Spinner } from "./Loader";
 import { PokemonSprite } from "./PokemonSprite";
 
 type Suggestion = {
@@ -131,7 +132,9 @@ export function SearchBar({
           className="absolute left-0 right-0 mt-1 z-40 rounded-lg border border-border bg-card shadow-lg overflow-hidden max-h-96 overflow-y-auto"
         >
           {loading && results.length === 0 && (
-            <li className="px-4 py-3 text-sm text-muted">…</li>
+            <li className="flex items-center justify-center px-4 py-4">
+              <Spinner size={16} />
+            </li>
           )}
           {results.map((r, i) => (
             <li key={r.slug}>

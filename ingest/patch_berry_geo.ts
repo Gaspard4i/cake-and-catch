@@ -5,7 +5,7 @@ import { tmpdir } from "node:os";
 import { db, schema } from "../src/lib/db/client";
 
 async function main() {
-  const base = join(tmpdir(), "cake-and-catch-cobblemon", "common", "src", "main", "resources", "data", "cobblemon", "berries");
+  const base = join(tmpdir(), "snack-and-catch-cobblemon", "common", "src", "main", "resources", "data", "cobblemon", "berries");
   const files = (await readdir(base)).filter((f) => f.endsWith(".json"));
   let ok = 0;
   for (const f of files) {

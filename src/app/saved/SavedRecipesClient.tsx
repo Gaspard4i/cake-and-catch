@@ -12,6 +12,7 @@ import {
   type SavedJuice,
   type SavedSnack,
 } from "@/lib/saved-recipes";
+import { Skeleton } from "@/components/Loader";
 
 export function SavedRecipesClient() {
   const [snacks, setSnacks] = useState<SavedSnack[]>([]);
@@ -25,7 +26,13 @@ export function SavedRecipesClient() {
   }, []);
 
   if (!hydrated) {
-    return <p className="text-sm text-muted">Loading…</p>;
+    return (
+      <div className="space-y-2" aria-busy="true" aria-live="polite">
+        {Array.from({ length: 3 }).map((_, i) => (
+          <Skeleton key={i} className="h-20 rounded-lg" />
+        ))}
+      </div>
+    );
   }
 
   if (snacks.length === 0 && juices.length === 0) {

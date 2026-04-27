@@ -3,6 +3,7 @@ import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import { listSpawnsForBiome } from "@/lib/db/queries";
 import { BiomeSpawnList, type BiomeSpawnEntry } from "@/components/BiomeSpawnList";
+import { PageSkeleton } from "@/components/Loader";
 
 function prettifyBiome(key: string): string {
   return key
@@ -58,7 +59,7 @@ async function BiomeContent({ params }: { params: Promise<{ key: string }> }) {
 export default function BiomePage({ params }: { params: Promise<{ key: string }> }) {
   return (
     <div className="mx-auto max-w-6xl px-4 sm:px-6 py-6 sm:py-10">
-      <Suspense fallback={<p className="text-sm text-muted">…</p>}>
+      <Suspense fallback={<PageSkeleton />}>
         <BiomeContent params={params} />
       </Suspense>
     </div>

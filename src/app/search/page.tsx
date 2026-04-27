@@ -5,6 +5,7 @@ import { listSourceNames, searchSpeciesFiltered } from "@/lib/db/queries";
 import { SearchBar } from "@/components/SearchBar";
 import { TypePair } from "@/components/TypeBadge";
 import { PokemonSprite } from "@/components/PokemonSprite";
+import { Skeleton } from "@/components/Loader";
 
 const TYPES = [
   "normal",
@@ -164,7 +165,15 @@ export default function SearchPage({
       <Suspense fallback={<div className="h-8" />}>
         <SearchHeader />
       </Suspense>
-      <Suspense fallback={<p className="mt-4 text-sm text-muted">…</p>}>
+      <Suspense
+        fallback={
+          <div className="mt-4 space-y-2" aria-busy="true" aria-live="polite">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <Skeleton key={i} className="h-14 rounded-lg" />
+            ))}
+          </div>
+        }
+      >
         <ResultsAsync searchParams={searchParams} />
       </Suspense>
     </div>

@@ -746,9 +746,9 @@ export function CampfirePot() {
             {t("attracted")} {loading && <Spinner className="ml-2" />}
           </h3>
           <div className="mt-2 rounded-lg border border-amber-400/50 bg-amber-400/10 p-3 text-xs">
-            <div className="flex items-start gap-2">
+            <div className="flex items-center justify-center gap-2">
               <span
-                className="mt-0.5 inline-flex items-center justify-center size-5 rounded-full bg-amber-500 text-white font-bold text-[10px] shrink-0"
+                className="inline-flex items-center justify-center size-5 rounded-full bg-amber-500 text-white font-bold text-[10px] shrink-0"
                 aria-hidden
               >
                 !

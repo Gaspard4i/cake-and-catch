@@ -62,12 +62,23 @@ function resolveTexUrl(fruitTexture: string | null, itemId: string) {
   return `/textures/cobblemon/item/${raw}.png`;
 }
 
-const geoCache = new Map<string, Promise<BedrockFile>>();
-function loadGeo(fruitModel: string): Promise<BedrockFile> {
+const geoCache = new Map<string, Promise<BedrockFile | null>>();
+function loadGeo(fruitModel: string): Promise<BedrockFile | null> {
   const url = `/textures/cobblemon/bedrock/berries/${fruitModel}.geo.json`;
   let p = geoCache.get(url);
   if (!p) {
-    p = fetch(url).then((r) => r.json() as Promise<BedrockFile>);
+    // Be defensive: a missing file or a stale path returns 404 HTML, and
+    // r.json() then throws SyntaxError. Pre-check the response and parse
+    // the body as text + JSON.parse so we can swallow the error cleanly.
+    p = fetch(url).then(async (r) => {
+      if (!r.ok) return null;
+      const text = await r.text();
+      try {
+        return JSON.parse(text) as BedrockFile;
+      } catch {
+        return null;
+      }
+    });
     geoCache.set(url, p);
   }
   return p;

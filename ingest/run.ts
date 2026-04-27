@@ -308,10 +308,9 @@ async function ingestBerries(clone: RepoClone) {
         rotation: { x: number; y: number; z: number };
       }> | undefined) ?? [];
       const fruitModel =
-        ((raw.fruitModel as string | undefined) ?? null)?.replace(
-          /^cobblemon:/,
-          "",
-        ) ?? null;
+        ((raw.fruitModel as string | undefined) ?? null)
+          ?.replace(/^cobblemon:/, "")
+          .replace(/\.geo$/, "") ?? null;
       const fruitTexture =
         ((raw.fruitTexture as string | undefined) ?? null)?.replace(
           /^cobblemon:/,

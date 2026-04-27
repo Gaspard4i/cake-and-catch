@@ -135,7 +135,7 @@ export function MultiSelect({
         <span className="text-[10px] uppercase tracking-wide text-muted shrink-0">
           {label}
         </span>
-        <span className="truncate max-w-[16rem]">{summary}</span>
+        <span className="truncate max-w-[10rem] sm:max-w-[16rem]">{summary}</span>
         {value.length > 0 && (
           <span className="shrink-0 text-[10px] bg-accent text-accent-foreground rounded-full px-1.5 py-0.5 font-mono">
             {value.length}

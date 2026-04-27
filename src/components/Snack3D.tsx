@@ -158,9 +158,17 @@ async function loadGeo(fruitModel: string): Promise<BedrockDoc> {
   const url = `/textures/cobblemon/bedrock/berries/${fruitModel}.geo.json`;
   let p = geoCache.get(url);
   if (!p) {
-    p = fetch(url).then((r) => {
+    p = fetch(url).then(async (r) => {
       if (!r.ok) throw new Error(`geo 404: ${fruitModel}`);
-      return r.json() as Promise<BedrockDoc>;
+      // Manual parse so a non-JSON body (HTML 404 page from the dev
+      // server) doesn't throw a SyntaxError upstream that the caller
+      // can't tell from a real fetch failure.
+      const text = await r.text();
+      try {
+        return JSON.parse(text) as BedrockDoc;
+      } catch {
+        throw new Error(`geo non-JSON: ${fruitModel}`);
+      }
     });
     geoCache.set(url, p);
   }
