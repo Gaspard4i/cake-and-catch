@@ -45,7 +45,7 @@ async function BiomeContent({ params }: { params: Promise<{ key: string }> }) {
       <Link href="/" className="text-sm text-muted hover:text-foreground transition-colors">
         ← Retour
       </Link>
-      <h1 className="mt-4 text-3xl font-semibold tracking-tight capitalize">
+      <h1 className="mt-4 text-2xl sm:text-3xl font-semibold tracking-tight capitalize">
         {prettifyBiome(decoded)}
       </h1>
       <p className="mt-1 text-sm text-muted font-mono">{decoded}</p>

@@ -39,6 +39,7 @@ import { formatBaitEffects, type RawBaitEffect } from "@/lib/recommend/bait-effe
 import { BAIT_VANILLA_ITEMS } from "@/lib/recommend/bait-effects";
 import { listAllSeasonings } from "@/lib/db/queries";
 import { PageSkeleton } from "@/components/Loader";
+import { BackLink } from "@/components/BackLink";
 
 function formatBiome(biome: string) {
   return biome.replace(/^#?cobblemon:/, "").replace(/is_/, "").replace(/_/g, " ");
@@ -159,9 +160,12 @@ async function SpeciesDetail({ params }: { params: Promise<{ slug: string }> }) 
 
   return (
     <>
-      <Link href="/" className="text-sm text-muted hover:text-foreground transition-colors">
+      <BackLink
+        fallback="/pokedex"
+        className="text-sm text-muted hover:text-foreground transition-colors"
+      >
         {t("back")}
-      </Link>
+      </BackLink>
 
       <header className="mt-4 flex items-center gap-4 flex-wrap">
         <PokemonSprite dexNo={species.dexNo} name={species.name} size={96} />
@@ -170,7 +174,7 @@ async function SpeciesDetail({ params }: { params: Promise<{ slug: string }> }) 
             <span className="text-muted font-mono">
               #{String(species.dexNo).padStart(4, "0")}
             </span>
-            <h1 className="text-3xl font-semibold tracking-tight">{species.name}</h1>
+            <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight truncate">{species.name}</h1>
             <SourceBadge
               kind="mod"
               name="cobblemon"
@@ -260,35 +264,54 @@ async function SpeciesDetail({ params }: { params: Promise<{ slug: string }> }) 
           </p>
         ) : (
           <ul className="mt-3 flex flex-wrap gap-3">
-            {rankedSeasonings.map((r, i) => (
-              <li
-                key={r.seasoning.slug}
-                className={`relative rounded-lg border p-3 flex flex-col items-center gap-1 w-28 text-center transition-transform ${
-                  i < 3
-                    ? "border-2 border-accent bg-accent/5 shadow-sm"
-                    : "border-border bg-card"
-                } ${i === 0 ? "scale-105" : ""}`}
-                title={r.reasons.join(" · ")}
-              >
-                {i < 3 && (
-                  <span className="absolute -top-2 -left-2 size-5 rounded-full bg-accent text-accent-foreground text-[10px] font-mono font-bold flex items-center justify-center shadow">
-                    {i + 1}
-                  </span>
-                )}
-                <ItemIcon id={r.seasoning.itemId} size={48} />
-                <div className="text-xs font-medium capitalize leading-tight">
-                  {r.seasoning.slug.replaceAll("_", " ")}
-                </div>
-                <div className="text-[10px] uppercase text-accent font-medium">
-                  {r.primaryReason}
-                </div>
-                {r.reasons.length > 1 && (
-                  <div className="text-[9px] text-muted leading-tight">
-                    + {r.reasons.slice(1, 3).join(" · ")}
+            {rankedSeasonings.map((r, i) => {
+              // Only berries (slug ending in _berry) have a /berry/[slug]
+              // page. Vanilla bait items stay as plain cards.
+              const isBerry = r.seasoning.slug.endsWith("_berry");
+              const inner = (
+                <>
+                  {i < 3 && (
+                    <span className="absolute -top-2 -left-2 size-5 rounded-full bg-accent text-accent-foreground text-[10px] font-mono font-bold flex items-center justify-center shadow">
+                      {i + 1}
+                    </span>
+                  )}
+                  <ItemIcon id={r.seasoning.itemId} size={48} />
+                  <div className="text-xs font-medium capitalize leading-tight">
+                    {r.seasoning.slug.replaceAll("_", " ")}
                   </div>
-                )}
-              </li>
-            ))}
+                  <div className="text-[10px] uppercase text-accent font-medium">
+                    {r.primaryReason}
+                  </div>
+                  {r.reasons.length > 1 && (
+                    <div className="text-[9px] text-muted leading-tight">
+                      + {r.reasons.slice(1, 3).join(" · ")}
+                    </div>
+                  )}
+                </>
+              );
+              const cardClass = `relative rounded-lg border p-3 flex flex-col items-center gap-1 w-28 text-center transition-transform ${
+                i < 3
+                  ? "border-2 border-accent bg-accent/5 shadow-sm"
+                  : "border-border bg-card"
+              } ${i === 0 ? "scale-105" : ""}`;
+              return (
+                <li
+                  key={r.seasoning.slug}
+                  title={r.reasons.join(" · ")}
+                >
+                  {isBerry ? (
+                    <Link
+                      href={`/berry/${r.seasoning.slug}`}
+                      className={`${cardClass} hover:border-accent/80 hover:bg-accent/10 cursor-pointer`}
+                    >
+                      {inner}
+                    </Link>
+                  ) : (
+                    <div className={cardClass}>{inner}</div>
+                  )}
+                </li>
+              );
+            })}
           </ul>
         )}
       </section>

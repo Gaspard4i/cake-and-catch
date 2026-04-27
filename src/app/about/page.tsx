@@ -132,7 +132,7 @@ async function AboutContent() {
   const t = await getTranslations("about");
   return (
     <div className="mx-auto max-w-3xl px-4 sm:px-6 py-6 sm:py-10">
-      <h1 className="text-3xl font-semibold tracking-tight">{t("title")}</h1>
+      <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight">{t("title")}</h1>
       <p className="mt-3 text-muted">{t("intro")}</p>
 
       <FeedbackCard className="mt-8" />
