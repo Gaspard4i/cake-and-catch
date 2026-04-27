@@ -35,8 +35,7 @@ export type BerryPivot = {
 };
 
 export const BERRY_PIVOTS: Record<string, BerryPivot> = {
-  // example:
-  // razz_berry: { dy: 0.02 },
+  apicot_berry: { cy: -2 },
 };
 
 export function getBerryPivot(slug: string): BerryPivot {

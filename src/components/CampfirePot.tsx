@@ -211,7 +211,8 @@ export function CampfirePot() {
   const [filterQuery, setFilterQuery] = useState("");
   const [activeFlavours, setActiveFlavours] = useState<Set<string>>(new Set());
   const [kindFilter, setKindFilter] = useState<(typeof KINDS)[number]>("all");
-  const [validOnly, setValidOnly] = useState(true);
+  // Always restrict the pantry to bait-valid seasonings — non-valid items
+  // can't be placed in a snack slot anyway, so the toggle was a footgun.
   const [pantryLoading, setPantryLoading] = useState(true);
   /** Adaptive 3D snack size: ~180px on phones, 220px on desktop. */
   const [snack3DSize, setSnack3DSize] = useState(220);
@@ -234,6 +235,35 @@ export function CampfirePot() {
       .then((d: { biomes: BiomeApiEntry[] }) => setBiomeCatalog(d.biomes ?? []))
       .catch(() => setBiomeCatalog([]));
   }, []);
+
+  // Hydrate slots from `?load=<savedId>` so the Saved-recipes page can
+  // deep-link a stored snack into the maker. Runs once seasonings have
+  // loaded so we can resolve slugs to full Seasoning objects.
+  useEffect(() => {
+    if (seasonings.length === 0) return;
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    const id = params.get("load");
+    if (!id) return;
+    import("@/lib/saved-recipes").then(({ listSavedSnacks }) => {
+      const saved = listSavedSnacks().find((s) => s.id === id);
+      if (!saved) return;
+      const next: SlotState = [null, null, null];
+      saved.seasoningSlugs.slice(0, 3).forEach((slug, i) => {
+        const s = seasonings.find((x) => x.slug === slug);
+        if (s) next[i] = s;
+      });
+      setSlots(next);
+      if (saved.potColour) {
+        const match = POT_COLOURS.find((c) => c.hex === saved.potColour);
+        if (match) setPotColour(match);
+      }
+      // Clean the URL so a refresh doesn't re-trigger this.
+      const url = new URL(window.location.href);
+      url.searchParams.delete("load");
+      window.history.replaceState({}, "", url.toString());
+    });
+  }, [seasonings]);
 
   const biomeOptions = useMemo<MultiSelectOption[]>(() => {
     const set = new Set(allowedNamespaces);
@@ -258,8 +288,7 @@ export function CampfirePot() {
   }, [allowedNamespaces, biomeCatalog]);
 
   const filtered = useMemo(() => {
-    let list = seasonings;
-    if (validOnly) list = list.filter((s) => s.snackValid);
+    let list = seasonings.filter((s) => s.snackValid);
     if (kindFilter !== "all") {
       list = list.filter((s) =>
         kindFilter === "berry" ? s.kind === "berry" : s.kind === "other",
@@ -275,7 +304,7 @@ export function CampfirePot() {
       );
     }
     return list;
-  }, [seasonings, validOnly, kindFilter, filterQuery, activeFlavours]);
+  }, [seasonings, kindFilter, filterQuery, activeFlavours]);
 
   const grouped = useMemo(() => {
     const map = new Map<string, Seasoning[]>();
@@ -489,12 +518,19 @@ export function CampfirePot() {
               berries={snackBerries}
               potColour={potColour.hex}
               size={snack3DSize}
+              interactive
             />
             <p
               className="text-[10px] text-muted italic text-center leading-snug"
               style={{ maxWidth: snack3DSize }}
             >
               {t("previewDisclaimer")}
+            </p>
+            <p
+              className="text-[9px] text-muted text-center leading-tight"
+              style={{ maxWidth: snack3DSize }}
+            >
+              drag to rotate · scroll to zoom
             </p>
 
             <div className="flex items-center gap-2 text-xs text-muted">
@@ -544,6 +580,8 @@ export function CampfirePot() {
               ))}
             </div>
             <div className="text-[10px] text-muted uppercase">{t("seasoningSlotsCount", { count: 3 })}</div>
+
+            <SaveSnackButton slots={slots} potColour={potColour.hex} />
           </div>
         </div>
       </aside>
@@ -576,15 +614,6 @@ export function CampfirePot() {
                 </button>
               ))}
             </div>
-            <label className="text-[10px] uppercase text-muted flex items-center gap-1 select-none">
-              <input
-                type="checkbox"
-                checked={validOnly}
-                onChange={(e) => setValidOnly(e.target.checked)}
-                className="accent-accent"
-              />
-              {t("baitValidOnly")}
-            </label>
             <div className="flex flex-wrap gap-1">
               {FLAVOURS.map((f) => {
                 const active = activeFlavours.has(f);
@@ -1034,5 +1063,56 @@ function SeasoningChip({
         </div>
       )}
     </>
+  );
+}
+
+/**
+ * Tiny "Save" button + name prompt that drops the current snack composition
+ * into localStorage via saveSnack(). Disabled when no slot is filled.
+ */
+function SaveSnackButton({
+  slots,
+  potColour,
+}: {
+  slots: SlotState;
+  potColour: string;
+}) {
+  const [savedAt, setSavedAt] = useState<number | null>(null);
+  const filled = slots.filter((s): s is Seasoning => Boolean(s));
+  const disabled = filled.length === 0;
+
+  return (
+    <div className="mt-2 flex items-center gap-2">
+      <button
+        type="button"
+        disabled={disabled}
+        onClick={async () => {
+          const defaultName = filled
+            .map((s) => s.slug.replace(/_berry$/, "").replace(/_/g, " "))
+            .join(" + ");
+          const name = window.prompt("Name this snack:", defaultName);
+          if (!name) return;
+          const { saveSnack } = await import("@/lib/saved-recipes");
+          saveSnack({
+            name: name.trim().slice(0, 80),
+            seasoningSlugs: filled.map((s) => s.slug),
+            potColour,
+          });
+          setSavedAt(Date.now());
+        }}
+        className="text-[10px] uppercase tracking-wide px-2 py-1 rounded border border-border hover:bg-subtle disabled:opacity-30"
+      >
+        Save snack
+      </button>
+      <Link
+        href="/saved"
+        className="text-[10px] uppercase tracking-wide text-muted hover:text-foreground"
+      >
+        My recipes
+      </Link>
+      {savedAt && (
+        <span className="text-[10px] text-green-600">saved</span>
+      )}
+    </div>
   );
 }

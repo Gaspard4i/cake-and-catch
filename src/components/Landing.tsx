@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import dynamic from "next/dynamic";
 import { useEffect, useMemo, useState } from "react";
 import type { BerryPlacement } from "./Snack3D";
@@ -184,9 +185,10 @@ export function Landing({ labels }: { labels: Labels }) {
             </Link>
             <Link
               href="/snack"
-              className="flex-1 sm:flex-none text-center rounded-lg border border-border bg-card px-5 py-3 sm:py-2.5 text-sm font-medium hover:bg-subtle transition"
+              className="relative flex-1 sm:flex-none text-center rounded-lg border border-border bg-card px-5 py-3 sm:py-2.5 text-sm font-medium hover:bg-subtle transition"
             >
               Snack maker
+              <RandomBerryBadge pool={pool} />
             </Link>
           </div>
         </div>
@@ -231,5 +233,35 @@ function ResponsiveSnack3D({
     window.addEventListener("resize", update);
     return () => window.removeEventListener("resize", update);
   }, [mobile]);
-  return <Snack3D berries={berries} size={size} />;
+  return <Snack3D berries={berries} size={size} interactive />;
+}
+
+/**
+ * Decorative 2D sprite floating on the top-right corner of the Snack
+ * maker CTA. Picks a random berry from the loaded pool on mount so the
+ * landing feels different on each visit. Pointer-events disabled so it
+ * never blocks the underlying button click.
+ */
+function RandomBerryBadge({ pool }: { pool: Seasoning[] }) {
+  const [pick, setPick] = useState<Seasoning | null>(null);
+  useEffect(() => {
+    if (pool.length === 0) return;
+    setPick(pool[Math.floor(Math.random() * pool.length)]);
+  }, [pool]);
+  if (!pick) return null;
+  return (
+    <span
+      aria-hidden
+      className="pointer-events-none absolute -top-2 -right-2 w-7 h-7 rounded-full bg-card border border-border flex items-center justify-center shadow-sm"
+    >
+      <Image
+        src={`/textures/cobblemon/item/berries/${pick.slug}.png`}
+        alt=""
+        width={20}
+        height={20}
+        style={{ imageRendering: "pixelated" }}
+        unoptimized
+      />
+    </span>
+  );
 }

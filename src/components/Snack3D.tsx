@@ -1,6 +1,8 @@
 "use client";
 
 import { Canvas, useFrame, useLoader } from "@react-three/fiber";
+import { OrbitControls } from "@react-three/drei";
+import { usePathname } from "next/navigation";
 import { Suspense, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { TextureLoader, NearestFilter, type Texture } from "three";
 import * as THREE from "three";
@@ -258,15 +260,16 @@ function BerryOnTop({
         const g = doc["minecraft:geometry"]?.[0];
         const bone = g ? firstBone(g) : null;
         if (!g || !bone) return;
-        // If the per-berry registry defines a custom pivot, use it —
-        // that's the authored "centre" of the model. Otherwise fall
-        // back to auto-bottom anchoring (lowest vertex on origin).
+        // Anchor each berry by its bbox CENTRE so its middle sits on the
+        // origin. Combined with py = 7/16 below, this puts the berry's
+        // centre exactly on the snack top face — i.e. the lower half is
+        // sunk into the cake and the upper half pokes out.
         const pv = getBerryPivot(berry.slug);
         const custom =
           pv.cx != null || pv.cy != null || pv.cz != null
             ? { cx: pv.cx ?? 0, cy: pv.cy ?? 0, cz: pv.cz ?? 0 }
             : null;
-        setGeometry(boneToGeometry(bone, g, "bottom", custom));
+        setGeometry(boneToGeometry(bone, g, "center", custom));
       })
       .catch(() => {
         /* model missing — fall back to plane below */
@@ -291,46 +294,49 @@ function BerryOnTop({
 
   if (!material) return null;
 
-  // X/Z placement mirrors PokeSnackBlockEntityRenderer.kt (1/2/3 berry
-  // distribution on the top face). Y is FORCED to the snack top face
-  // (7/16) — we no longer trust the mod's per-berry pos.y because
-  // every model has a different cube anchor, which is what made
-  // berries land at random heights. Auto-bottom anchoring in
-  // boneToGeometry already aligned every model on its own lowest
-  // vertex, so a uniform y=7/16 puts them all flat on the snack.
-  // The (cosmetic) tilt rotations from the mod are kept.
-  const positionings = berry.snackPositionings ?? [];
-  const base = positionings[0];
+  // Distribution on the snack top:
+  //   1 berry  → centre, slight NE tilt.
+  //   2 berries → ±OFFSET on X, bottoms pointing inward.
+  //   3 berries → triangle, bottoms pointing inward.
+  // Tilt sign: to make the BOTTOM lean toward the centre, the TOP must
+  // lean OUTWARDS. A berry sitting at +X (east) needs to tip its top
+  // toward +X → that's a negative rotation around Z (right-hand rule).
+  // For a berry sitting at +Z, tip top toward +Z → positive rotation
+  // around X.
+  const OFFSET = 3 / 16; // 3 MC pixels from centre.
+  const TILT_DEG = 18; // inward-bottom lean
+  const SOLO_TILT = 6; // gentler tilt for the lonely centre berry
   let px = 0;
   let pz = 0;
   let rxDeg = 0;
-  let ryDeg = 0;
   let rzDeg = 0;
-  const py = 7 / 16;
-
-  if (base) {
-    if (totalCount === 1) {
-      px = 0;
-      pz = 0;
-    } else if (totalCount === 2) {
-      const p = base;
-      px = p.position.x / 16 - 0.5;
-      pz = (index === 0 ? p.position.z : 16 - p.position.z) / 16 - 0.5;
-      rxDeg = p.rotation.x;
-      ryDeg = p.rotation.y;
-      rzDeg = p.rotation.z;
-      // Mirror second berry's Y rotation so it doesn't perfectly clone
-      // the first.
-      if (index === 1) ryDeg = 180 - ryDeg;
-    } else {
-      const p = positionings[Math.min(index, positionings.length - 1)] ?? base;
-      px = p.position.x / 16 - 0.5;
-      pz = p.position.z / 16 - 0.5;
-      rxDeg = p.rotation.x;
-      ryDeg = p.rotation.y;
-      rzDeg = p.rotation.z;
-    }
+  const ryDeg = 0;
+  if (totalCount === 1) {
+    // Slight NE lean: top toward NE, bottom toward SW.
+    rxDeg = -SOLO_TILT; // top toward -Z (north)
+    rzDeg = -SOLO_TILT; // top toward +X (east)
+  } else if (totalCount === 2) {
+    px = (index === 0 ? -1 : 1) * OFFSET;
+    // index 0 at -X → top should lean -X → positive Z-rot.
+    // index 1 at +X → top should lean +X → negative Z-rot.
+    rzDeg = (index === 0 ? 1 : -1) * TILT_DEG;
+  } else if (totalCount >= 3) {
+    const angles = [Math.PI / 2, Math.PI / 2 + (2 * Math.PI) / 3, Math.PI / 2 - (2 * Math.PI) / 3];
+    const a = angles[Math.min(index, 2)];
+    px = Math.cos(a) * OFFSET;
+    pz = -Math.sin(a) * OFFSET;
+    // To tip the BOTTOM toward centre, the TOP must point outward
+    // (away from origin). The berry sits at world (cos·OFF, _, -sin·OFF),
+    // so the outward direction is (+cos, 0, -sin).
+    //   top moves +X (cos>0)  ↔ negative rotation around Z
+    //   top moves -Z (sin>0)  ↔ negative rotation around X
+    //     (right-hand rule: +rx rotates +Y toward +Z, we want -Z so -rx)
+    const cos = Math.cos(a);
+    const sin = Math.sin(a);
+    rxDeg = -sin * TILT_DEG;
+    rzDeg = -cos * TILT_DEG;
   }
+  const py = 7 / 16 + 0.5 / 16; // a touch above the top face, lower than before
 
   // Per-berry static pivot override + live debug overrides (debug only
   // affects the berry currently being tuned; see SnackMesh).
@@ -348,10 +354,9 @@ function BerryOnTop({
   const scaleY = ((d.scaleFactorY ?? 1) * (pivot.scale ?? 1)) / 16;
 
   if (geometry) {
-    // Geometry is already auto-anchored to its own bottom in
-    // boneToGeometry, so we draw it with positive scale on every axis.
-    // scaleFactorY in debug overrides lets you flip a specific berry
-    // if its source model is upside-down (rare).
+    // Geometry is already bbox-centred in boneToGeometry, so we draw it
+    // with positive scale on every axis. scaleFactorY in debug overrides
+    // lets you flip a specific berry if its source model is upside-down.
     return (
       <group
         position={[finalX, finalY, finalZ]}
@@ -366,40 +371,11 @@ function BerryOnTop({
     );
   }
 
-  // No Bedrock model (typically a vanilla bait item: apple, golden_apple…).
-  // Render it as two crossed sprite planes standing on top of the snack —
-  // same visual language MC uses for grass/flowers on cake-like blocks.
-  const fbSize = 0.28;
-  const fbH = 7 / 16;
-  const fbY = fbH + fbSize / 2 - 0.02;
-  const fbD = 0.3;
-  let fbX = 0;
-  let fbZ = 0;
-  if (totalCount === 2) {
-    fbX = index === 0 ? -fbD / 2 : fbD / 2;
-  } else if (totalCount >= 3) {
-    if (index === 0) fbZ = fbD / 2;
-    else if (index === 1) {
-      fbX = -fbD / 2;
-      fbZ = -fbD / 4;
-    } else {
-      fbX = fbD / 2;
-      fbZ = -fbD / 4;
-    }
-  }
-  return (
-    <group position={[fbX, fbY, fbZ]}>
-      <mesh>
-        <planeGeometry args={[fbSize, fbSize]} />
-        <primitive object={material} attach="material" />
-      </mesh>
-      <mesh rotation={[0, Math.PI / 2, 0]}>
-        <planeGeometry args={[fbSize, fbSize]} />
-        <primitive object={material} attach="material" />
-      </mesh>
-    </group>
-  );
-
+  // Vanilla bait items (apple, golden_apple, sweet_berries…) ship without
+  // a Bedrock 3D model. They still tint the snack via computeSnackTint —
+  // we deliberately render NOTHING on top so they don't compete visually
+  // with the actual berry models.
+  return null;
 }
 
 export function SnackMesh({
@@ -468,18 +444,20 @@ export function SnackMesh({
     [sideTex, topTex, bottomTex, tint, wireframe],
   );
 
-  // Berry placements are now read per-berry from pokeSnackPositionings inside
-  // BerryOnTop. No global lookup table needed here.
+  // Only count berries that have a 3D model when distributing on the top
+  // face — vanilla items (no fruitModel) only contribute a tint and never
+  // render on top, so they shouldn't shift the actual berries off-centre.
+  const visibleBerries = berries.filter((b) => Boolean(b.fruitModel));
 
   return (
     <group ref={group}>
       <mesh position={[0, H / 2, 0]} geometry={geo} material={mats} />
-      {berries.map((b, i) => (
+      {visibleBerries.map((b, i) => (
         <BerryOnTop
           key={`${b.slug}-${i}`}
           berry={b}
           index={i}
-          totalCount={berries.length}
+          totalCount={visibleBerries.length}
           debug={berryDebug}
         />
       ))}
@@ -492,6 +470,7 @@ export function Snack3D({
   berries = [],
   potColour,
   size = 200,
+  interactive = false,
 }: {
   flavour?: string | null;
   berries?: BerryPlacement[];
@@ -502,6 +481,13 @@ export function Snack3D({
    */
   potColour?: string;
   size?: number;
+  /**
+   * Lets the user grab and rotate the snack with OrbitControls (drag,
+   * scroll to zoom). Also disables the idle Y-spin so the camera the
+   * user picked sticks. Off by default to keep the small thumbnail
+   * preview behaving like a passive icon.
+   */
+  interactive?: boolean;
 }) {
   /**
    * Gate the Canvas behind a post-mount flag. On client-side navigation
@@ -520,10 +506,18 @@ export function Snack3D({
   const [mounted, setMounted] = useState(false);
   const [canvasKey, setCanvasKey] = useState(0);
   const wrapperRef = useRef<HTMLDivElement | null>(null);
+  const pathname = usePathname();
 
   useLayoutEffect(() => {
     setMounted(true);
   }, []);
+
+  // Bump key on every client-side navigation so a returning page (e.g.
+  // /snack → /juice → /snack) gets a fresh Canvas instead of a stale
+  // ResizeObserver that latched onto a 0x0 wrapper during the transition.
+  useEffect(() => {
+    setCanvasKey((k) => k + 1);
+  }, [pathname]);
 
   useEffect(() => {
     const onVisible = () => {
@@ -533,6 +527,30 @@ export function Snack3D({
     };
     document.addEventListener("visibilitychange", onVisible);
     return () => document.removeEventListener("visibilitychange", onVisible);
+  }, []);
+
+  // Watch the wrapper size: if it ever transitions from 0 to >0 (typical
+  // Cache Components hydration race on returning navigations), force a
+  // remount so R3F sizes the canvas correctly. Without this the canvas
+  // stays 0x0 and renders nothing.
+  useEffect(() => {
+    const host = wrapperRef.current;
+    if (!host || typeof ResizeObserver === "undefined") return;
+    let lastZero = host.clientWidth === 0 || host.clientHeight === 0;
+    const ro = new ResizeObserver((entries) => {
+      for (const e of entries) {
+        const w = e.contentRect.width;
+        const h = e.contentRect.height;
+        if (lastZero && w > 0 && h > 0) {
+          lastZero = false;
+          setCanvasKey((k) => k + 1);
+        } else if (w === 0 || h === 0) {
+          lastZero = true;
+        }
+      }
+    });
+    ro.observe(host);
+    return () => ro.disconnect();
   }, []);
 
   // Attach a context-lost listener to the actual WebGL canvas the first
@@ -574,8 +592,19 @@ export function Snack3D({
               berries={berries}
               fallbackFlavour={flavour ?? null}
               potColour={potColour ?? null}
+              spin={!interactive}
             />
           </Suspense>
+          {interactive && (
+            <OrbitControls
+              enablePan={false}
+              enableDamping
+              dampingFactor={0.1}
+              minDistance={0.6}
+              maxDistance={4}
+              target={[0, 0.2, 0]}
+            />
+          )}
         </Canvas>
       )}
     </div>
