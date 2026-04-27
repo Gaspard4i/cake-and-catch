@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import {
   ArrowUp,
+  Ban,
   Shield,
   Target,
   Wind,
@@ -634,14 +635,16 @@ export function JuiceMaker() {
                     type="button"
                     onClick={() => toggleIgnoreStat(stat)}
                     aria-pressed={ignored}
+                    aria-label={t("ignore")}
                     title={t("ignoreTitle")}
-                    className={`text-[10px] uppercase tracking-wide px-1.5 py-0.5 rounded border transition-colors shrink-0 ${
+                    className={`text-[10px] uppercase tracking-wide rounded border transition-colors shrink-0 inline-flex items-center justify-center sm:px-1.5 sm:py-0.5 sm:gap-1 size-7 sm:size-auto ${
                       ignored
                         ? "border-amber-400 bg-amber-400/10 text-amber-600 dark:text-amber-400"
                         : "border-border text-muted hover:text-foreground"
                     }`}
                   >
-                    {t("ignore")}
+                    <Ban className="h-3.5 w-3.5 sm:hidden" aria-hidden />
+                    <span className="hidden sm:inline">{t("ignore")}</span>
                   </button>
                 </li>
               );
