@@ -27,7 +27,7 @@ export const metadata: Metadata = {
     default: "Snack & Catch",
     template: "%s",
   },
-  description: "Cobblemon assistant — cooking recipes & spawn spots per Cobblemon.",
+  description: "Cobblemon assistant. Cooking recipes and spawn spots per Cobblemon.",
 };
 
 /**
