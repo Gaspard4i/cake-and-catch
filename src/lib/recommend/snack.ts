@@ -106,6 +106,9 @@ export type SpawnFilter = {
   /** If provided, spawn must match AT LEAST ONE timeRange (union). */
   timeRanges?: string[];
   weather?: "clear" | "rain" | "thunder";
+  /** Restrict spawns to those whose `sourceName` matches one of these
+   *  values (cobblemon, mysticmons, …). Empty/undefined = no filter. */
+  sources?: string[];
 };
 
 export type AttractedSpecies = {
@@ -217,7 +220,11 @@ function stripHash(s: string): string {
 }
 
 export function filterSpawns<
-  T extends Pick<Spawn, "biomes" | "condition"> & { levelMin: number; levelMax: number },
+  T extends Pick<Spawn, "biomes" | "condition"> & {
+    levelMin: number;
+    levelMax: number;
+    sourceName?: string;
+  },
 >(spawns: T[], filter: SpawnFilter): T[] {
   const biomeSet =
     filter.biomes && filter.biomes.length > 0
@@ -227,8 +234,13 @@ export function filterSpawns<
     filter.timeRanges && filter.timeRanges.length > 0
       ? new Set(filter.timeRanges)
       : null;
+  const sourceSet =
+    filter.sources && filter.sources.length > 0
+      ? new Set(filter.sources)
+      : null;
 
   return spawns.filter((s) => {
+    if (sourceSet && s.sourceName && !sourceSet.has(s.sourceName)) return false;
     if (biomeSet) {
       const match = s.biomes.some((b) => biomeSet.has(stripHash(b)));
       if (!match) return false;

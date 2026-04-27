@@ -197,6 +197,8 @@ export function CampfirePot() {
   const [times, setTimes] = useState<string[]>([]);
   const [minY, setMinY] = useState<string>("");
   const [maxY, setMaxY] = useState<string>("");
+  const [sourcesCatalog, setSourcesCatalog] = useState<string[]>([]);
+  const [sources, setSources] = useState<string[]>([]);
   const [attracted, setAttracted] = useState<AttractedEntry[]>([]);
   const [attractedVisible, setAttractedVisible] = useState(24);
   const attractedSentinelRef = useRef<HTMLDivElement>(null);
@@ -239,6 +241,10 @@ export function CampfirePot() {
       .then((r) => r.json())
       .then((d: { biomes: BiomeApiEntry[] }) => setBiomeCatalog(d.biomes ?? []))
       .catch(() => setBiomeCatalog([]));
+    fetch("/api/sources")
+      .then((r) => r.json())
+      .then((d: { sources: string[] }) => setSourcesCatalog(d.sources ?? []))
+      .catch(() => setSourcesCatalog([]));
   }, []);
 
   // Hydrate slots from `?load=<savedId>` so the Saved-recipes page can
@@ -371,6 +377,7 @@ export function CampfirePot() {
             timeRanges: times.length > 0 ? times : undefined,
             minY: minY ? Number.parseInt(minY, 10) : undefined,
             maxY: maxY ? Number.parseInt(maxY, 10) : undefined,
+            sources: sources.length > 0 ? sources : undefined,
           },
         };
         const res = await fetch("/api/snack", {
@@ -399,7 +406,7 @@ export function CampfirePot() {
       clearTimeout(timer);
       ctrl.abort();
     };
-  }, [slots, biomes, times, minY, maxY]);
+  }, [slots, biomes, times, minY, maxY, sources]);
 
 
   const attractedView = useMemo(() => {
@@ -699,6 +706,18 @@ export function CampfirePot() {
               onChange={setAllowedNamespaces}
               placeholder={t("modsAny")}
             />
+            {sourcesCatalog.length > 1 && (
+              <MultiSelect
+                label="Addons"
+                options={sourcesCatalog.map((s) => ({
+                  value: s,
+                  label: s,
+                }))}
+                value={sources}
+                onChange={setSources}
+                placeholder="all addons"
+              />
+            )}
             <MultiSelect
               label={t("biomes")}
               options={biomeOptions}

@@ -44,6 +44,7 @@ function normalizeFilter(raw: IncomingFilter | undefined): SpawnFilter {
   if (typeof raw?.minY === "number") out.minY = raw.minY;
   if (typeof raw?.maxY === "number") out.maxY = raw.maxY;
   if (raw?.weather) out.weather = raw.weather;
+  if (raw?.sources && raw.sources.length > 0) out.sources = raw.sources;
   return out;
 }
 

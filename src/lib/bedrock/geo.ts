@@ -168,7 +168,33 @@ export function boneToGeometry(
     const z0 = oz;
     const z1 = oz + sz;
 
-    const v = (x: number, y: number, z: number) => new THREE.Vector3(x, y, z);
+    // Per-cube rotation (Bedrock convention): rotate around `pivot` in
+    // degrees, axis order ZYX. Without this, models with rotated cubes
+    // — typically 0-thickness leaf quads like nanab_berry — render as
+    // flat unrotated planes, breaking the shape.
+    const rot = cube.rotation;
+    const piv = cube.pivot ?? [0, 0, 0];
+    const matrix = rot
+      ? (() => {
+          const m = new THREE.Matrix4();
+          const e = new THREE.Euler(
+            THREE.MathUtils.degToRad(rot[0]),
+            THREE.MathUtils.degToRad(rot[1]),
+            THREE.MathUtils.degToRad(rot[2]),
+            "ZYX",
+          );
+          m.makeTranslation(piv[0], piv[1], piv[2])
+            .multiply(new THREE.Matrix4().makeRotationFromEuler(e))
+            .multiply(new THREE.Matrix4().makeTranslation(-piv[0], -piv[1], -piv[2]));
+          return m;
+        })()
+      : null;
+
+    const v = (x: number, y: number, z: number) => {
+      const out = new THREE.Vector3(x, y, z);
+      if (matrix) out.applyMatrix4(matrix);
+      return out;
+    };
 
     const uv = Array.isArray(cube.uv)
       ? autoBoxUV(cube.uv[0], cube.uv[1], sx, sy, sz)
