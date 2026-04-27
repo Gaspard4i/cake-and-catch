@@ -128,40 +128,9 @@ export const ADDONS: AddonSource[] = [
     versionZipUrl: "",
     versionName: "",
   },
-  {
-    name: "mundialmons",
-    modrinthSlug: "mundialmons",
-    license: "MIT",
-    pageUrl: "https://modrinth.com/datapack/mundialmons",
-    versionZipUrl: "",
-    versionName: "",
-  },
-  {
-    name: "glitchdex-cobblemon",
-    modrinthSlug: "glitchdex-cobblemon",
-    license: "MIT",
-    pageUrl: "https://modrinth.com/datapack/glitchdex-cobblemon",
-    versionZipUrl: "",
-    versionName: "",
-  },
-  {
-    name: "ggt-pack",
-    modrinthSlug: "ggt-pack",
-    license: "MIT",
-    pageUrl: "https://modrinth.com/datapack/ggt-pack",
-    versionZipUrl: "",
-    versionName: "",
-  },
-  // Recommended by the spawn-addons research report (April 2026):
-  // most-downloaded packs that add species or rewrite spawn pools.
-  {
-    name: "allthemons",
-    modrinthSlug: "allthemons",
-    license: "ARR",
-    pageUrl: "https://modrinth.com/datapack/allthemons",
-    versionZipUrl: "",
-    versionName: "",
-  },
+  // Canon-only policy: no fakemons. Excluded packs (mundialmons,
+  // glitchdex, ggt-pack, allthemons) all bundle non-canon species,
+  // so we keep them out even though some are popular.
   {
     name: "cobblemon-pokemans",
     modrinthSlug: "cobblemon-pokemans",

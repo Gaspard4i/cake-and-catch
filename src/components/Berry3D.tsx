@@ -2,6 +2,7 @@
 
 import { Canvas, useFrame } from "@react-three/fiber";
 import { Grid, OrbitControls } from "@react-three/drei";
+import { usePathname } from "next/navigation";
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import { NearestFilter, TextureLoader } from "three";
@@ -88,14 +89,72 @@ export function Berry3D(props: Props) {
     showOrigin = false,
     className,
   } = props;
+
+  // Same defenses as Snack3D — R3F can latch onto a 0x0 wrapper when the
+  // page hydrates after a client-side navigation (Cache Components race),
+  // and the GPU context can be lost on tab switches. Both leave a blank
+  // canvas without these.
+  const wrapperRef = useRef<HTMLDivElement | null>(null);
+  const [canvasKey, setCanvasKey] = useState(0);
+  const pathname = usePathname();
+
+  useEffect(() => {
+    setCanvasKey((k) => k + 1);
+  }, [pathname]);
+
+  useEffect(() => {
+    const onVisible = () => {
+      if (document.visibilityState === "visible") {
+        setCanvasKey((k) => k + 1);
+      }
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => document.removeEventListener("visibilitychange", onVisible);
+  }, []);
+
+  useEffect(() => {
+    const host = wrapperRef.current;
+    if (!host || typeof ResizeObserver === "undefined") return;
+    let lastZero = host.clientWidth === 0 || host.clientHeight === 0;
+    const ro = new ResizeObserver((entries) => {
+      for (const e of entries) {
+        const w = e.contentRect.width;
+        const h = e.contentRect.height;
+        if (lastZero && w > 0 && h > 0) {
+          lastZero = false;
+          setCanvasKey((k) => k + 1);
+        } else if (w === 0 || h === 0) {
+          lastZero = true;
+        }
+      }
+    });
+    ro.observe(host);
+    return () => ro.disconnect();
+  }, []);
+
+  useEffect(() => {
+    const host = wrapperRef.current;
+    if (!host) return;
+    const canvas = host.querySelector("canvas");
+    if (!canvas) return;
+    const onLost = (e: Event) => {
+      e.preventDefault();
+      setCanvasKey((k) => k + 1);
+    };
+    canvas.addEventListener("webglcontextlost", onLost);
+    return () => canvas.removeEventListener("webglcontextlost", onLost);
+  }, [canvasKey]);
+
   return (
     <div
+      ref={wrapperRef}
       className={
         className ??
         "rounded-lg border border-border bg-subtle overflow-hidden h-full min-h-[320px] relative"
       }
     >
       <Canvas
+        key={canvasKey}
         camera={{ position: [0.6, 0.45, 0.6], fov: 30, near: 0.01, far: 100 }}
         gl={{ preserveDrawingBuffer: true }}
       >

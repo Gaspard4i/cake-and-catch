@@ -43,24 +43,6 @@ const DATA_SOURCES: SourceEntry[] = [
     purpose: "Cross-mod spawns added to the pool.",
   },
   {
-    name: "MundialMons",
-    license: "MIT",
-    url: "https://modrinth.com/datapack/mundialmons",
-    purpose: "Reanimated species + spawns merged into the pool.",
-  },
-  {
-    name: "Glitchdex",
-    license: "MIT",
-    url: "https://modrinth.com/datapack/glitchdex-cobblemon",
-    purpose: "Glitch-flavoured species + spawns.",
-  },
-  {
-    name: "GG&T Fakemon Pack",
-    license: "MIT",
-    url: "https://modrinth.com/datapack/ggt-pack",
-    purpose: "Fakemon species + spawns.",
-  },
-  {
     name: "Terralith / Biomes O' Plenty / BYG / Aether / Incendium / Nullscape / The Bumblezone",
     license: "Respective authors",
     url: "https://modrinth.com",
