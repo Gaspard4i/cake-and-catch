@@ -190,6 +190,13 @@ export function Landing({ labels }: { labels: Labels }) {
               Snack maker
               <RandomBerryBadge pool={pool} />
             </Link>
+            <Link
+              href="/juice"
+              className="relative flex-1 sm:flex-none text-center rounded-lg border border-border bg-card px-5 py-3 sm:py-2.5 text-sm font-medium hover:bg-subtle transition"
+            >
+              Aprijuice maker
+              <RandomApricornBadge />
+            </Link>
           </div>
         </div>
 
@@ -234,6 +241,44 @@ function ResponsiveSnack3D({
     return () => window.removeEventListener("resize", update);
   }, [mobile]);
   return <Snack3D berries={berries} size={size} interactive />;
+}
+
+const APRICORN_COLOURS = [
+  "red",
+  "yellow",
+  "green",
+  "blue",
+  "pink",
+  "black",
+  "white",
+] as const;
+
+/**
+ * Same idea as RandomBerryBadge, but for the Aprijuice maker CTA — picks
+ * a random apricorn colour on mount.
+ */
+function RandomApricornBadge() {
+  const [colour, setColour] = useState<string | null>(null);
+  useEffect(() => {
+    const c = APRICORN_COLOURS[Math.floor(Math.random() * APRICORN_COLOURS.length)];
+    setColour(c);
+  }, []);
+  if (!colour) return null;
+  return (
+    <span
+      aria-hidden
+      className="pointer-events-none absolute -top-2 -right-2 w-7 h-7 rounded-full bg-card border border-border flex items-center justify-center shadow-sm"
+    >
+      <Image
+        src={`/textures/cobblemon/item/${colour}_apricorn.png`}
+        alt=""
+        width={20}
+        height={20}
+        style={{ imageRendering: "pixelated" }}
+        unoptimized
+      />
+    </span>
+  );
 }
 
 /**
