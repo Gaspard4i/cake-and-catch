@@ -7,6 +7,7 @@ import { ItemIcon } from "@/components/ItemIcon";
 import type { Apricorn, Flavour } from "@/lib/recommend/aprijuice";
 import { cookAprijuice } from "@/lib/recommend/aprijuice";
 import { RideStatsGrid } from "@/components/juice/RideStatsGrid";
+import { SaveJuiceButton } from "@/components/juice/SaveJuiceButton";
 
 /**
  * Cobblemon apricorn item ids keyed by the canonical colour name used
@@ -133,6 +134,7 @@ export default async function JuiceRecipePage({
           {t("apricornHeading", { kind: apricorn })}
         </h1>
         <p className="mt-2 text-sm text-muted">{t("recipeIntro")}</p>
+        <SaveJuiceButton apricorn={apricorn} berrySlugs={berries.map((b) => b.slug)} />
       </header>
 
       {/* Cobblemon cooking-pot interface — 1:1 copy of the wiki layout.
