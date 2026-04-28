@@ -191,12 +191,6 @@ export function Landing({ labels }: { labels: Labels }) {
               <RandomBerryBadge pool={pool} />
             </Link>
             <Link
-              href="/bait"
-              className="flex-1 sm:flex-none text-center rounded-lg border border-border bg-card px-5 py-3 sm:py-2.5 text-sm font-medium hover:bg-subtle transition"
-            >
-              Bait maker
-            </Link>
-            <Link
               href="/juice"
               className="relative flex-1 sm:flex-none text-center rounded-lg border border-border bg-card px-5 py-3 sm:py-2.5 text-sm font-medium hover:bg-subtle transition"
             >
