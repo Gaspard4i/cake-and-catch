@@ -109,6 +109,10 @@ export type SpawnFilter = {
   /** Restrict spawns to those whose `sourceName` matches one of these
    *  values (cobblemon, mysticmons, …). Empty/undefined = no filter. */
   sources?: string[];
+  /** Restrict to spawns whose Cobblemon spawn `context` is one of these
+   *  (grounded, submerged, surface, seafloor, sky_air). Used by the bait
+   *  maker to surface only water spawns. Empty/undefined = no filter. */
+  contexts?: string[];
 };
 
 export type AttractedSpecies = {
@@ -224,6 +228,7 @@ export function filterSpawns<
     levelMin: number;
     levelMax: number;
     sourceName?: string;
+    context?: string | null;
   },
 >(spawns: T[], filter: SpawnFilter): T[] {
   const biomeSet =
@@ -238,9 +243,17 @@ export function filterSpawns<
     filter.sources && filter.sources.length > 0
       ? new Set(filter.sources)
       : null;
+  const contextSet =
+    filter.contexts && filter.contexts.length > 0
+      ? new Set(filter.contexts)
+      : null;
 
   return spawns.filter((s) => {
     if (sourceSet && s.sourceName && !sourceSet.has(s.sourceName)) return false;
+    if (contextSet) {
+      const ctx = s.context ?? "grounded";
+      if (!contextSet.has(ctx)) return false;
+    }
     if (biomeSet) {
       const match = s.biomes.some((b) => biomeSet.has(stripHash(b)));
       if (!match) return false;

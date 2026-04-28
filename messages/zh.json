@@ -35,7 +35,8 @@
     "search": "搜索",
     "more": "更多",
     "primary": "主导航",
-    "closeMenu": "关闭菜单"
+    "closeMenu": "关闭菜单",
+    "bait": "Bait"
   },
   "cake": {
     "title": "Poké Snack maker",
@@ -308,5 +309,10 @@
     "lv": "Lv",
     "drops": "掉落",
     "rerollN": "reroll ×{value}"
+  },
+  "bait": {
+    "title": "Poké Bait 工坊",
+    "intro": "把 bait seasonings 放入烹饪锅以制作 Poké Bait。将其挂在 Poké Rod 上,它能像 Snack 影响地面生成那样,影响水中生成。",
+    "navLabel": "Bait"
   }
 }

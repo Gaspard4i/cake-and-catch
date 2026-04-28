@@ -189,6 +189,7 @@ export async function listSpawnsWithSpecies(limit = 5000) {
           levelMax: schema.spawns.levelMax,
           biomes: schema.spawns.biomes,
           condition: schema.spawns.condition,
+          context: schema.spawns.context,
           sourceKind: schema.spawns.sourceKind,
           sourceName: schema.spawns.sourceName,
           slug: schema.species.slug,
@@ -211,6 +212,7 @@ export async function listSpawnsWithSpecies(limit = 5000) {
       levelMax: number;
       biomes: string[];
       condition: unknown;
+      context: string | null;
       sourceKind: "mod" | "wiki" | "derived" | "addon";
       sourceName: string;
       slug: string;

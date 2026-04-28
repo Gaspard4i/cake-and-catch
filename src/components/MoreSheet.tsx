@@ -5,7 +5,7 @@ import { createPortal } from "react-dom";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { ChefHat, FlaskRound, Home, Info, Leaf, Search, X } from "lucide-react";
+import { ChefHat, Fish, FlaskRound, Home, Info, Leaf, Search, X } from "lucide-react";
 
 type Props = {
   open: boolean;
@@ -55,6 +55,7 @@ export function MoreSheet({ open, onClose, id, showDebug = false }: Props) {
   const items: Array<{ href: string; label: string; Icon: typeof Home }> = [
     { href: "/", label: t("home"), Icon: Home },
     { href: "/search", label: t("search"), Icon: Search },
+    { href: "/bait", label: t("bait"), Icon: Fish },
     { href: "/seasonings", label: t("seasonings"), Icon: Leaf },
     { href: "/saved", label: t("savedRecipes"), Icon: ChefHat },
     { href: "/about", label: t("about"), Icon: Info },

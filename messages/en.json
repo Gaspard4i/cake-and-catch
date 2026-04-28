@@ -35,7 +35,8 @@
     "search": "Search",
     "more": "More",
     "primary": "Primary navigation",
-    "closeMenu": "Close menu"
+    "closeMenu": "Close menu",
+    "bait": "Bait"
   },
   "cake": {
     "title": "Poké Snack maker",
@@ -308,5 +309,10 @@
     "lv": "Lv",
     "drops": "Drops",
     "rerollN": "reroll ×{value}"
+  },
+  "bait": {
+    "title": "Poké Bait maker",
+    "intro": "Drop bait seasonings into the cooking pot to brew a Poké Bait. Hang it on a Poké Rod and water spawns are biased the same way a Snack biases land spawns. type, egg group, nature, IVs, shiny, hidden ability, rarity bucket.",
+    "navLabel": "Bait"
   }
 }

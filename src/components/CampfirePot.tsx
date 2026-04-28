@@ -183,9 +183,12 @@ export function SnackBaseRecipe({ size = 48 }: { size?: number }) {
   );
 }
 
-export function CampfirePot() {
+export type PotMode = "snack" | "bait";
+
+export function CampfirePot({ mode = "snack" }: { mode?: PotMode } = {}) {
   const t = useTranslations("snack");
   const tc = useTranslations("common");
+  const isBait = mode === "bait";
   const [seasonings, setSeasonings] = useState<Seasoning[]>([]);
   const [slots, setSlots] = useState<SlotState>([null, null, null]);
   const [biomes, setBiomes] = useState<string[]>([]);
@@ -378,6 +381,10 @@ export function CampfirePot() {
             minY: minY ? Number.parseInt(minY, 10) : undefined,
             maxY: maxY ? Number.parseInt(maxY, 10) : undefined,
             sources: sources.length > 0 ? sources : undefined,
+            // Bait operates on a fishing rod, so only spawns whose
+            // SpawningContext is water (surface / submerged / seafloor)
+            // are reachable. Force the filter on the API side.
+            contexts: isBait ? ["surface", "submerged", "seafloor"] : undefined,
           },
         };
         const res = await fetch("/api/snack", {
@@ -406,7 +413,7 @@ export function CampfirePot() {
       clearTimeout(timer);
       ctrl.abort();
     };
-  }, [slots, biomes, times, minY, maxY, sources]);
+  }, [slots, biomes, times, minY, maxY, sources, isBait]);
 
 
   const attractedView = useMemo(() => {
@@ -507,36 +514,50 @@ export function CampfirePot() {
         <div>
           <h3 className="text-sm font-medium uppercase tracking-wide text-muted">{t("cookingPot")}</h3>
           <div className="mt-3 flex w-full sm:inline-flex sm:w-auto flex-col items-center gap-3 p-4 rounded-xl border border-border bg-card">
-            <div className="flex items-center gap-1">
-              {POT_COLOURS.map((c) => (
-                <button
-                  key={c.slug ?? "default"}
-                  onClick={() => setPotColour(c)}
-                  title={`${c.label} Cooking Pot`}
-                  aria-label={`${c.label} Cooking Pot`}
-                  className={`size-5 rounded-full border transition-transform ${
-                    potColour.slug === c.slug
-                      ? "border-accent scale-110 ring-2 ring-ring/30"
-                      : "border-border hover:scale-105"
-                  }`}
-                  style={{ background: c.hex }}
-                />
-              ))}
-            </div>
-            <div className="text-[10px] text-muted uppercase">{t("potDefault", { name: potColour.label })}</div>
+            {!isBait && (
+              <>
+                <div className="flex items-center gap-1">
+                  {POT_COLOURS.map((c) => (
+                    <button
+                      key={c.slug ?? "default"}
+                      onClick={() => setPotColour(c)}
+                      title={`${c.label} Cooking Pot`}
+                      aria-label={`${c.label} Cooking Pot`}
+                      className={`size-5 rounded-full border transition-transform ${
+                        potColour.slug === c.slug
+                          ? "border-accent scale-110 ring-2 ring-ring/30"
+                          : "border-border hover:scale-105"
+                      }`}
+                      style={{ background: c.hex }}
+                    />
+                  ))}
+                </div>
+                <div className="text-[10px] text-muted uppercase">{t("potDefault", { name: potColour.label })}</div>
+              </>
+            )}
 
-            <Snack3D
-              flavour={dominant}
-              berries={snackBerries}
-              potColour={potColour.hex}
-              size={snack3DSize}
-              interactive
-            />
+            {isBait ? (
+              <BaitPreview
+                berries={snackBerries}
+                size={snack3DSize}
+                flavour={dominant}
+              />
+            ) : (
+              <Snack3D
+                flavour={dominant}
+                berries={snackBerries}
+                potColour={potColour.hex}
+                size={snack3DSize}
+                interactive
+              />
+            )}
             <p
               className="text-[8px] text-muted italic text-center leading-tight"
               style={{ maxWidth: snack3DSize }}
             >
-              the in-game snack may look different.
+              {isBait
+                ? "the in-game bait may look different."
+                : "the in-game snack may look different."}
             </p>
 
             <div className="flex gap-2 mt-1">
@@ -590,7 +611,7 @@ export function CampfirePot() {
             </div>
             <div className="text-[10px] text-muted uppercase">{t("seasoningSlotsCount", { count: 3 })}</div>
 
-            <SaveSnackButton slots={slots} potColour={potColour.hex} />
+            <SaveSnackButton slots={slots} potColour={potColour.hex} mode={mode} />
           </div>
         </div>
       </aside>
@@ -1120,10 +1141,13 @@ function SeasoningChip({
 function SaveSnackButton({
   slots,
   potColour,
+  mode,
 }: {
   slots: SlotState;
   potColour: string;
+  mode: PotMode;
 }) {
+  const isBait = mode === "bait";
   const [savedAt, setSavedAt] = useState<number | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const filled = slots.filter((s): s is Seasoning => Boolean(s));
@@ -1140,7 +1164,7 @@ function SaveSnackButton({
         onClick={() => setModalOpen(true)}
         className="text-[10px] uppercase tracking-wide px-2 py-1 rounded border border-border hover:bg-subtle disabled:opacity-30"
       >
-        Save snack
+        {isBait ? "Save bait" : "Save snack"}
       </button>
       <Link
         href="/saved"
@@ -1154,7 +1178,7 @@ function SaveSnackButton({
 
       <NameRecipeModal
         open={modalOpen}
-        title="Name this snack"
+        title={isBait ? "Name this bait" : "Name this snack"}
         hint="Saved locally in your browser."
         defaultValue={defaultName}
         onCancel={() => setModalOpen(false)}
@@ -1164,11 +1188,114 @@ function SaveSnackButton({
             name,
             seasoningSlugs: filled.map((s) => s.slug),
             potColour,
+            kind: mode,
           });
           setSavedAt(Date.now());
           setModalOpen(false);
         }}
       />
+    </div>
+  );
+}
+
+/**
+ * Static preview of the Poké Bait that the seasonings would yield. Bait
+ * has no rotating 3D model in-game (unlike the snack, which is a placed
+ * block), so we just stack the placed berries above the bait item icon
+ * with a tint borrowed from the dominant flavour. This keeps the page
+ * visually balanced with the snack page without inventing extra geometry.
+ */
+function BaitPreview({
+  berries,
+  size,
+  flavour,
+}: {
+  berries: BerryPlacement[];
+  size: number;
+  flavour: string | null;
+}) {
+  const tint = flavour ? FLAVOUR_COLORS[flavour] : null;
+  const chipSize = Math.round(size * 0.22);
+  return (
+    <div
+      className="relative flex items-center justify-center rounded-lg border border-border"
+      style={{
+        width: size,
+        height: size,
+        background: tint ? `${tint}22` : undefined,
+      }}
+    >
+      <ItemIcon id="cobblemon:poke_bait" size={Math.round(size * 0.6)} />
+      {berries.length > 0 && (
+        <div
+          className="absolute flex items-center gap-1"
+          style={{ top: chipSize / 3 }}
+        >
+          {berries.map((b, i) => (
+            <div
+              key={`${b.slug}-${i}`}
+              className="rounded-full border border-border bg-card flex items-center justify-center"
+              style={{
+                width: chipSize,
+                height: chipSize,
+                boxShadow: b.colour
+                  ? `0 0 0 2px ${b.colour.toLowerCase()}55 inset`
+                  : undefined,
+              }}
+              title={b.slug}
+            >
+              <ItemIcon id={b.itemId} size={Math.round(chipSize * 0.85)} />
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/**
+ * Poké Rod base recipe preview. Mirrors SnackBaseRecipe but for the rod
+ * crafted from a stick + string + iron — not the seasoning-injected bait
+ * itself, which is produced by the Cooking Pot just like a snack.
+ *
+ * Source: cobblemon recipes/poke_rod.json (shaped 3×3 with stick column
+ * + string + iron tip). Slot positions:
+ *   . . S
+ *   . S t
+ *   I . .
+ * (S = stick, t = string, I = iron ingot). The shape varies between
+ * versions but the ingredients have been stable since 1.4.
+ */
+export function BaitBaseRecipe({ size = 48 }: { size?: number }) {
+  const tc = useTranslations("snack");
+  const ids = [
+    null,
+    null,
+    "minecraft:stick",
+    null,
+    "minecraft:stick",
+    "minecraft:string",
+    "minecraft:iron_ingot",
+    null,
+    null,
+  ];
+  return (
+    <div className="inline-flex flex-col items-center gap-1">
+      <div className="grid grid-cols-3 gap-1 p-2 rounded-lg bg-subtle border border-border">
+        {ids.map((id, i) => (
+          <div
+            key={i}
+            className="rounded bg-card border border-border flex items-center justify-center"
+            style={{ width: size, height: size }}
+            title={id ?? ""}
+          >
+            {id ? <ItemIcon id={id} size={Math.round(size * 0.7)} /> : null}
+          </div>
+        ))}
+      </div>
+      <div className="text-[10px] text-muted uppercase">
+        {tc("baseRecipe").replace("Snack", "Rod")}
+      </div>
     </div>
   );
 }

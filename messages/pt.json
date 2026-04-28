@@ -35,7 +35,8 @@
     "search": "Buscar",
     "more": "Mais",
     "primary": "Navegação principal",
-    "closeMenu": "Fechar menu"
+    "closeMenu": "Fechar menu",
+    "bait": "Bait"
   },
   "cake": {
     "title": "Poké Snack maker",
@@ -308,5 +309,10 @@
     "lv": "Nv",
     "drops": "Drops",
     "rerollN": "reroll ×{value}"
+  },
+  "bait": {
+    "title": "Oficina de Poké Bait",
+    "intro": "Coloque bait seasonings na panela para preparar um Poké Bait. Pendure-o na Poké Rod e ele enviesa os spawns aquáticos como um Snack enviesa os terrestres.",
+    "navLabel": "Bait"
   }
 }

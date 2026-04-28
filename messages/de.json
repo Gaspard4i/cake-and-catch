@@ -35,7 +35,8 @@
     "search": "Suche",
     "more": "Mehr",
     "primary": "Hauptnavigation",
-    "closeMenu": "Menü schließen"
+    "closeMenu": "Menü schließen",
+    "bait": "Bait"
   },
   "cake": {
     "title": "Poké Snack maker",
@@ -308,5 +309,10 @@
     "lv": "Lv",
     "drops": "Drops",
     "rerollN": "reroll ×{value}"
+  },
+  "bait": {
+    "title": "Poké-Bait-Werkstatt",
+    "intro": "Wirf Bait-Seasonings in den Kochtopf, um einen Poké Bait zu brauen. An einer Poké Rod befestigt, beeinflusst er Wasserspawns so wie ein Snack die Landspawns.",
+    "navLabel": "Bait"
   }
 }

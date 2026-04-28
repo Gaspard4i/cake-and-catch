@@ -35,7 +35,8 @@
     "search": "検索",
     "more": "その他",
     "primary": "メインナビゲーション",
-    "closeMenu": "メニューを閉じる"
+    "closeMenu": "メニューを閉じる",
+    "bait": "Bait"
   },
   "cake": {
     "title": "Poké Snack maker",
@@ -308,5 +309,10 @@
     "lv": "Lv",
     "drops": "ドロップ",
     "rerollN": "reroll ×{value}"
+  },
+  "bait": {
+    "title": "ポケベイト工房",
+    "intro": "クッキングポットにベイトシーズニングを入れて Poké Bait を作ります。Poké Rod に取り付けると、Snack が地上のスポーンを操作するのと同じように水中のスポーンを操作します。",
+    "navLabel": "Bait"
   }
 }

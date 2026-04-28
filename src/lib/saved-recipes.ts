@@ -22,6 +22,9 @@ export type SavedSnack = {
   seasoningSlugs: string[];
   /** Optional pot colour the user picked. */
   potColour?: string | null;
+  /** What the seasoning composition was cooked into. Defaults to "snack"
+   *  for backwards compatibility with entries saved before bait existed. */
+  kind?: "snack" | "bait";
 };
 
 export type SavedJuice = {

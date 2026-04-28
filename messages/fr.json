@@ -35,7 +35,8 @@
     "search": "Recherche",
     "more": "Plus",
     "primary": "Navigation principale",
-    "closeMenu": "Fermer le menu"
+    "closeMenu": "Fermer le menu",
+    "bait": "Bait"
   },
   "cake": {
     "title": "Poké Snack maker",
@@ -308,5 +309,10 @@
     "lv": "Niv",
     "drops": "Drops",
     "rerollN": "reroll ×{value}"
+  },
+  "bait": {
+    "title": "Atelier Poké Bait",
+    "intro": "Place des bait seasonings dans le pot de cuisson pour préparer un Poké Bait. Accroche-le sur une Poké Rod et il influence les apparitions aquatiques comme un Snack influence celles au sol. type, egg group, nature, IVs, shiny, talent caché, palier de rareté.",
+    "navLabel": "Bait"
   }
 }

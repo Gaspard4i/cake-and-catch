@@ -35,7 +35,8 @@
     "search": "Buscar",
     "more": "Más",
     "primary": "Navegación principal",
-    "closeMenu": "Cerrar menú"
+    "closeMenu": "Cerrar menú",
+    "bait": "Bait"
   },
   "cake": {
     "title": "Poké Snack maker",
@@ -308,5 +309,10 @@
     "lv": "Niv",
     "drops": "Drops",
     "rerollN": "reroll ×{value}"
+  },
+  "bait": {
+    "title": "Fabricante de Poké Bait",
+    "intro": "Añade bait seasonings a la olla para preparar un Poké Bait. Engánchalo en una Poké Rod y sesga las apariciones acuáticas igual que un Snack lo hace con las terrestres.",
+    "navLabel": "Bait"
   }
 }
