@@ -537,11 +537,7 @@ export function CampfirePot({ mode = "snack" }: { mode?: PotMode } = {}) {
             )}
 
             {isBait ? (
-              <BaitPreview
-                berries={snackBerries}
-                size={snack3DSize}
-                flavour={dominant}
-              />
+              <BaitPreview berries={snackBerries} size={snack3DSize} />
             ) : (
               <Snack3D
                 flavour={dominant}
@@ -1199,56 +1195,99 @@ function SaveSnackButton({
 }
 
 /**
- * Static preview of the Poké Bait that the seasonings would yield. Bait
- * has no rotating 3D model in-game (unlike the snack, which is a placed
- * block), so we just stack the placed berries above the bait item icon
- * with a tint borrowed from the dominant flavour. This keeps the page
- * visually balanced with the snack page without inventing extra geometry.
+ * Minecraft DyeColor → textureDiffuseColor (RGB hex). These are the same
+ * values the in-game `PokeBaitItemColorProvider` reads from the bait's
+ * FoodColourComponent to tint each layer.
+ *
+ * Source: net.minecraft.world.item.DyeColor.java per-vanilla 1.21.x.
+ * We keep the table in sync with the official mod by name (lower_snake_case).
+ */
+const DYE_TEXTURE_COLOR: Record<string, string> = {
+  white: "#F9FFFE",
+  orange: "#F9801D",
+  magenta: "#C74EBD",
+  light_blue: "#3AB3DA",
+  yellow: "#FED83D",
+  lime: "#80C71F",
+  pink: "#F38BAA",
+  gray: "#474F52",
+  light_gray: "#9D9D97",
+  cyan: "#169C9C",
+  purple: "#8932B8",
+  blue: "#3C44AA",
+  brown: "#835432",
+  green: "#5E7C16",
+  red: "#B02E26",
+  black: "#1D1D21",
+};
+
+function dyeToHex(dye: string | null | undefined): string | null {
+  if (!dye) return null;
+  return DYE_TEXTURE_COLOR[dye.toLowerCase()] ?? null;
+}
+
+/**
+ * In-mod accurate preview of the Poké Bait. Replicates
+ * `PokeBaitItemColorProvider`: 3 stacked alpha-mask layers (base +
+ * overlay1 + overlay2) tinted by the DyeColor of each placed seasoning,
+ * in slot order. The `mask-image` + `background-color` trick is the
+ * portable way to reproduce Minecraft's textureDiffuseColor multiply.
  */
 function BaitPreview({
   berries,
   size,
-  flavour,
 }: {
   berries: BerryPlacement[];
   size: number;
-  flavour: string | null;
 }) {
-  const tint = flavour ? FLAVOUR_COLORS[flavour] : null;
-  const chipSize = Math.round(size * 0.22);
+  const layers = [
+    "/textures/cobblemon/item/poke_bait.png",
+    "/textures/cobblemon/item/poke_bait_overlay1.png",
+    "/textures/cobblemon/item/poke_bait_overlay2.png",
+  ];
   return (
     <div
-      className="relative flex items-center justify-center rounded-lg border border-border"
-      style={{
-        width: size,
-        height: size,
-        background: tint ? `${tint}22` : undefined,
-      }}
+      className="relative rounded-lg border border-border bg-subtle/40 flex items-center justify-center"
+      style={{ width: size, height: size }}
     >
-      <ItemIcon id="cobblemon:poke_bait" size={Math.round(size * 0.6)} />
-      {berries.length > 0 && (
-        <div
-          className="absolute flex items-center gap-1"
-          style={{ top: chipSize / 3 }}
-        >
-          {berries.map((b, i) => (
+      <div
+        className="relative"
+        style={{
+          width: Math.round(size * 0.7),
+          height: Math.round(size * 0.7),
+          imageRendering: "pixelated",
+        }}
+      >
+        {layers.map((src, i) => {
+          // Slot N feeds layer N. With no seasoning placed at all, show
+          // the base layer with its default brown tint so the user sees
+          // a recognisable Poké Bait silhouette.
+          const slot = berries[i];
+          const fallbackBase = i === 0 && berries.length === 0;
+          const tint = fallbackBase
+            ? "#835432" // base poke_bait colour
+            : dyeToHex(slot?.colour ?? null);
+          if (!tint) return null;
+          return (
             <div
-              key={`${b.slug}-${i}`}
-              className="rounded-full border border-border bg-card flex items-center justify-center"
+              key={src}
+              aria-hidden
+              className="absolute inset-0"
               style={{
-                width: chipSize,
-                height: chipSize,
-                boxShadow: b.colour
-                  ? `0 0 0 2px ${b.colour.toLowerCase()}55 inset`
-                  : undefined,
+                backgroundColor: tint,
+                WebkitMaskImage: `url(${src})`,
+                maskImage: `url(${src})`,
+                WebkitMaskRepeat: "no-repeat",
+                maskRepeat: "no-repeat",
+                WebkitMaskSize: "contain",
+                maskSize: "contain",
+                WebkitMaskPosition: "center",
+                maskPosition: "center",
               }}
-              title={b.slug}
-            >
-              <ItemIcon id={b.itemId} size={Math.round(chipSize * 0.85)} />
-            </div>
-          ))}
-        </div>
-      )}
+            />
+          );
+        })}
+      </div>
     </div>
   );
 }
