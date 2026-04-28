@@ -7,10 +7,6 @@ const CampfirePot = dynamic(() => import("./CampfirePot").then((m) => m.Campfire
   ssr: false,
   loading: () => <PageSkeleton variant="snack" />,
 });
-const BaitBaseRecipe = dynamic(
-  () => import("./CampfirePot").then((m) => m.BaitBaseRecipe),
-  { ssr: false },
-);
 
 export function BaitPageClient({
   title,
@@ -21,14 +17,9 @@ export function BaitPageClient({
 }) {
   return (
     <>
-      <header className="flex flex-row items-start justify-between gap-3 sm:gap-8">
-        <div className="max-w-2xl flex-1 min-w-0">
-          <h1 className="text-xl sm:text-3xl font-semibold tracking-tight">{title}</h1>
-          <p className="mt-2 text-sm sm:text-base text-muted">{intro}</p>
-        </div>
-        <div className="shrink-0">
-          <BaitBaseRecipe size={40} />
-        </div>
+      <header className="max-w-2xl">
+        <h1 className="text-xl sm:text-3xl font-semibold tracking-tight">{title}</h1>
+        <p className="mt-2 text-sm sm:text-base text-muted">{intro}</p>
       </header>
 
       <div className="mt-6 sm:mt-8">
