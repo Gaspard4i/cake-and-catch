@@ -18,16 +18,31 @@ import { SatisfactionModal } from "@/components/SatisfactionModal";
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
 
+const SITE_URL =
+  process.env.NEXT_PUBLIC_SITE_URL ?? "https://snack-and-catch.vercel.app";
+
 export const metadata: Metadata = {
-  // `default` is what shows on the home page; `template` lets child
-  // pages provide just their own short title (e.g. "Aprijuice") and
-  // skip the long " — Snack & Catch" suffix. `absolute` on a child
-  // overrides the template entirely.
+  metadataBase: new URL(SITE_URL),
   title: {
     default: "Snack & Catch",
     template: "%s",
   },
-  description: "Cobblemon assistant. Cooking recipes and spawn spots per Cobblemon.",
+  description:
+    "Cobblemon companion: cooking recipes, seasonings and spawn spots for every Pokémon.",
+  openGraph: {
+    type: "website",
+    siteName: "Snack & Catch",
+    title: "Snack & Catch — Cobblemon companion",
+    description:
+      "Cook the right snack. Catch the right Cobblemon. Recipes and spawn spots in one place.",
+    url: "/",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Snack & Catch — Cobblemon companion",
+    description:
+      "Cook the right snack. Catch the right Cobblemon. Recipes and spawn spots in one place.",
+  },
 };
 
 /**
