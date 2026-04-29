@@ -77,6 +77,8 @@ export async function safe<T>(fn: () => Promise<T>, fallback: T): Promise<T> {
     console.warn(
       "[db] query failed, falling back:",
       err instanceof Error ? err.message : err,
+      err instanceof Error && err.cause ? `cause=${String(err.cause)}` : "",
+      err && typeof err === "object" && "code" in err ? `code=${(err as { code: unknown }).code}` : "",
     );
     return fallback;
   }
