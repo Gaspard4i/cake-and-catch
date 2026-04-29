@@ -5,6 +5,12 @@ export const alt = "Snack & Catch — Cobblemon companion";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
+const BG = "#fafaf9";
+const FG = "#18181b";
+const MUTED = "#71717a";
+const ACCENT = "#2563eb";
+const BORDER = "#e4e4e7";
+
 export default async function TwitterImage() {
   return new ImageResponse(
     (
@@ -16,54 +22,60 @@ export default async function TwitterImage() {
           flexDirection: "column",
           justifyContent: "space-between",
           padding: "72px 80px",
-          background:
-            "linear-gradient(135deg, #fff7ed 0%, #fef3c7 45%, #fde68a 100%)",
+          background: BG,
           fontFamily: "Inter, system-ui, sans-serif",
-          color: "#1c1917",
+          color: FG,
         }}
       >
-        <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
           <div
             style={{
-              width: 14,
-              height: 14,
-              borderRadius: 999,
-              background: "#ea580c",
+              fontSize: 28,
+              fontWeight: 600,
+              letterSpacing: "-0.01em",
+            }}
+          >
+            Snack <span style={{ color: ACCENT }}>&</span> Catch
+          </div>
+          <div
+            style={{
+              height: 18,
+              width: 1,
+              background: BORDER,
+              margin: "0 6px",
             }}
           />
           <div
             style={{
-              fontSize: 22,
-              letterSpacing: 6,
-              textTransform: "uppercase",
-              color: "#78716c",
-              fontWeight: 600,
+              fontSize: 18,
+              color: MUTED,
+              fontWeight: 500,
             }}
           >
             Cobblemon companion
           </div>
         </div>
 
-        <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
           <div
             style={{
-              fontSize: 110,
+              fontSize: 104,
               fontWeight: 700,
               lineHeight: 1.02,
-              letterSpacing: "-0.04em",
+              letterSpacing: "-0.045em",
               display: "flex",
               flexDirection: "column",
             }}
           >
             <span>Cook the right snack.</span>
-            <span style={{ color: "#ea580c" }}>Catch the right Cobblemon.</span>
+            <span style={{ color: ACCENT }}>Catch the right Cobblemon.</span>
           </div>
           <div
             style={{
-              fontSize: 30,
-              color: "#57534e",
-              maxWidth: 900,
-              lineHeight: 1.35,
+              fontSize: 28,
+              color: MUTED,
+              maxWidth: 880,
+              lineHeight: 1.4,
             }}
           >
             Recipes, seasonings and spawn spots for every Cobblemon — all in
@@ -76,15 +88,19 @@ export default async function TwitterImage() {
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
-            fontSize: 26,
-            color: "#1c1917",
+            fontSize: 22,
+            color: MUTED,
+            borderTop: `1px solid ${BORDER}`,
+            paddingTop: 28,
           }}
         >
-          <div style={{ display: "flex", fontWeight: 700 }}>
-            Snack <span style={{ color: "#ea580c", margin: "0 8px" }}>&</span>{" "}
-            Catch
+          <div style={{ display: "flex", gap: 28 }}>
+            <span>Cobbledex</span>
+            <span>Snack maker</span>
+            <span>Bait maker</span>
+            <span>Aprijuice</span>
           </div>
-          <div style={{ color: "#78716c" }}>snack-and-catch.vercel.app</div>
+          <div>snack-and-catch.vercel.app</div>
         </div>
       </div>
     ),
