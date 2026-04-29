@@ -34,7 +34,8 @@ export async function POST(request: Request) {
     return Response.json({ error: "unauthorized" }, { status: 401 });
   }
   for (const tag of TAGS) {
-    revalidateTag(tag);
+    // Next 16 requires a cache-life profile alongside the tag.
+    revalidateTag(tag, "default");
   }
   return Response.json({ purged: TAGS });
 }
