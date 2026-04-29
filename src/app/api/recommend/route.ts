@@ -13,7 +13,7 @@ function ok(data: unknown) {
     status: 200,
     headers: {
       "content-type": "application/json",
-      "cache-control": "public, s-maxage=60, stale-while-revalidate=300",
+      "cache-control": "public, s-maxage=3600, stale-while-revalidate=86400",
     },
   });
 }

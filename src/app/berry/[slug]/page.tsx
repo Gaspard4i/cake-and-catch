@@ -75,10 +75,7 @@ export default async function BerryPage({ params }: { params: Promise<Params> })
       if (t1 && types.has(t1)) reasons.push(`${t1}-type`);
       if (t2 && types.has(t2)) reasons.push(`${t2}-type`);
       if (eggGroups.size > 0) {
-        const raw = (s.speciesRaw ?? {}) as Record<string, unknown>;
-        const groups = ((raw.eggGroups as string[] | undefined) ?? []).map((g) =>
-          g.toLowerCase(),
-        );
+        const groups = (s.eggGroups ?? []).map((g) => g.toLowerCase());
         for (const g of groups) {
           if (eggGroups.has(g)) reasons.push(`${g.replace(/_/g, " ")} egg group`);
         }

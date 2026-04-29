@@ -38,6 +38,6 @@ export async function GET() {
       namespaces: [...byNs.keys()].sort(),
       biomes: entries,
     },
-    { headers: { "cache-control": "public, s-maxage=300" } },
+    { headers: { "cache-control": "public, s-maxage=86400, stale-while-revalidate=604800" } },
   );
 }

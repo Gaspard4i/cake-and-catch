@@ -248,7 +248,9 @@ function buildPantry(
 
 function ok(data: unknown) {
   return Response.json(data, {
-    headers: { "cache-control": "public, s-maxage=30" },
+    headers: {
+      "cache-control": "public, s-maxage=3600, stale-while-revalidate=86400",
+    },
   });
 }
 
@@ -345,24 +347,20 @@ export async function POST(req: NextRequest) {
     combinedRawEffects.push(...(baitByItem.get(itemId) ?? []));
   }
 
-  const candidates: SnackSpawnCandidate[] = matchingSpawns.map((s) => {
-    const r = (s.speciesRaw ?? {}) as Record<string, unknown>;
-    const eggGroups = (r.eggGroups as string[] | undefined) ?? [];
-    return {
-      spawnId: s.spawnId,
-      speciesId: s.speciesId,
-      slug: s.slug,
-      name: s.name,
-      dexNo: s.dexNo,
-      primaryType: s.primaryType,
-      secondaryType: s.secondaryType,
-      eggGroups,
-      bucket: s.bucket,
-      weight: s.weight,
-      levelMin: s.levelMin,
-      levelMax: s.levelMax,
-    };
-  });
+  const candidates: SnackSpawnCandidate[] = matchingSpawns.map((s) => ({
+    spawnId: s.spawnId,
+    speciesId: s.speciesId,
+    slug: s.slug,
+    name: s.name,
+    dexNo: s.dexNo,
+    primaryType: s.primaryType,
+    secondaryType: s.secondaryType,
+    eggGroups: s.eggGroups ?? [],
+    bucket: s.bucket,
+    weight: s.weight,
+    levelMin: s.levelMin,
+    levelMax: s.levelMax,
+  }));
 
   const ranked = rankSnackAttractions(
     candidates,

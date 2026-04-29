@@ -57,14 +57,20 @@ export async function safe<T>(fn: () => Promise<T>, fallback: T): Promise<T> {
   try {
     return await fn();
   } catch (err) {
-    if (process.env.NEXT_PHASE === "phase-production-build") {
-      console.warn(
-        "[db] query failed during build, falling back:",
-        err instanceof Error ? err.message : err,
-      );
-      return fallback;
-    }
-    throw err;
+    /**
+     * Always degrade gracefully instead of throwing. A throw here bubbles up
+     * into the Server Component render, which Next surfaces as the generic
+     * "A server error occurred" page — useless to users when the underlying
+     * cause is a transient DB issue (Neon free-tier quota exhausted, cold
+     * compute, sleeping branch). Returning the fallback keeps the route
+     * renderable; downstream components already cope with empty arrays /
+     * null. The error is logged so Vercel logs still expose the cause.
+     */
+    console.warn(
+      "[db] query failed, falling back:",
+      err instanceof Error ? err.message : err,
+    );
+    return fallback;
   }
 }
 

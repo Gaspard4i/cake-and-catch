@@ -92,6 +92,6 @@ export async function POST(req: NextRequest) {
       caps,
       vectors: body.includeVectors ? vectors : undefined,
     },
-    { headers: { "cache-control": "public, s-maxage=30" } },
+    { headers: { "cache-control": "public, s-maxage=3600, stale-while-revalidate=86400" } },
   );
 }

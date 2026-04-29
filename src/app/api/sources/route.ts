@@ -9,6 +9,6 @@ export async function GET() {
   const names = await listSourceNames();
   return Response.json(
     { sources: names },
-    { headers: { "cache-control": "public, s-maxage=300" } },
+    { headers: { "cache-control": "public, s-maxage=86400, stale-while-revalidate=604800" } },
   );
 }
