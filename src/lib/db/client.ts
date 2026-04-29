@@ -26,12 +26,6 @@ function createDb(): DB {
       "DATABASE_URL is not set. Configure it in your environment (.env.local or Vercel project settings).",
     );
   }
-  try {
-    const u = new URL(url);
-    console.warn(`[db] connecting to host=${u.hostname} user=${u.username} db=${u.pathname.slice(1)}`);
-  } catch {
-    /* ignore */
-  }
   /**
    * Supabase / Neon poolers terminate TLS — `ssl: "require"` makes the
    * postgres-js client opt into encrypted transport without needing a CA
@@ -83,8 +77,6 @@ export async function safe<T>(fn: () => Promise<T>, fallback: T): Promise<T> {
     console.warn(
       "[db] query failed, falling back:",
       err instanceof Error ? err.message : err,
-      err instanceof Error && err.cause ? `cause=${String(err.cause)}` : "",
-      err && typeof err === "object" && "code" in err ? `code=${(err as { code: unknown }).code}` : "",
     );
     return fallback;
   }
