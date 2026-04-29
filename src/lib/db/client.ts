@@ -26,10 +26,18 @@ function createDb(): DB {
       "DATABASE_URL is not set. Configure it in your environment (.env.local or Vercel project settings).",
     );
   }
+  /**
+   * Supabase / Neon poolers terminate TLS — `ssl: "require"` makes the
+   * postgres-js client opt into encrypted transport without needing a CA
+   * bundle. Without this, the connection silently fails on Vercel lambdas
+   * because the host enforces TLS and we'd otherwise speak plain TCP.
+   */
+  const needsSsl = /supabase|neon|render|amazonaws|sslmode=require/.test(url);
   const client = postgres(url, {
     max: process.env.NODE_ENV === "production" ? 10 : 3,
     idle_timeout: 20,
     max_lifetime: 60 * 10,
+    ssl: needsSsl ? "require" : undefined,
   });
   holder.client = client;
   return drizzle(client, { schema });
