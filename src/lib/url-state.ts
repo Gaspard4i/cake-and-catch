@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo } from "react";
+import { useCallback, useMemo, useRef } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 /**
@@ -56,30 +56,46 @@ export function useFilterState<D extends FilterDescriptor>(
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  // Stable serialised key — Next 16 sometimes hands a fresh
+  // `URLSearchParams` instance back even when the query string did
+  // not change. Memoising on `.toString()` keeps the derived state
+  // referentially stable so consumer-side `useEffect` deps don't
+  // ping-pong forever.
+  const qs = searchParams.toString();
 
   const state = useMemo(() => {
+    const sp = new URLSearchParams(qs);
     const out: Record<string, unknown> = {};
     for (const key of descriptor.scalars ?? []) {
-      out[key] = searchParams.get(key);
+      out[key] = sp.get(key);
     }
     for (const key of descriptor.multi ?? []) {
-      out[key] = searchParams.getAll(key);
+      out[key] = sp.getAll(key);
     }
     for (const key of descriptor.bools ?? []) {
-      out[key] = searchParams.get(key) === "1" || searchParams.get(key) === "true";
+      out[key] = sp.get(key) === "1" || sp.get(key) === "true";
     }
     return out as FilterValue<D>;
-  }, [searchParams, descriptor]);
+  }, [qs, descriptor]);
+
+  // Refs so `setState` doesn't have to re-build when state changes —
+  // it always reads the latest value at call time. The callback
+  // identity stays stable across renders unless `pathname`/`router`
+  // change.
+  const stateRef = useRef(state);
+  stateRef.current = state;
+  const qsRef = useRef(qs);
+  qsRef.current = qs;
 
   const setState = useCallback(
     (patch: FilterPatch<D>, opts: UseFilterStateOptions = {}) => {
-      const next = new URLSearchParams(searchParams.toString());
+      const next = new URLSearchParams(qsRef.current);
       for (const [rawKey, rawValue] of Object.entries(patch)) {
         const key = rawKey;
         const value =
           typeof rawValue === "function"
             ? (rawValue as (c: unknown) => unknown)(
-                (state as unknown as Record<string, unknown>)[key],
+                (stateRef.current as unknown as Record<string, unknown>)[key],
               )
             : rawValue;
 
@@ -97,11 +113,15 @@ export function useFilterState<D extends FilterDescriptor>(
           next.set(key, String(value));
         }
       }
-      const qs = next.toString();
-      const url = qs ? `${pathname}?${qs}` : pathname;
+      const nextQs = next.toString();
+      // Don't push a duplicate URL — `router.replace` to the exact
+      // same href still emits a new history entry that some
+      // consumers re-render on, which is the original feedback loop.
+      if (nextQs === qsRef.current) return;
+      const url = nextQs ? `${pathname}?${nextQs}` : pathname;
       router.replace(url, { scroll: opts.scroll ?? false });
     },
-    [router, pathname, searchParams, state],
+    [router, pathname],
   );
 
   return [state, setState];

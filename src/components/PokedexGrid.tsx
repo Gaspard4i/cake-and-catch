@@ -85,6 +85,16 @@ export function PokedexGrid() {
   const reqIdRef = useRef(0);
   const inFlightRef = useRef(false);
 
+  // Single stable identity that captures every filter axis. Comparing
+  // arrays directly in deps would refire every render because
+  // `searchParams.getAll(...)` returns a fresh array each call — the
+  // join key is value-stable.
+  const filterKey = useMemo(
+    () =>
+      [q, [...types].sort().join(","), gens.join(","), [...labels].sort().join(","), sort, form, ability].join("|"),
+    [q, types, gens, labels, sort, form, ability],
+  );
+
   const buildUrl = useCallback(
     (c: string | null) => {
       const u = new URLSearchParams();
@@ -98,21 +108,26 @@ export function PokedexGrid() {
       u.set("sort", sort);
       return `/api/pokedex?${u.toString()}`;
     },
-    [q, types, gens, labels, sort, form, ability],
+    // The key captures every value-relevant filter; arrays don't need
+    // to appear directly in this deps list because they're folded in.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [filterKey],
   );
 
-  const reset = useCallback(() => {
+  // Re-fetch whenever any filter changes. The key change is what
+  // matters; we do the reset inline so we don't introduce a callback
+  // identity that would force an extra dep on `reset`.
+  useEffect(() => {
     reqIdRef.current += 1;
     inFlightRef.current = false;
     setResults([]);
     setCursor(null);
     setDone(false);
-  }, []);
+  }, [filterKey]);
 
-  // Re-fetch whenever any filter changes.
-  useEffect(() => {
-    reset();
-  }, [q, types, gens, labels, sort, form, ability, reset]);
+  // Stable ref for the type intersection check inside fetchPage.
+  const typesRef = useRef(types);
+  typesRef.current = types;
 
   const fetchPage = useCallback(async () => {
     if (inFlightRef.current || done) return;
@@ -127,12 +142,13 @@ export function PokedexGrid() {
       // Server already narrowed; we still belt-and-braces filter
       // type intersection client-side so the cap of 2 types is
       // honoured even when the server payload includes extras.
+      const activeTypes = typesRef.current;
       const filtered = data.results.filter((s) => {
-        if (types.length > 0) {
+        if (activeTypes.length > 0) {
           const own = [s.primaryType, s.secondaryType].filter(
             (x): x is string => !!x,
           );
-          if (!types.every((t) => own.includes(t))) return false;
+          if (!activeTypes.every((t) => own.includes(t))) return false;
         }
         return true;
       });
@@ -155,7 +171,7 @@ export function PokedexGrid() {
       if (myId === reqIdRef.current) setLoading(false);
       inFlightRef.current = false;
     }
-  }, [buildUrl, cursor, done, types]);
+  }, [buildUrl, cursor, done]);
 
   useEffect(() => {
     if (results.length === 0 && !done) fetchPage();
