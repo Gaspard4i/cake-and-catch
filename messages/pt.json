@@ -293,9 +293,9 @@
     "filtersHelp": "Describe where, when and how you'll use the snack. Each option mirrors a Cobblemon spawn condition; defaults show every Cobblemon spawn.",
     "filtersReset": "Reset",
     "filtersWhere": "Where",
-    "filtersWhen": "When",
-    "filtersConditions": "Conditions",
-    "filtersSources": "Sources",
+    "filtersWhen": "5. When",
+    "filtersConditions": "6. Sky & light",
+    "filtersSources": "7. Sources (advanced)",
     "weather": "Weather",
     "weatherAny": "Any",
     "context": "Position",
@@ -308,7 +308,11 @@
     "dimension": "Dimension",
     "dimensionAny": "All dimensions",
     "sourcesAll": "All datapacks",
-    "pickDimensionFirst": "Pick at least one dimension to see the Cobblemon that spawn there. Time, weather, moon phase and sky controls only show up once a dimension is set."
+    "pickDimensionFirst": "Pick at least one dimension to see the Cobblemon that spawn there. Time, weather, moon phase and sky controls only show up once a dimension is set.",
+    "filtersMods": "1. Mods",
+    "filtersDimension": "2. Dimension",
+    "filtersBiome": "3. Biome",
+    "filtersPosition": "4. Position"
   },
   "pokedexUi": {
     "searchPlaceholder": "Pesquisar Cobblemon por nome…",

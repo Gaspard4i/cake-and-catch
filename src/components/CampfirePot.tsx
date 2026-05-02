@@ -1012,22 +1012,19 @@ export function CampfirePot({ mode = "snack" }: { mode?: PotMode } = {}) {
           </div>
           <p className="mt-1 text-xs text-muted">{t("filtersHelp")}</p>
 
-          {/* Section: Where (location, dimension, biome, position) */}
+          {/*
+            Filter sections follow the dependency chain the user walks
+            through:  Mods → Dimension → Biome → Position+Y →
+            Time/Weather/Moon → Sky/Light → Sources. Each step prunes
+            the next one.
+          */}
+
+          {/* 1. Mods (Cobblemon + Minecraft locked, addons opt-in) */}
           <div className="mt-3">
             <div className="text-[10px] uppercase tracking-wider text-muted px-1 mb-1">
-              {t("filtersWhere")}
+              {t("filtersMods")}
             </div>
             <div className="flex flex-wrap items-center gap-2">
-              <MultiSelect
-                label={t("dimension")}
-                options={DIMENSION_OPTIONS.filter(
-                  (o) => !reachable || reachable.dimensions.has(o.value),
-                )}
-                value={dimensions}
-                onChange={setDimensions}
-                placeholder={t("dimensionAny")}
-                searchable={false}
-              />
               <MultiSelect
                 label={t("mods")}
                 options={NAMESPACE_OPTIONS.filter(
@@ -1046,58 +1043,100 @@ export function CampfirePot({ mode = "snack" }: { mode?: PotMode } = {}) {
                 )}
                 value={allowedNamespaces}
                 onChange={(next) => {
-                  // Cobblemon + Minecraft are always required; the
-                  // MultiSelect honours `locked` so this is mostly a
-                  // safety net for any other entry path (URL state,
-                  // saved-recipe hydration, etc.).
                   const merged = new Set(next);
                   for (const ns of LOCKED_NAMESPACES) merged.add(ns);
                   setAllowedNamespaces([...merged]);
                 }}
                 placeholder={t("modsAny")}
               />
-              <MultiSelect
-                label={t("biomes")}
-                options={biomeOptions}
-                value={biomes}
-                onChange={setBiomes}
-                placeholder={t("biomesAny")}
-              />
-              <MultiSelect
-                label={t("context")}
-                options={CONTEXT_OPTIONS.filter(
-                  (o) => !reachable || reachable.contexts.has(o.value),
-                )}
-                value={contexts}
-                onChange={setContexts}
-                placeholder={t("contextAny")}
-                searchable={false}
-              />
-              <label className="text-xs inline-flex items-center gap-1 text-muted">
-                <span className="text-[10px] uppercase tracking-wide">{t("minY")}</span>
-                <input
-                  value={minY}
-                  onChange={(e) => setMinY(e.target.value)}
-                  inputMode="numeric"
-                  placeholder="-64"
-                  className="w-16 rounded-md border border-border bg-card px-2 py-1 text-sm"
-                />
-              </label>
-              <label className="text-xs inline-flex items-center gap-1 text-muted">
-                <span className="text-[10px] uppercase tracking-wide">{t("maxY")}</span>
-                <input
-                  value={maxY}
-                  onChange={(e) => setMaxY(e.target.value)}
-                  inputMode="numeric"
-                  placeholder="320"
-                  className="w-16 rounded-md border border-border bg-card px-2 py-1 text-sm"
-                />
-              </label>
             </div>
           </div>
 
-          {/* Section: When (time, weather, moon phase) */}
-          {(dimTraits.hasDayCycle || dimTraits.hasWeather || dimTraits.hasMoon) && (
+          {/* 2. Dimension — always shows the vanilla three plus any
+              addon-declared dimension. We DON'T cross-filter through
+              `reachable.dimensions` because almost no spawn declares a
+              dimension explicitly (they imply it via the biome), so
+              that set is empty for the vanilla mod. */}
+          <div className="mt-3">
+            <div className="text-[10px] uppercase tracking-wider text-muted px-1 mb-1">
+              {t("filtersDimension")}
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <MultiSelect
+                label={t("dimension")}
+                options={DIMENSION_OPTIONS}
+                value={dimensions}
+                onChange={setDimensions}
+                placeholder={t("dimensionAny")}
+                searchable={false}
+              />
+            </div>
+          </div>
+
+          {/* 3. Biome — only meaningful once a dimension is locked in. */}
+          {dimensions.length > 0 && (
+            <div className="mt-3">
+              <div className="text-[10px] uppercase tracking-wider text-muted px-1 mb-1">
+                {t("filtersBiome")}
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                <MultiSelect
+                  label={t("biomes")}
+                  options={biomeOptions}
+                  value={biomes}
+                  onChange={setBiomes}
+                  placeholder={t("biomesAny")}
+                />
+              </div>
+            </div>
+          )}
+
+          {/* 4. Position + Y range */}
+          {dimensions.length > 0 && (
+            <div className="mt-3">
+              <div className="text-[10px] uppercase tracking-wider text-muted px-1 mb-1">
+                {t("filtersPosition")}
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                <MultiSelect
+                  label={t("context")}
+                  options={CONTEXT_OPTIONS.filter(
+                    (o) => !reachable || reachable.contexts.has(o.value),
+                  )}
+                  value={contexts}
+                  onChange={setContexts}
+                  placeholder={t("contextAny")}
+                  searchable={false}
+                />
+                <label className="text-xs inline-flex items-center gap-1 text-muted">
+                  <span className="text-[10px] uppercase tracking-wide">{t("minY")}</span>
+                  <input
+                    value={minY}
+                    onChange={(e) => setMinY(e.target.value)}
+                    inputMode="numeric"
+                    placeholder="-64"
+                    className="w-16 rounded-md border border-border bg-card px-2 py-1 text-sm"
+                  />
+                </label>
+                <label className="text-xs inline-flex items-center gap-1 text-muted">
+                  <span className="text-[10px] uppercase tracking-wide">{t("maxY")}</span>
+                  <input
+                    value={maxY}
+                    onChange={(e) => setMaxY(e.target.value)}
+                    inputMode="numeric"
+                    placeholder="320"
+                    className="w-16 rounded-md border border-border bg-card px-2 py-1 text-sm"
+                  />
+                </label>
+              </div>
+            </div>
+          )}
+
+          {/* 5. When (time / weather / moon) — gated behind dimension
+              AND skipped entirely for dimensions without those traits
+              (Nether: no day cycle, no weather, no moon). */}
+          {dimensions.length > 0 &&
+            (dimTraits.hasDayCycle || dimTraits.hasWeather || dimTraits.hasMoon) && (
             <div className="mt-3">
               <div className="text-[10px] uppercase tracking-wider text-muted px-1 mb-1">
                 {t("filtersWhen")}
@@ -1157,45 +1196,48 @@ export function CampfirePot({ mode = "snack" }: { mode?: PotMode } = {}) {
             </div>
           )}
 
-          {/* Section: Conditions (light, sky exposure) */}
-          <div className="mt-3">
-            <div className="text-[10px] uppercase tracking-wider text-muted px-1 mb-1">
-              {t("filtersConditions")}
-            </div>
-            <div className="flex flex-wrap items-center gap-2">
-              {dimTraits.hasSky && (
+          {/* 6. Sky / light — gated behind dimension. */}
+          {dimensions.length > 0 && (
+            <div className="mt-3">
+              <div className="text-[10px] uppercase tracking-wider text-muted px-1 mb-1">
+                {t("filtersConditions")}
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                {dimTraits.hasSky && (
+                  <label className="text-xs inline-flex items-center gap-1 text-muted">
+                    <span className="text-[10px] uppercase tracking-wide">{t("skyExposure")}</span>
+                    <select
+                      value={skyExposure}
+                      onChange={(e) => setSkyExposure(e.target.value)}
+                      className="rounded-md border border-border bg-card px-2 py-1 text-sm outline-none focus:border-accent"
+                    >
+                      <option value="">{t("skyExposureAny")}</option>
+                      {SKY_EXPOSURE_OPTIONS.filter(
+                        (o) => !reachable || reachable.skyExposure.has(o.value),
+                      ).map((o) => (
+                        <option key={o.value} value={o.value}>
+                          {o.label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                )}
                 <label className="text-xs inline-flex items-center gap-1 text-muted">
-                  <span className="text-[10px] uppercase tracking-wide">{t("skyExposure")}</span>
-                  <select
-                    value={skyExposure}
-                    onChange={(e) => setSkyExposure(e.target.value)}
-                    className="rounded-md border border-border bg-card px-2 py-1 text-sm outline-none focus:border-accent"
-                  >
-                    <option value="">{t("skyExposureAny")}</option>
-                    {SKY_EXPOSURE_OPTIONS.filter(
-                      (o) => !reachable || reachable.skyExposure.has(o.value),
-                    ).map((o) => (
-                      <option key={o.value} value={o.value}>
-                        {o.label}
-                      </option>
-                    ))}
-                  </select>
+                  <span className="text-[10px] uppercase tracking-wide">{t("lightLevel")}</span>
+                  <input
+                    value={lightLevel}
+                    onChange={(e) => setLightLevel(e.target.value)}
+                    inputMode="numeric"
+                    placeholder="0–15"
+                    className="w-16 rounded-md border border-border bg-card px-2 py-1 text-sm"
+                  />
                 </label>
-              )}
-              <label className="text-xs inline-flex items-center gap-1 text-muted">
-                <span className="text-[10px] uppercase tracking-wide">{t("lightLevel")}</span>
-                <input
-                  value={lightLevel}
-                  onChange={(e) => setLightLevel(e.target.value)}
-                  inputMode="numeric"
-                  placeholder="0–15"
-                  className="w-16 rounded-md border border-border bg-card px-2 py-1 text-sm"
-                />
-              </label>
+              </div>
             </div>
-          </div>
+          )}
 
-          {/* Section: Sources (datapacks / addons) */}
+          {/* 7. Sources (datapacks / addons) — last because it's an
+              advanced override, not part of the main flow. */}
           {sourcesCatalog.length > 1 && (
             <div className="mt-3">
               <div className="text-[10px] uppercase tracking-wider text-muted px-1 mb-1">
