@@ -52,6 +52,11 @@ export function PokemonSprite({
     );
   }
 
+  // Cobblemon portraits are anti-aliased 3D renders — applying the
+  // `.pixel` class would crisp-edge them into something ugly. Only
+  // the pixel-art fallbacks (Showdown / PokeAPI) wear that class.
+  const isPixelArt = idx >= 1;
+
   return (
     <img
       key={candidates[idx]}
@@ -62,7 +67,9 @@ export function PokemonSprite({
       loading="lazy"
       decoding="async"
       onError={() => setIdx((i) => i + 1)}
-      className={`pixel inline-block object-contain shrink-0 ${className}`}
+      className={`inline-block object-contain shrink-0 ${
+        isPixelArt ? "pixel" : ""
+      } ${className}`}
       style={{ width: size, height: size }}
     />
   );
