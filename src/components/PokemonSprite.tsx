@@ -4,54 +4,30 @@ import Image from "next/image";
 import { useState } from "react";
 
 /**
- * Build the pokemondb slug for a Pokémon. Every species (base or
- * variant) is reachable by `<basename>` or `<basename>-<variant>`:
- *   bulbasaur, vulpix-alolan, slowpoke-galarian, tauros-paldea-combat,
- *   venusaur-mega, charizard-gmax.
- * pokemondb uses `paldea` instead of `paldean`, normalise.
+ * Single sprite source for every Pokémon — the PokeAPI default front
+ * sprite keyed on the National Dex number. Base species and variants
+ * (alolan, galarian, mega, gmax, …) all reuse the base dex sprite, so
+ * the visual style stays consistent across the app.
  */
-function pokemondbSlug(name: string, variantLabel?: string | null): string {
-  const base = name
-    .toLowerCase()
-    .replace(/\s*\(.*\)\s*$/, "") // drop "(alolan)" suffix we add at ingest
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-|-$/g, "");
-  if (!variantLabel) return base;
-  const v = variantLabel.toLowerCase().replace(/^paldean/, "paldea");
-  return `${base}-${v}`;
-}
-
 export function PokemonSprite({
   dexNo,
   name,
   size = 64,
-  variant = "default",
   shiny = false,
-  variantLabel,
   className = "",
 }: {
   dexNo: number;
   name: string;
   size?: number;
+  /** Kept for API compatibility — rendering is identical for every form. */
   variant?: "default" | "artwork";
   shiny?: boolean;
-  /** Regional / form aspect (e.g. "alolan", "mega", "gmax", "paldean-combat"). */
+  /** Kept for API compatibility — see comment above. */
   variantLabel?: string | null;
   className?: string;
 }) {
-  // Cascade through fallbacks when a sprite 404s: pokemondb 2D ↘
-  // pokemondb HOME (3D but covers everything) ↘ PokeAPI by dex ↘
-  // baked-in dex number badge.
-  void variant;
-  const slug = pokemondbSlug(name, variantLabel);
-  const candidates = [
-    `https://img.pokemondb.net/sprites/sword-shield/${shiny ? "shiny" : "normal"}/${slug}.png`,
-    `https://img.pokemondb.net/sprites/home/${shiny ? "shiny" : "normal"}/${slug}.png`,
-    `https://cdn.jsdelivr.net/gh/PokeAPI/sprites@master/sprites/pokemon/${shiny ? "shiny/" : ""}${dexNo}.png`,
-  ];
-  const [srcIndex, setSrcIndex] = useState(0);
-  const errored = srcIndex >= candidates.length;
-  const src = errored ? candidates[0] : candidates[srcIndex];
+  const [errored, setErrored] = useState(false);
+  const src = `https://cdn.jsdelivr.net/gh/PokeAPI/sprites@master/sprites/pokemon/${shiny ? "shiny/" : ""}${dexNo}.png`;
   if (errored) {
     return (
       <span
@@ -70,7 +46,7 @@ export function PokemonSprite({
       width={size}
       height={size}
       unoptimized
-      onError={() => setSrcIndex((i) => i + 1)}
+      onError={() => setErrored(true)}
       className={`pixel inline-block ${className}`}
     />
   );
