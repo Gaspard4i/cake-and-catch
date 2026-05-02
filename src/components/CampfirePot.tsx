@@ -98,6 +98,62 @@ const TIME_OPTIONS: MultiSelectOption[] = [
   { value: "dusk", label: "Dusk" },
 ];
 
+/**
+ * Cobblemon spawn conditions evaluate `isRaining` / `isThundering`
+ * booleans. We expose three mutually exclusive choices the user can
+ * pick from; "any" is the default and means we don't constrain weather.
+ */
+const WEATHER_OPTIONS: MultiSelectOption[] = [
+  { value: "clear", label: "Clear" },
+  { value: "rain", label: "Rain" },
+  { value: "thunder", label: "Thunder" },
+];
+
+/**
+ * Spawnable position contexts. Bait recommendations always force water
+ * contexts client-side, but the snack maker exposes the full set so the
+ * user can simulate where the snack/bait will be placed.
+ */
+const CONTEXT_OPTIONS: MultiSelectOption[] = [
+  { value: "grounded", label: "On the ground" },
+  { value: "surface", label: "Water/lava surface" },
+  { value: "submerged", label: "Underwater" },
+  { value: "seafloor", label: "Sea floor" },
+  { value: "lavafloor", label: "Lava floor" },
+];
+
+/**
+ * Combined sky-light + canSeeSky question, mapped onto the underlying
+ * filter fields when sent to the API. "Any" (no selection) keeps the
+ * spawn list untouched.
+ */
+const SKY_EXPOSURE_OPTIONS: MultiSelectOption[] = [
+  { value: "open", label: "Open sky" },
+  { value: "covered", label: "Covered (no sky)" },
+  { value: "cave", label: "Cave / underground" },
+];
+
+/**
+ * Vanilla moon phase ids match Cobblemon's `moonPhase` condition (0–7).
+ * 0 is full moon, 4 is new moon — mirrors Minecraft's MoonPhase enum.
+ */
+const MOON_PHASE_OPTIONS: MultiSelectOption[] = [
+  { value: "0", label: "Full moon" },
+  { value: "1", label: "Waning gibbous" },
+  { value: "2", label: "Last quarter" },
+  { value: "3", label: "Waning crescent" },
+  { value: "4", label: "New moon" },
+  { value: "5", label: "Waxing crescent" },
+  { value: "6", label: "First quarter" },
+  { value: "7", label: "Waxing gibbous" },
+];
+
+const DIMENSION_OPTIONS: MultiSelectOption[] = [
+  { value: "minecraft:overworld", label: "Overworld" },
+  { value: "minecraft:the_nether", label: "Nether" },
+  { value: "minecraft:the_end", label: "End" },
+];
+
 const TYPE_OPTIONS: MultiSelectOption[] = [
   "normal", "fire", "water", "electric", "grass", "ice", "fighting",
   "poison", "ground", "flying", "psychic", "bug", "rock", "ghost",
@@ -201,7 +257,22 @@ export function CampfirePot({ mode = "snack" }: { mode?: PotMode } = {}) {
   const [minY, setMinY] = useState<string>("");
   const [maxY, setMaxY] = useState<string>("");
   const [sourcesCatalog, setSourcesCatalog] = useState<string[]>([]);
-  const [sources, setSources] = useState<string[]>([]);
+  /**
+   * Spawn-pool sources selected by the user. We DEFAULT to ["cobblemon"]
+   * so first-time visitors only see vanilla mod spawns — the dropdown
+   * lets them opt in to addons. An empty array still means "all sources"
+   * downstream, but the UI never starts there.
+   */
+  const [sources, setSources] = useState<string[]>(["cobblemon"]);
+  // Extended Cobblemon spawn conditions (see audit §3).
+  const [weather, setWeather] = useState<string>("");
+  const [contexts, setContexts] = useState<string[]>(
+    isBait ? ["surface", "submerged", "seafloor"] : [],
+  );
+  const [skyExposure, setSkyExposure] = useState<string>("");
+  const [lightLevel, setLightLevel] = useState<string>("");
+  const [moonPhase, setMoonPhase] = useState<string>("");
+  const [dimensions, setDimensions] = useState<string[]>([]);
   const [attracted, setAttracted] = useState<AttractedEntry[]>([]);
   const [attractedVisible, setAttractedVisible] = useState(24);
   const attractedSentinelRef = useRef<HTMLDivElement>(null);
@@ -373,6 +444,33 @@ export function CampfirePot({ mode = "snack" }: { mode?: PotMode } = {}) {
         const seasoningSlugs = slots
           .filter((s): s is Seasoning => s !== null)
           .map((s) => s.slug);
+        // Map the combined "sky exposure" UI control onto the two
+        // independent Cobblemon condition fields it represents. "Open
+        // sky" → canSeeSky=true (and skyLight is high so a default of
+        // 15 is a reasonable guess). "Covered" → canSeeSky=false but
+        // we don't pin skyLight (the player may stand under a tree).
+        // "Cave" → canSeeSky=false AND skyLight=0 to match conditions
+        // like `derelict` / `redstone_caves` that pin maxSkyLight=0.
+        let canSeeSkyValue: boolean | undefined;
+        let skyLightLevelValue: number | undefined;
+        if (skyExposure === "open") canSeeSkyValue = true;
+        else if (skyExposure === "covered") canSeeSkyValue = false;
+        else if (skyExposure === "cave") {
+          canSeeSkyValue = false;
+          skyLightLevelValue = 0;
+        }
+
+        // Bait operates on a fishing rod, so only spawns whose
+        // SpawningContext is water (surface / submerged / seafloor)
+        // are reachable. We seed the state with that set in bait mode
+        // (above) but the user can broaden it; honour their choice.
+        const effectiveContexts =
+          contexts.length > 0
+            ? contexts
+            : isBait
+              ? ["surface", "submerged", "seafloor"]
+              : undefined;
+
         const body = {
           composition: { seasoningSlugs },
           filter: {
@@ -381,10 +479,13 @@ export function CampfirePot({ mode = "snack" }: { mode?: PotMode } = {}) {
             minY: minY ? Number.parseInt(minY, 10) : undefined,
             maxY: maxY ? Number.parseInt(maxY, 10) : undefined,
             sources: sources.length > 0 ? sources : undefined,
-            // Bait operates on a fishing rod, so only spawns whose
-            // SpawningContext is water (surface / submerged / seafloor)
-            // are reachable. Force the filter on the API side.
-            contexts: isBait ? ["surface", "submerged", "seafloor"] : undefined,
+            contexts: effectiveContexts,
+            weather: weather || undefined,
+            canSeeSky: canSeeSkyValue,
+            skyLightLevel: skyLightLevelValue,
+            lightLevel: lightLevel ? Number.parseInt(lightLevel, 10) : undefined,
+            moonPhase: moonPhase ? Number.parseInt(moonPhase, 10) : undefined,
+            dimensions: dimensions.length > 0 ? dimensions : undefined,
           },
         };
         const res = await fetch("/api/snack", {
@@ -413,7 +514,21 @@ export function CampfirePot({ mode = "snack" }: { mode?: PotMode } = {}) {
       clearTimeout(timer);
       ctrl.abort();
     };
-  }, [slots, biomes, times, minY, maxY, sources, isBait]);
+  }, [
+    slots,
+    biomes,
+    times,
+    minY,
+    maxY,
+    sources,
+    isBait,
+    weather,
+    contexts,
+    skyExposure,
+    lightLevel,
+    moonPhase,
+    dimensions,
+  ]);
 
 
   const attractedView = useMemo(() => {
@@ -722,63 +837,201 @@ export function CampfirePot({ mode = "snack" }: { mode?: PotMode } = {}) {
 
 
         <div>
-          <h3 className="text-sm font-medium uppercase tracking-wide text-muted">{t("filters")}</h3>
-          <div className="mt-3 flex flex-wrap items-center gap-2">
-            <MultiSelect
-              label={t("mods")}
-              options={NAMESPACE_OPTIONS}
-              value={allowedNamespaces}
-              onChange={setAllowedNamespaces}
-              placeholder={t("modsAny")}
-            />
-            {sourcesCatalog.length > 1 && (
-              <MultiSelect
-                label="Addons"
-                options={sourcesCatalog.map((s) => ({
-                  value: s,
-                  label: s,
-                }))}
-                value={sources}
-                onChange={setSources}
-                placeholder="all addons"
-              />
+          <div className="flex items-baseline justify-between gap-2">
+            <h3 className="text-sm font-medium uppercase tracking-wide text-muted">
+              {t("filters")}
+            </h3>
+            {(biomes.length > 0 ||
+              times.length > 0 ||
+              minY !== "" ||
+              maxY !== "" ||
+              weather !== "" ||
+              contexts.length > 0 ||
+              skyExposure !== "" ||
+              lightLevel !== "" ||
+              moonPhase !== "" ||
+              dimensions.length > 0) && (
+              <button
+                onClick={() => {
+                  setBiomes([]);
+                  setTimes([]);
+                  setMinY("");
+                  setMaxY("");
+                  setWeather("");
+                  setContexts(isBait ? ["surface", "submerged", "seafloor"] : []);
+                  setSkyExposure("");
+                  setLightLevel("");
+                  setMoonPhase("");
+                  setDimensions([]);
+                }}
+                className="text-[10px] uppercase tracking-wide px-2 py-0.5 rounded-full border border-border bg-card text-muted hover:text-foreground"
+              >
+                {t("filtersReset")}
+              </button>
             )}
-            <MultiSelect
-              label={t("biomes")}
-              options={biomeOptions}
-              value={biomes}
-              onChange={setBiomes}
-              placeholder={t("biomesAny")}
-            />
-            <MultiSelect
-              label={t("time")}
-              options={TIME_OPTIONS}
-              value={times}
-              onChange={setTimes}
-              placeholder={t("timeAny")}
-              searchable={false}
-            />
-            <label className="text-xs inline-flex items-center gap-1 text-muted">
-              <span className="text-[10px] uppercase tracking-wide">{t("minY")}</span>
-              <input
-                value={minY}
-                onChange={(e) => setMinY(e.target.value)}
-                inputMode="numeric"
-                placeholder="-64"
-                className="w-16 rounded-md border border-border bg-card px-2 py-1 text-sm"
-              />
-            </label>
-            <label className="text-xs inline-flex items-center gap-1 text-muted">
-              <span className="text-[10px] uppercase tracking-wide">{t("maxY")}</span>
-              <input
-                value={maxY}
-                onChange={(e) => setMaxY(e.target.value)}
-                inputMode="numeric"
-                placeholder="320"
-                className="w-16 rounded-md border border-border bg-card px-2 py-1 text-sm"
-              />
-            </label>
           </div>
+          <p className="mt-1 text-xs text-muted">{t("filtersHelp")}</p>
+
+          {/* Section: Where (location, dimension, biome, position) */}
+          <div className="mt-3">
+            <div className="text-[10px] uppercase tracking-wider text-muted px-1 mb-1">
+              {t("filtersWhere")}
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <MultiSelect
+                label={t("dimension")}
+                options={DIMENSION_OPTIONS}
+                value={dimensions}
+                onChange={setDimensions}
+                placeholder={t("dimensionAny")}
+                searchable={false}
+              />
+              <MultiSelect
+                label={t("mods")}
+                options={NAMESPACE_OPTIONS}
+                value={allowedNamespaces}
+                onChange={setAllowedNamespaces}
+                placeholder={t("modsAny")}
+              />
+              <MultiSelect
+                label={t("biomes")}
+                options={biomeOptions}
+                value={biomes}
+                onChange={setBiomes}
+                placeholder={t("biomesAny")}
+              />
+              <MultiSelect
+                label={t("context")}
+                options={CONTEXT_OPTIONS}
+                value={contexts}
+                onChange={setContexts}
+                placeholder={t("contextAny")}
+                searchable={false}
+              />
+              <label className="text-xs inline-flex items-center gap-1 text-muted">
+                <span className="text-[10px] uppercase tracking-wide">{t("minY")}</span>
+                <input
+                  value={minY}
+                  onChange={(e) => setMinY(e.target.value)}
+                  inputMode="numeric"
+                  placeholder="-64"
+                  className="w-16 rounded-md border border-border bg-card px-2 py-1 text-sm"
+                />
+              </label>
+              <label className="text-xs inline-flex items-center gap-1 text-muted">
+                <span className="text-[10px] uppercase tracking-wide">{t("maxY")}</span>
+                <input
+                  value={maxY}
+                  onChange={(e) => setMaxY(e.target.value)}
+                  inputMode="numeric"
+                  placeholder="320"
+                  className="w-16 rounded-md border border-border bg-card px-2 py-1 text-sm"
+                />
+              </label>
+            </div>
+          </div>
+
+          {/* Section: When (time, weather, moon phase) */}
+          <div className="mt-3">
+            <div className="text-[10px] uppercase tracking-wider text-muted px-1 mb-1">
+              {t("filtersWhen")}
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <MultiSelect
+                label={t("time")}
+                options={TIME_OPTIONS}
+                value={times}
+                onChange={setTimes}
+                placeholder={t("timeAny")}
+                searchable={false}
+              />
+              <label className="text-xs inline-flex items-center gap-1 text-muted">
+                <span className="text-[10px] uppercase tracking-wide">{t("weather")}</span>
+                <select
+                  value={weather}
+                  onChange={(e) => setWeather(e.target.value)}
+                  className="rounded-md border border-border bg-card px-2 py-1 text-sm outline-none focus:border-accent"
+                >
+                  <option value="">{t("weatherAny")}</option>
+                  {WEATHER_OPTIONS.map((o) => (
+                    <option key={o.value} value={o.value}>
+                      {o.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="text-xs inline-flex items-center gap-1 text-muted">
+                <span className="text-[10px] uppercase tracking-wide">{t("moonPhase")}</span>
+                <select
+                  value={moonPhase}
+                  onChange={(e) => setMoonPhase(e.target.value)}
+                  className="rounded-md border border-border bg-card px-2 py-1 text-sm outline-none focus:border-accent"
+                >
+                  <option value="">{t("moonPhaseAny")}</option>
+                  {MOON_PHASE_OPTIONS.map((o) => (
+                    <option key={o.value} value={o.value}>
+                      {o.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
+          </div>
+
+          {/* Section: Conditions (light, sky exposure) */}
+          <div className="mt-3">
+            <div className="text-[10px] uppercase tracking-wider text-muted px-1 mb-1">
+              {t("filtersConditions")}
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <label className="text-xs inline-flex items-center gap-1 text-muted">
+                <span className="text-[10px] uppercase tracking-wide">{t("skyExposure")}</span>
+                <select
+                  value={skyExposure}
+                  onChange={(e) => setSkyExposure(e.target.value)}
+                  className="rounded-md border border-border bg-card px-2 py-1 text-sm outline-none focus:border-accent"
+                >
+                  <option value="">{t("skyExposureAny")}</option>
+                  {SKY_EXPOSURE_OPTIONS.map((o) => (
+                    <option key={o.value} value={o.value}>
+                      {o.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="text-xs inline-flex items-center gap-1 text-muted">
+                <span className="text-[10px] uppercase tracking-wide">{t("lightLevel")}</span>
+                <input
+                  value={lightLevel}
+                  onChange={(e) => setLightLevel(e.target.value)}
+                  inputMode="numeric"
+                  placeholder="0–15"
+                  className="w-16 rounded-md border border-border bg-card px-2 py-1 text-sm"
+                />
+              </label>
+            </div>
+          </div>
+
+          {/* Section: Sources (datapacks / addons) */}
+          {sourcesCatalog.length > 1 && (
+            <div className="mt-3">
+              <div className="text-[10px] uppercase tracking-wider text-muted px-1 mb-1">
+                {t("filtersSources")}
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                <MultiSelect
+                  label="Datapacks"
+                  options={sourcesCatalog.map((s) => ({
+                    value: s,
+                    label: s,
+                  }))}
+                  value={sources}
+                  onChange={setSources}
+                  placeholder={t("sourcesAll")}
+                />
+              </div>
+            </div>
+          )}
         </div>
 
       </div>

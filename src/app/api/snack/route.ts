@@ -46,6 +46,15 @@ function normalizeFilter(raw: IncomingFilter | undefined): SpawnFilter {
   if (raw?.weather) out.weather = raw.weather;
   if (raw?.sources && raw.sources.length > 0) out.sources = raw.sources;
   if (raw?.contexts && raw.contexts.length > 0) out.contexts = raw.contexts;
+  if (raw?.structures && raw.structures.length > 0) out.structures = raw.structures;
+  if (raw?.dimensions && raw.dimensions.length > 0) out.dimensions = raw.dimensions;
+  if (typeof raw?.lightLevel === "number") out.lightLevel = raw.lightLevel;
+  if (typeof raw?.skyLightLevel === "number") out.skyLightLevel = raw.skyLightLevel;
+  if (typeof raw?.moonPhase === "number") out.moonPhase = raw.moonPhase;
+  if (typeof raw?.canSeeSky === "boolean") out.canSeeSky = raw.canSeeSky;
+  if (typeof raw?.baseBlock === "string") out.baseBlock = raw.baseBlock;
+  if (raw?.nearbyBlocks && raw.nearbyBlocks.length > 0) out.nearbyBlocks = raw.nearbyBlocks;
+  if (typeof raw?.fluid === "string") out.fluid = raw.fluid;
   return out;
 }
 
