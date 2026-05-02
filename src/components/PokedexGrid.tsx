@@ -129,19 +129,24 @@ export function PokedexGrid() {
   const typesRef = useRef(types);
   typesRef.current = types;
 
+  // AbortController for the in-flight request — when the user
+  // changes a filter mid-fetch (or HMR kicks in) we abort instead
+  // of letting the old fetch surface as an unhandled NetworkError.
+  const abortRef = useRef<AbortController | null>(null);
+
   const fetchPage = useCallback(async () => {
     if (inFlightRef.current || done) return;
     inFlightRef.current = true;
     const myId = reqIdRef.current;
+    abortRef.current?.abort();
+    const ctrl = new AbortController();
+    abortRef.current = ctrl;
     setLoading(true);
     try {
-      const res = await fetch(buildUrl(cursor));
+      const res = await fetch(buildUrl(cursor), { signal: ctrl.signal });
       if (!res.ok) throw new Error("pokedex fetch failed");
       const data = (await res.json()) as { results: Species[]; nextCursor: string | null };
       if (myId !== reqIdRef.current) return;
-      // Server already narrowed; we still belt-and-braces filter
-      // type intersection client-side so the cap of 2 types is
-      // honoured even when the server payload includes extras.
       const activeTypes = typesRef.current;
       const filtered = data.results.filter((s) => {
         if (activeTypes.length > 0) {
@@ -165,13 +170,21 @@ export function PokedexGrid() {
       });
       if (data.nextCursor === null) setDone(true);
       else setCursor(data.nextCursor);
-    } catch {
+    } catch (err) {
+      // AbortError = filter changed mid-flight, ignore.
+      // TypeError "NetworkError" = transient (HMR, reload, offline).
+      // Either way: don't surface it as an unhandled rejection.
+      const name = (err as { name?: string } | null)?.name;
+      if (name === "AbortError") return;
       if (myId === reqIdRef.current) setDone(true);
     } finally {
       if (myId === reqIdRef.current) setLoading(false);
       inFlightRef.current = false;
     }
   }, [buildUrl, cursor, done]);
+
+  // Abort any in-flight fetch when the component unmounts.
+  useEffect(() => () => abortRef.current?.abort(), []);
 
   useEffect(() => {
     if (results.length === 0 && !done) fetchPage();

@@ -34,7 +34,10 @@ function createDb(): DB {
    */
   const needsSsl = /supabase|neon|render|amazonaws|sslmode=require/.test(url);
   const client = postgres(url, {
-    max: process.env.NODE_ENV === "production" ? 10 : 3,
+    // Dev had 3 originally, but the species page fan-outs nine
+    // queries in Promise.all → pool starvation → 30s timeouts. Bump
+    // to 10 so a single page load fits in one pool round-trip.
+    max: process.env.NODE_ENV === "production" ? 10 : 10,
     idle_timeout: 20,
     max_lifetime: 60 * 10,
     ssl: needsSsl ? "require" : undefined,

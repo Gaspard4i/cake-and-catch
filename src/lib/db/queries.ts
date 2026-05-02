@@ -188,6 +188,21 @@ export const getSpeciesNeighbors = cached(
   }> =>
     safe(
       async () => {
+        // Look up the current row first (1 row, indexed on slug).
+        const here = await db
+          .select({
+            slug: schema.species.slug,
+            dexNo: schema.species.dexNo,
+          })
+          .from(schema.species)
+          .where(eq(schema.species.slug, slug))
+          .limit(1);
+        const cur = here[0];
+        if (!cur) return { prev: null, next: null };
+
+        // Pokédex flow = base species + regional variants. Mimic
+        // forms (mega/gmax/cosmetic) are skipped so the arrows feel
+        // like a real Pokédex.
         const inFlow = sql<boolean>`(
           ${schema.species.variantOfSpeciesId} IS NULL
           OR ${schema.species.variantLabel} ILIKE 'alolan%'
@@ -195,20 +210,45 @@ export const getSpeciesNeighbors = cached(
           OR ${schema.species.variantLabel} ILIKE 'hisuian%'
           OR ${schema.species.variantLabel} ILIKE 'paldean%'
         )`;
-        const ordered = await db
-          .select({
-            slug: schema.species.slug,
-            name: schema.species.name,
-            dexNo: schema.species.dexNo,
-          })
-          .from(schema.species)
-          .where(inFlow)
-          .orderBy(asc(schema.species.dexNo), asc(schema.species.slug));
-        const i = ordered.findIndex((r) => r.slug === slug);
-        if (i < 0) return { prev: null, next: null };
+
+        // Two seek queries — each hits the (dex_no, slug) order key
+        // path with LIMIT 1. Way cheaper than scanning every row.
+        const [prevRows, nextRows] = await Promise.all([
+          db
+            .select({
+              slug: schema.species.slug,
+              name: schema.species.name,
+              dexNo: schema.species.dexNo,
+            })
+            .from(schema.species)
+            .where(
+              and(
+                inFlow,
+                sql`(${schema.species.dexNo}, ${schema.species.slug}) < (${cur.dexNo}, ${cur.slug})`,
+              ),
+            )
+            .orderBy(desc(schema.species.dexNo), desc(schema.species.slug))
+            .limit(1),
+          db
+            .select({
+              slug: schema.species.slug,
+              name: schema.species.name,
+              dexNo: schema.species.dexNo,
+            })
+            .from(schema.species)
+            .where(
+              and(
+                inFlow,
+                sql`(${schema.species.dexNo}, ${schema.species.slug}) > (${cur.dexNo}, ${cur.slug})`,
+              ),
+            )
+            .orderBy(asc(schema.species.dexNo), asc(schema.species.slug))
+            .limit(1),
+        ]);
+
         return {
-          prev: i > 0 ? ordered[i - 1] : null,
-          next: i < ordered.length - 1 ? ordered[i + 1] : null,
+          prev: prevRows[0] ?? null,
+          next: nextRows[0] ?? null,
         };
       },
       { prev: null, next: null },
