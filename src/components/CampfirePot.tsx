@@ -5,6 +5,11 @@ import Link from "next/link";
 import { Star } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { Spinner, TopProgress, AttractedCardSkeleton, Skeleton } from "./Loader";
+import {
+  availableValues,
+  type AxisFilter,
+  type SpawnAxis,
+} from "@/lib/recommend/spawn-axes";
 import { ItemIcon } from "./ItemIcon";
 import { PokemonSprite } from "./PokemonSprite";
 import { TypePair } from "./TypeBadge";
@@ -304,6 +309,11 @@ export function CampfirePot({ mode = "snack" }: { mode?: PotMode } = {}) {
     return () => window.removeEventListener("resize", update);
   }, []);
 
+  // Compact projection of every spawn used to drive the cross-axis filter
+  // cascade — picking a dimension narrows the biome list, picking a biome
+  // narrows the time list, etc. Loaded once, cached on the server side.
+  const [spawnAxes, setSpawnAxes] = useState<SpawnAxis[]>([]);
+
   useEffect(() => {
     setPantryLoading(true);
     fetch("/api/snack")
@@ -319,6 +329,10 @@ export function CampfirePot({ mode = "snack" }: { mode?: PotMode } = {}) {
       .then((r) => r.json())
       .then((d: { sources: string[] }) => setSourcesCatalog(d.sources ?? []))
       .catch(() => setSourcesCatalog([]));
+    fetch("/api/spawn-axes")
+      .then((r) => r.json())
+      .then((d: { axes: SpawnAxis[] }) => setSpawnAxes(d.axes ?? []))
+      .catch(() => setSpawnAxes([]));
   }, []);
 
   // Hydrate slots from `?load=<savedId>` so the Saved-recipes page can
@@ -350,16 +364,75 @@ export function CampfirePot({ mode = "snack" }: { mode?: PotMode } = {}) {
     });
   }, [seasonings]);
 
+  /**
+   * The cross-axis filter that all dropdowns share. We assemble it from
+   * every UI state so each axis can ask "given the OTHER selections,
+   * what values are still reachable?".
+   */
+  const axisFilter = useMemo<AxisFilter>(() => {
+    let canSeeSkyValue: boolean | undefined;
+    if (skyExposure === "open") canSeeSkyValue = true;
+    else if (skyExposure === "covered" || skyExposure === "cave")
+      canSeeSkyValue = false;
+    void canSeeSkyValue; // surfaced through the `skyExposure` axis directly
+
+    return {
+      sources: sources.length > 0 ? sources : undefined,
+      contexts: contexts.length > 0 ? contexts : undefined,
+      biomes: biomes.length > 0 ? biomes : undefined,
+      dimensions: dimensions.length > 0 ? dimensions : undefined,
+      timeRanges: times.length > 0 ? times : undefined,
+      weather: weather ? (weather as "clear" | "rain" | "thunder") : undefined,
+      moonPhase: moonPhase ? Number.parseInt(moonPhase, 10) : undefined,
+      skyExposure: skyExposure
+        ? (skyExposure as "open" | "covered" | "cave")
+        : undefined,
+      lightLevel: lightLevel ? Number.parseInt(lightLevel, 10) : undefined,
+      namespaces: allowedNamespaces.length > 0 ? allowedNamespaces : undefined,
+    };
+  }, [
+    sources,
+    contexts,
+    biomes,
+    dimensions,
+    times,
+    weather,
+    moonPhase,
+    skyExposure,
+    lightLevel,
+    allowedNamespaces,
+  ]);
+
+  // Compute the still-reachable values per axis once, from the shared
+  // axes payload. Each call ignores the axis being computed so the
+  // control never greys ITS OWN value out.
+  const reachable = useMemo(() => {
+    if (spawnAxes.length === 0) return null;
+    return {
+      biomes: availableValues(spawnAxes, axisFilter, "biomes"),
+      namespaces: availableValues(spawnAxes, axisFilter, "namespaces"),
+      dimensions: availableValues(spawnAxes, axisFilter, "dimensions"),
+      contexts: availableValues(spawnAxes, axisFilter, "contexts"),
+      timeRanges: availableValues(spawnAxes, axisFilter, "timeRanges"),
+      weather: availableValues(spawnAxes, axisFilter, "weather"),
+      moonPhase: availableValues(spawnAxes, axisFilter, "moonPhase"),
+      skyExposure: availableValues(spawnAxes, axisFilter, "skyExposure"),
+      sources: availableValues(spawnAxes, axisFilter, "sources"),
+    };
+  }, [spawnAxes, axisFilter]);
+
   const biomeOptions = useMemo<MultiSelectOption[]>(() => {
     const set = new Set(allowedNamespaces);
+    const reach = reachable?.biomes;
     return biomeCatalog
       .filter((b) => set.has(b.namespace))
+      .filter((b) => !reach || reach.has(b.value.replace(/^#/, "")))
       .map((b) => ({
         value: b.value,
         label: b.label,
         group: NS_LABEL[b.namespace] ?? b.namespace,
       }));
-  }, [biomeCatalog, allowedNamespaces]);
+  }, [biomeCatalog, allowedNamespaces, reachable]);
 
   // Prune selected biomes that are no longer in the allowed namespace set.
   useEffect(() => {
@@ -880,7 +953,9 @@ export function CampfirePot({ mode = "snack" }: { mode?: PotMode } = {}) {
             <div className="flex flex-wrap items-center gap-2">
               <MultiSelect
                 label={t("dimension")}
-                options={DIMENSION_OPTIONS}
+                options={DIMENSION_OPTIONS.filter(
+                  (o) => !reachable || reachable.dimensions.has(o.value),
+                )}
                 value={dimensions}
                 onChange={setDimensions}
                 placeholder={t("dimensionAny")}
@@ -888,7 +963,9 @@ export function CampfirePot({ mode = "snack" }: { mode?: PotMode } = {}) {
               />
               <MultiSelect
                 label={t("mods")}
-                options={NAMESPACE_OPTIONS}
+                options={NAMESPACE_OPTIONS.filter(
+                  (o) => !reachable || reachable.namespaces.has(o.value),
+                )}
                 value={allowedNamespaces}
                 onChange={setAllowedNamespaces}
                 placeholder={t("modsAny")}
@@ -902,7 +979,9 @@ export function CampfirePot({ mode = "snack" }: { mode?: PotMode } = {}) {
               />
               <MultiSelect
                 label={t("context")}
-                options={CONTEXT_OPTIONS}
+                options={CONTEXT_OPTIONS.filter(
+                  (o) => !reachable || reachable.contexts.has(o.value),
+                )}
                 value={contexts}
                 onChange={setContexts}
                 placeholder={t("contextAny")}
@@ -939,7 +1018,9 @@ export function CampfirePot({ mode = "snack" }: { mode?: PotMode } = {}) {
             <div className="flex flex-wrap items-center gap-2">
               <MultiSelect
                 label={t("time")}
-                options={TIME_OPTIONS}
+                options={TIME_OPTIONS.filter(
+                  (o) => !reachable || reachable.timeRanges.has(o.value),
+                )}
                 value={times}
                 onChange={setTimes}
                 placeholder={t("timeAny")}
@@ -953,7 +1034,9 @@ export function CampfirePot({ mode = "snack" }: { mode?: PotMode } = {}) {
                   className="rounded-md border border-border bg-card px-2 py-1 text-sm outline-none focus:border-accent"
                 >
                   <option value="">{t("weatherAny")}</option>
-                  {WEATHER_OPTIONS.map((o) => (
+                  {WEATHER_OPTIONS.filter(
+                    (o) => !reachable || reachable.weather.has(o.value),
+                  ).map((o) => (
                     <option key={o.value} value={o.value}>
                       {o.label}
                     </option>
@@ -968,7 +1051,9 @@ export function CampfirePot({ mode = "snack" }: { mode?: PotMode } = {}) {
                   className="rounded-md border border-border bg-card px-2 py-1 text-sm outline-none focus:border-accent"
                 >
                   <option value="">{t("moonPhaseAny")}</option>
-                  {MOON_PHASE_OPTIONS.map((o) => (
+                  {MOON_PHASE_OPTIONS.filter(
+                    (o) => !reachable || reachable.moonPhase.has(o.value),
+                  ).map((o) => (
                     <option key={o.value} value={o.value}>
                       {o.label}
                     </option>
@@ -992,7 +1077,9 @@ export function CampfirePot({ mode = "snack" }: { mode?: PotMode } = {}) {
                   className="rounded-md border border-border bg-card px-2 py-1 text-sm outline-none focus:border-accent"
                 >
                   <option value="">{t("skyExposureAny")}</option>
-                  {SKY_EXPOSURE_OPTIONS.map((o) => (
+                  {SKY_EXPOSURE_OPTIONS.filter(
+                    (o) => !reachable || reachable.skyExposure.has(o.value),
+                  ).map((o) => (
                     <option key={o.value} value={o.value}>
                       {o.label}
                     </option>
@@ -1021,10 +1108,9 @@ export function CampfirePot({ mode = "snack" }: { mode?: PotMode } = {}) {
               <div className="flex flex-wrap items-center gap-2">
                 <MultiSelect
                   label="Datapacks"
-                  options={sourcesCatalog.map((s) => ({
-                    value: s,
-                    label: s,
-                  }))}
+                  options={sourcesCatalog
+                    .filter((s) => !reachable || reachable.sources.has(s))
+                    .map((s) => ({ value: s, label: s }))}
                   value={sources}
                   onChange={setSources}
                   placeholder={t("sourcesAll")}
