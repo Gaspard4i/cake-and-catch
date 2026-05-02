@@ -58,6 +58,32 @@ export const listSpawnsForSpecies = cached(
     ),
 );
 
+/**
+ * Cobblemon-only spawns for a species. Used by the Cobbledex page so
+ * datapacks/addons never sneak into the canonical spawn list — addon
+ * spawns are still queryable via {@link listSpawnsForSpecies}.
+ */
+export const listCobblemonSpawnsForSpecies = cached(
+  "cobblemon-spawns-for-species",
+  ONE_HOUR,
+  async (speciesId: number) =>
+    safe(
+      () =>
+        db
+          .select()
+          .from(schema.spawns)
+          .where(
+            and(
+              eq(schema.spawns.speciesId, speciesId),
+              eq(schema.spawns.sourceName, "cobblemon"),
+              eq(schema.spawns.sourceKind, "mod"),
+            ),
+          )
+          .orderBy(desc(schema.spawns.weight)),
+      [] as Array<typeof schema.spawns.$inferSelect>,
+    ),
+);
+
 export const getSourcesFor = cached(
   "sources-for",
   ONE_HOUR,

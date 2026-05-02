@@ -24,7 +24,7 @@ import {
   getWikiSummary,
   listBaitEffects,
   listBerries,
-  listSpawnsForSpecies,
+  listCobblemonSpawnsForSpecies,
 } from "@/lib/db/queries";
 import { SourceBadge } from "@/components/SourceBadge";
 import { TypePair } from "@/components/TypeBadge";
@@ -45,6 +45,35 @@ function formatBiome(biome: string) {
   return biome.replace(/^#?cobblemon:/, "").replace(/is_/, "").replace(/_/g, " ");
 }
 
+function prettyId(id: string): string {
+  // `#cobblemon:is_lush` → `is lush`, `minecraft:village` → `village`.
+  return id.replace(/^#?[a-z0-9_]+:/, "").replace(/_/g, " ");
+}
+
+function joinList(items: string[]): string {
+  return items.map(prettyId).join(", ");
+}
+
+const MOON_PHASE_LABELS = [
+  "full",
+  "waning gibbous",
+  "last quarter",
+  "waning crescent",
+  "new",
+  "waxing crescent",
+  "first quarter",
+  "waxing gibbous",
+];
+
+/**
+ * Exhaustive renderer for a Cobblemon `condition` block. Each key produces
+ * one human-readable line; the goal is to mirror what an in-game
+ * Pokefinder/Cobblenav would surface so a player can read the full
+ * gating without having to inspect the JSON.
+ *
+ * Returns plain strings so the caller can decide on layout. Empty array
+ * when nothing is configured.
+ */
 function formatCondition(
   cond: unknown,
   t: (key: string, values?: Record<string, string | number>) => string,
@@ -52,15 +81,36 @@ function formatCondition(
   if (!cond || typeof cond !== "object") return [];
   const c = cond as Record<string, unknown>;
   const parts: string[] = [];
+
   if (typeof c.timeRange === "string") parts.push(t("condition.time", { value: c.timeRange }));
-  if (typeof c.moonPhase === "string") parts.push(t("condition.moon", { value: c.moonPhase }));
+  if (c.moonPhase !== undefined) {
+    const raw = typeof c.moonPhase === "number" ? c.moonPhase : Number.parseInt(String(c.moonPhase), 10);
+    if (Number.isFinite(raw)) {
+      parts.push(t("condition.moon", { value: MOON_PHASE_LABELS[raw] ?? String(raw) }));
+    }
+  }
+
   if (c.isRaining === true) parts.push(t("condition.raining"));
+  else if (c.isRaining === false) parts.push(t("condition.notRaining"));
   if (c.isThundering === true) parts.push(t("condition.thundering"));
+  else if (c.isThundering === false) parts.push(t("condition.notThundering"));
+  if (c.canSeeSky === true) parts.push(t("condition.openSky"));
+  else if (c.canSeeSky === false) parts.push(t("condition.coveredSky"));
+  if (c.isSlimeChunk === true) parts.push(t("condition.slimeChunk"));
+
   if (typeof c.minY === "number" || typeof c.maxY === "number") {
     parts.push(
       t("condition.y", {
         min: typeof c.minY === "number" ? c.minY : "-∞",
         max: typeof c.maxY === "number" ? c.maxY : "+∞",
+      }),
+    );
+  }
+  if (typeof c.minLight === "number" || typeof c.maxLight === "number") {
+    parts.push(
+      t("condition.light", {
+        min: typeof c.minLight === "number" ? c.minLight : 0,
+        max: typeof c.maxLight === "number" ? c.maxLight : 15,
       }),
     );
   }
@@ -72,11 +122,34 @@ function formatCondition(
       }),
     );
   }
+  if (typeof c.minDepth === "number" || typeof c.maxDepth === "number") {
+    parts.push(
+      t("condition.depth", {
+        min: typeof c.minDepth === "number" ? c.minDepth : 0,
+        max: typeof c.maxDepth === "number" ? c.maxDepth : "+∞",
+      }),
+    );
+  }
+
+  if (Array.isArray(c.dimensions) && c.dimensions.length > 0) {
+    parts.push(t("condition.dimensions", { value: joinList(c.dimensions as string[]) }));
+  }
   if (Array.isArray(c.structures) && c.structures.length > 0) {
-    parts.push(t("condition.structures", { value: (c.structures as string[]).join(", ") }));
+    parts.push(t("condition.structures", { value: joinList(c.structures as string[]) }));
   }
   if (Array.isArray(c.neededBaseBlocks) && c.neededBaseBlocks.length > 0) {
-    parts.push(t("condition.blocks", { value: (c.neededBaseBlocks as string[]).join(", ") }));
+    parts.push(t("condition.blocks", { value: joinList(c.neededBaseBlocks as string[]) }));
+  }
+  if (Array.isArray(c.neededNearbyBlocks) && c.neededNearbyBlocks.length > 0) {
+    parts.push(t("condition.nearbyBlocks", { value: joinList(c.neededNearbyBlocks as string[]) }));
+  }
+  if (typeof c.fluid === "string") {
+    parts.push(t("condition.fluid", { value: prettyId(c.fluid) }));
+  }
+  if (c.fluidIsSource === true) parts.push(t("condition.fluidSource"));
+  if (Array.isArray(c.labels) && c.labels.length > 0) {
+    const mode = (c.labelMode as string | undefined) ?? "ANY";
+    parts.push(t("condition.labels", { value: (c.labels as string[]).join(", "), mode }));
   }
   return parts;
 }
@@ -87,7 +160,7 @@ async function SpeciesDetail({ params }: { params: Promise<{ slug: string }> }) 
   if (!species) notFound();
 
   const [spawns, sources, baits, berries, seasonings, wiki, t] = await Promise.all([
-    listSpawnsForSpecies(species.id),
+    listCobblemonSpawnsForSpecies(species.id),
     getSourcesFor("species", species.id),
     listBaitEffects(),
     listBerries(),
@@ -342,6 +415,12 @@ async function SpeciesDetail({ params }: { params: Promise<{ slug: string }> }) 
                     href={s.sourceUrl ?? undefined}
                   />
                 </div>
+                {s.context && (
+                  <div className="mt-2 text-xs text-muted">
+                    <span className="uppercase tracking-wide">{t("context")}: </span>
+                    <span className="capitalize">{prettyId(s.context)}</span>
+                  </div>
+                )}
                 {s.biomes.length > 0 && (
                   <div className="mt-2 text-sm flex flex-wrap gap-x-2 gap-y-1 items-baseline">
                     <span className="text-muted">{t("biomes")}</span>
@@ -357,10 +436,41 @@ async function SpeciesDetail({ params }: { params: Promise<{ slug: string }> }) 
                   </div>
                 )}
                 {formatCondition(s.condition, t as never).map((line, i) => (
-                  <div key={i} className="text-xs text-muted mt-1">
+                  <div key={`c-${i}`} className="text-xs text-muted mt-1">
                     {line}
                   </div>
                 ))}
+                {formatCondition(s.anticondition, t as never).map((line, i) => (
+                  <div key={`a-${i}`} className="text-xs text-amber-700 dark:text-amber-300 mt-1">
+                    <span className="uppercase tracking-wide mr-1">{t("except")}</span>
+                    {line}
+                  </div>
+                ))}
+                {s.presets && s.presets.length > 0 && (
+                  <div className="mt-2 text-xs text-muted flex flex-wrap gap-1">
+                    <span className="uppercase tracking-wide mr-1">{t("presets")}</span>
+                    {s.presets.map((p, i) => (
+                      <span
+                        key={i}
+                        className="rounded bg-subtle px-1.5 py-0.5 capitalize"
+                      >
+                        {p.replace(/_/g, " ")}
+                      </span>
+                    ))}
+                  </div>
+                )}
+                {Array.isArray(s.weightMultipliers) &&
+                  (s.weightMultipliers as Array<{ multiplier: number; condition?: unknown }>).map(
+                    (wm, i) => {
+                      const lines = formatCondition(wm.condition, t as never);
+                      return (
+                        <div key={`wm-${i}`} className="text-xs text-emerald-700 dark:text-emerald-300 mt-1">
+                          <span className="uppercase tracking-wide mr-1">×{wm.multiplier}</span>
+                          {lines.length > 0 ? lines.join(" · ") : t("ifAny")}
+                        </div>
+                      );
+                    },
+                  )}
               </li>
             ))}
           </ul>

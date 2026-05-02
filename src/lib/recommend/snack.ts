@@ -244,30 +244,36 @@ function stripHash(s: string): string {
 type ConditionShape = Record<string, unknown>;
 
 /**
- * Returns true when ALL set fields of `cond` match the player's context.
- * Used both for `condition` (must match → keep) and `anticondition`
- * (Cobblemon AND-strict semantics: must match → reject — see GitLab #1737).
+ * Returns true when the player's context (`filter`) is COMPATIBLE with the
+ * spawn's condition. We treat each field of `filter` like a player query:
  *
- * For each field that is undefined in `cond`, the field is ignored — same
- * short-circuit as the upstream `SpawningCondition.isSatisfiedBy`.
+ *   - filter field UNSET → the player did not constrain that axis →
+ *     the spawn condition on that axis is ignored (kept).
+ *   - filter field SET → the spawn's condition must allow that value
+ *     for the spawn to keep matching.
+ *
+ * This mirrors how `filterSpawns` historically worked for biome/time/Y
+ * (an unset filter never filtered) and how the Cobblenav lookup works in
+ * game (the nav reports what spawns CAN happen given current conditions,
+ * not what's mandatory).
+ *
+ * Used both for `condition` (returns false → reject) and `anticondition`
+ * (returns true → reject; see Cobblemon AND-strict semantics, GitLab #1737).
  */
 function conditionMatches(cond: ConditionShape, filter: SpawnFilter): boolean {
-  // Biomes — at least one biome in the cond list must match the filter's biomes.
+  // Biomes: only filter if BOTH the cond and the filter declare a biome list.
   const biomeList = cond.biomes as string[] | undefined;
-  if (biomeList && biomeList.length > 0) {
-    if (!filter.biomes || filter.biomes.length === 0) return false;
+  if (biomeList && biomeList.length > 0 && filter.biomes && filter.biomes.length > 0) {
     const fset = new Set(filter.biomes.map(stripHash));
     if (!biomeList.some((b) => fset.has(stripHash(b)))) return false;
   }
   const structList = cond.structures as string[] | undefined;
-  if (structList && structList.length > 0) {
-    if (!filter.structures || filter.structures.length === 0) return false;
+  if (structList && structList.length > 0 && filter.structures && filter.structures.length > 0) {
     const fset = new Set(filter.structures.map(stripHash));
     if (!structList.some((s) => fset.has(stripHash(s)))) return false;
   }
   const dimList = cond.dimensions as string[] | undefined;
-  if (dimList && dimList.length > 0) {
-    if (!filter.dimensions || filter.dimensions.length === 0) return false;
+  if (dimList && dimList.length > 0 && filter.dimensions && filter.dimensions.length > 0) {
     const fset = new Set(filter.dimensions);
     if (!dimList.some((d) => fset.has(d))) return false;
   }
@@ -294,19 +300,21 @@ function conditionMatches(cond: ConditionShape, filter: SpawnFilter): boolean {
     if (Number.isFinite(mp) && mp !== filter.moonPhase) return false;
   }
   const baseBlocks = cond.neededBaseBlocks as string[] | undefined;
-  if (baseBlocks && baseBlocks.length > 0) {
-    if (!filter.baseBlock) return false;
+  if (baseBlocks && baseBlocks.length > 0 && filter.baseBlock) {
     const fbase = stripHash(filter.baseBlock);
     if (!baseBlocks.some((b) => stripHash(b) === fbase)) return false;
   }
   const nearby = cond.neededNearbyBlocks as string[] | undefined;
-  if (nearby && nearby.length > 0) {
-    if (!filter.nearbyBlocks || filter.nearbyBlocks.length === 0) return false;
+  if (
+    nearby &&
+    nearby.length > 0 &&
+    filter.nearbyBlocks &&
+    filter.nearbyBlocks.length > 0
+  ) {
     const fset = new Set(filter.nearbyBlocks.map(stripHash));
     if (!nearby.some((b) => fset.has(stripHash(b)))) return false;
   }
-  if (typeof cond.fluid === "string") {
-    if (!filter.fluid) return false;
+  if (typeof cond.fluid === "string" && filter.fluid) {
     if (stripHash(cond.fluid as string) !== stripHash(filter.fluid)) return false;
   }
   return true;

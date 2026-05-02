@@ -110,8 +110,24 @@
       "y": "Y: {min} → {max}",
       "skyLight": "Luz do céu: {min}-{max}",
       "structures": "Estruturas: {value}",
-      "blocks": "Blocos necessários: {value}"
-    }
+      "blocks": "Blocos necessários: {value}",
+      "notRaining": "No rain",
+      "notThundering": "No thunder",
+      "openSky": "Open sky",
+      "coveredSky": "Covered (no sky)",
+      "slimeChunk": "Slime chunk",
+      "light": "Light: {min}-{max}",
+      "depth": "Depth: {min}-{max}",
+      "dimensions": "Dimensions: {value}",
+      "nearbyBlocks": "Nearby blocks: {value}",
+      "fluid": "Fluid: {value}",
+      "fluidSource": "Fluid source only",
+      "labels": "Labels ({mode}): {value}"
+    },
+    "context": "Position",
+    "except": "Except",
+    "presets": "Presets",
+    "ifAny": "always"
   },
   "theme": {
     "label": "Mudar tema",

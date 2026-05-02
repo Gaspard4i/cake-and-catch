@@ -57,6 +57,30 @@ describe("filterSpawns — anticondition", () => {
   });
 });
 
+describe("filterSpawns — empty filter", () => {
+  it("keeps every spawn when no filter axis is set", () => {
+    // Regression: a previous version rejected any spawn whose condition
+    // declared a biome list as soon as the filter had no biomes — that
+    // turned the empty default into "match nothing" instead of "match
+    // anything", which the user noticed as 8 results out of ~thousands.
+    const spawns = [
+      spawn({
+        biomes: ["minecraft:plains"],
+        condition: { biomes: ["minecraft:plains"], canSeeSky: true },
+      }),
+      spawn({
+        biomes: ["minecraft:desert"],
+        condition: { biomes: ["minecraft:desert"], minLight: 9 },
+      }),
+      spawn({
+        biomes: [],
+        condition: null,
+      }),
+    ];
+    expect(filterSpawns(spawns, {})).toHaveLength(3);
+  });
+});
+
 describe("filterSpawns — extended conditions", () => {
   it("filters by light level (block-light)", () => {
     const spawns = [
@@ -88,7 +112,7 @@ describe("filterSpawns — extended conditions", () => {
     ).toHaveLength(0);
   });
 
-  it("filters by structures", () => {
+  it("filters by structures only when the player picks one", () => {
     const spawns = [
       spawn({
         biomes: ["minecraft:plains"],
@@ -98,15 +122,26 @@ describe("filterSpawns — extended conditions", () => {
         },
       }),
     ];
+    // Player IS in a village → match.
     expect(
       filterSpawns(spawns, {
         biomes: ["minecraft:plains"],
         structures: ["minecraft:village"],
       }),
     ).toHaveLength(1);
+    // Player picks the wrong structure → reject.
+    expect(
+      filterSpawns(spawns, {
+        biomes: ["minecraft:plains"],
+        structures: ["minecraft:stronghold"],
+      }),
+    ).toHaveLength(0);
+    // Player did not constrain the structure axis at all — we keep the
+    // spawn (the lookup answers "what CAN spawn here", and we don't know
+    // whether the player is inside a structure or not).
     expect(
       filterSpawns(spawns, { biomes: ["minecraft:plains"] }),
-    ).toHaveLength(0);
+    ).toHaveLength(1);
   });
 });
 

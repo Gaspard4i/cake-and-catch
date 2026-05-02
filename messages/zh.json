@@ -110,8 +110,24 @@
       "y": "Y: {min} → {max}",
       "skyLight": "天空亮度: {min}-{max}",
       "structures": "结构: {value}",
-      "blocks": "必需方块: {value}"
-    }
+      "blocks": "必需方块: {value}",
+      "notRaining": "No rain",
+      "notThundering": "No thunder",
+      "openSky": "Open sky",
+      "coveredSky": "Covered (no sky)",
+      "slimeChunk": "Slime chunk",
+      "light": "Light: {min}-{max}",
+      "depth": "Depth: {min}-{max}",
+      "dimensions": "Dimensions: {value}",
+      "nearbyBlocks": "Nearby blocks: {value}",
+      "fluid": "Fluid: {value}",
+      "fluidSource": "Fluid source only",
+      "labels": "Labels ({mode}): {value}"
+    },
+    "context": "Position",
+    "except": "Except",
+    "presets": "Presets",
+    "ifAny": "always"
   },
   "theme": {
     "label": "切换主题",
