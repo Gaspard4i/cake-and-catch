@@ -241,7 +241,12 @@ async function SpeciesDetail({ params }: { params: Promise<{ slug: string }> }) 
       </BackLink>
 
       <header className="mt-4 flex items-center gap-4 flex-wrap">
-        <PokemonSprite dexNo={species.dexNo} name={species.name} size={96} />
+        <PokemonSprite
+          dexNo={species.dexNo}
+          name={species.name}
+          variantLabel={species.variantLabel}
+          size={96}
+        />
         <div>
           <div className="flex items-center gap-3 flex-wrap">
             <span className="text-muted font-mono">

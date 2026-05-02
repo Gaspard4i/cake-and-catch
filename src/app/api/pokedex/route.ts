@@ -111,6 +111,8 @@ export async function GET(req: NextRequest) {
         catchRate: schema.species.catchRate,
         abilities: schema.species.abilities,
         labels: schema.species.labels,
+        variantOfSpeciesId: schema.species.variantOfSpeciesId,
+        variantLabel: schema.species.variantLabel,
       })
       .from(schema.species)
       .where(where.length > 0 ? and(...where) : undefined)
@@ -127,6 +129,8 @@ export async function GET(req: NextRequest) {
     catchRate: number;
     abilities: string[];
     labels: string[];
+    variantOfSpeciesId: number | null;
+    variantLabel: string | null;
   }>);
 
   let nextCursor: string | null = null;

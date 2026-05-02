@@ -326,6 +326,7 @@ export function PokedexGrid() {
                   <PokemonSprite
                     dexNo={s.dexNo}
                     name={s.name}
+                    variantLabel={(s as { variantLabel?: string | null }).variantLabel}
                     size={120}
                     shiny={shiny}
                     className="transition-transform group-hover:scale-110 size-16 sm:size-[120px] object-contain"

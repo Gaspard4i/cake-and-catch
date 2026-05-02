@@ -79,6 +79,7 @@ type AttractedEntry = {
   dexNo: number;
   primaryType: string;
   secondaryType: string | null;
+  variantLabel?: string | null;
   bucket: "common" | "uncommon" | "rare" | "ultra-rare";
   weight: number;
   adjustedWeight: number;
@@ -649,7 +650,15 @@ export function CampfirePot({ mode = "snack" }: { mode?: PotMode } = {}) {
         if (!reachable_ok(b.id)) continue;
         if (seen.has(b.id)) continue;
         seen.add(b.id);
-        out.push({ value: b.id, label: b.label, group: sectionLabel(b.section) });
+        // Keep the upstream id verbatim as the label so power-users
+        // can grep the data files. Strip the leading `#` only so the
+        // chips don't read "##cobblemon:…" when copied.
+        out.push({
+          value: b.id,
+          label: b.id.replace(/^#/, ""),
+          description: b.label,
+          group: sectionLabel(b.section),
+        });
       }
       return out;
     }
@@ -676,7 +685,12 @@ export function CampfirePot({ mode = "snack" }: { mode?: PotMode } = {}) {
         if (!reachable_ok(tag)) continue;
         if (seen.has(tag)) continue;
         seen.add(tag);
-        out.push({ value: tag, label: biomeLabel(tag), group: section.title });
+        out.push({
+          value: tag,
+          label: tag.replace(/^#/, ""),
+          description: biomeLabel(tag),
+          group: section.title,
+        });
       }
     }
     // biomeCatalog (modded biomes from the API) — only fold them in
@@ -692,7 +706,8 @@ export function CampfirePot({ mode = "snack" }: { mode?: PotMode } = {}) {
         seen.add(b.value);
         out.push({
           value: b.value,
-          label: b.label,
+          label: b.value.replace(/^#/, ""),
+          description: b.label,
           group: NS_LABEL[b.namespace] ?? `Modded · ${b.namespace}`,
         });
       }
@@ -1357,10 +1372,14 @@ export function CampfirePot({ mode = "snack" }: { mode?: PotMode } = {}) {
             for (const link of worldGraph.biomeTagStructures) {
               if (!eligibleBiomes.has(link.biomeTagId)) continue;
               if (seenStruct.has(link.structureId)) continue;
-              const label = structureMeta.get(link.structureId);
-              if (!label) continue;
+              const meta = structureMeta.get(link.structureId);
+              if (!meta) continue;
               seenStruct.add(link.structureId);
-              opts.push({ value: link.structureId, label });
+              opts.push({
+                value: link.structureId,
+                label: link.structureId.replace(/^#/, ""),
+                description: meta,
+              });
             }
             // Also fold in structures the spawn graph reports through
             // `reachable` (handles addons that pinned structures we
@@ -1371,7 +1390,8 @@ export function CampfirePot({ mode = "snack" }: { mode?: PotMode } = {}) {
                 seenStruct.add(s);
                 opts.push({
                   value: s,
-                  label: s.replace(/^[a-z0-9_]+:/, "").replace(/_/g, " "),
+                  label: s.replace(/^#/, ""),
+                  description: s.replace(/^[a-z0-9_]+:/, "").replace(/_/g, " "),
                 });
               }
             }
@@ -1691,6 +1711,7 @@ export function CampfirePot({ mode = "snack" }: { mode?: PotMode } = {}) {
                     <PokemonSprite
                       dexNo={p.dexNo}
                       name={p.name}
+                      variantLabel={p.variantLabel}
                       size={64}
                       shiny={showShiny && hasShinyBoost}
                     />
