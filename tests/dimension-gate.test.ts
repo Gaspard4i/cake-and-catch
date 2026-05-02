@@ -77,6 +77,50 @@ describe("spawnMatchesDimensions", () => {
     expect(spawnMatchesDimensions({ biomes: ["whatever"] }, [])).toBe(true);
   });
 
+  it("treats `cobblemon:is_sky` as Overworld (Ducklett, Swanna leak)", () => {
+    expect(
+      spawnMatchesDimensions(
+        { biomes: ["#cobblemon:is_sky"] },
+        ["minecraft:the_nether"],
+      ),
+    ).toBe(false);
+    expect(
+      spawnMatchesDimensions(
+        { biomes: ["#cobblemon:is_sky"] },
+        ["minecraft:overworld"],
+      ),
+    ).toBe(true);
+  });
+
+  it("treats has_* tag-only spawns as Overworld", () => {
+    expect(
+      spawnMatchesDimensions(
+        { biomes: ["#cobblemon:has_block/mud"] },
+        ["minecraft:the_nether"],
+      ),
+    ).toBe(false);
+    expect(
+      spawnMatchesDimensions(
+        { biomes: ["#cobblemon:has_block/mud"] },
+        ["minecraft:overworld"],
+      ),
+    ).toBe(true);
+  });
+
+  it("ignores has_* tags when other dimensional tags are present", () => {
+    expect(
+      spawnMatchesDimensions(
+        {
+          biomes: [
+            "#cobblemon:has_block/mud",
+            "#cobblemon:nether/is_quartz",
+          ],
+        },
+        ["minecraft:the_nether"],
+      ),
+    ).toBe(true);
+  });
+
   it("matches every Nether biome variant", () => {
     const variants = [
       "#cobblemon:nether/is_basalt",

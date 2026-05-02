@@ -33,10 +33,43 @@ const BIOME_TO_DIMENSION = buildBiomeDimensionMap();
 const ADDITIONAL_BIOME_DIMENSIONS: Record<string, string> = {
   "cobblemon:is_overworld": "minecraft:overworld",
   "minecraft:is_overworld": "minecraft:overworld",
+  // Cobblemon's `is_sky` tag covers airborne biomes (Aether, etc.)
+  // but is also matched by Overworld biomes that "can see the sky".
+  // Treat it as Overworld so the dimension gate doesn't leak Ducklett /
+  // Swanna into Nether/End picks.
+  "cobblemon:is_sky": "minecraft:overworld",
+  "cobblemon:is_magical": "minecraft:overworld",
   "aether:is_aether": "aether:the_aether",
   "cobblemon:is_aether": "aether:the_aether",
   "the_aether:is_aether": "aether:the_aether",
+  // Bumblezone & BoP sub-biomes are Overworld unless the addon ships a
+  // dedicated dimension we know about.
+  "the_bumblezone:crystal_canyon": "minecraft:overworld",
+  "biomesoplenty:crystalline_chasm": "minecraft:overworld",
 };
+
+/**
+ * Tag prefixes that mean "any biome that has X" — they don't pin a
+ * dimension by themselves. Cobblemon ships dozens (`has_block/mud`,
+ * `has_feature/coral_reef`, `has_ore/diamond`, …). When a spawn ONLY
+ * lists tags from this set, we can't tell its dimension and we keep
+ * the spawn for safety. When it lists at least one dimensional biome
+ * AND some has_* tag, the dimensional biome decides.
+ */
+const HAS_TAG_PREFIXES = [
+  "cobblemon:has_block/",
+  "cobblemon:has_feature/",
+  "cobblemon:has_ore/",
+  "cobblemon:has_density/",
+  "cobblemon:has_season/",
+  "cobblemon:has_structure/",
+  "cobblemon:evolution/",
+];
+
+function isHasTag(b: string): boolean {
+  const stripped = b.replace(/^#/, "");
+  return HAS_TAG_PREFIXES.some((p) => stripped.startsWith(p));
+}
 for (const [k, v] of Object.entries(ADDITIONAL_BIOME_DIMENSIONS)) {
   BIOME_TO_DIMENSION.set(k, v);
 }
@@ -79,20 +112,26 @@ export function spawnMatchesDimensions(
     // hides legitimate addons that omit the field.
     return true;
   }
-  // Strict mode: every biome we recognise must agree on the dimension
-  // for the spawn to pass. Unknown biomes are NOT a free pass — if the
-  // player picks Nether, a spawn that lives in unknown biomes plus a
-  // known Overworld one is still Overworld content and should not show
-  // up.
-  let allUnknown = true;
+  // Strict mode: every biome we recognise must agree on the dimension.
+  // `has_*` and `evolution/` tags don't pin a dimension and are
+  // skipped. Truly unknown biomes (modded namespaces we haven't
+  // catalogued) keep the spawn — that's the only fallback.
+  let allUnknownOrHasTag = true;
+  let hasOnlyHasTags = true;
   for (const b of biomes) {
+    if (isHasTag(b)) continue;
+    hasOnlyHasTags = false;
     const dim = BIOME_TO_DIMENSION.get(stripHash(b));
     if (dim) {
-      allUnknown = false;
+      allUnknownOrHasTag = false;
       if (picked.has(dim)) return true;
     }
   }
-  // Every biome was unknown — we let the spawn through to avoid hiding
-  // legitimately modded content the addon team curated.
-  return allUnknown;
+  // Spawn lists only `has_*` tags — these cross-cutting tags don't
+  // pin a dimension. We treat the spawn as Overworld by default
+  // because every vanilla `has_block` / `has_feature` resource lives
+  // there; a modded spawn that genuinely needs Nether mud would set
+  // `condition.dimensions` (handled at the top of this function).
+  if (hasOnlyHasTags) return picked.has("minecraft:overworld");
+  return allUnknownOrHasTag;
 }
