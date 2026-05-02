@@ -635,13 +635,16 @@ export function CampfirePot({ mode = "snack" }: { mode?: PotMode } = {}) {
     const reachable_ok = (id: string) =>
       !reach || reach.has(id.replace(/^#/, ""));
 
-    if (worldGraph && dimSet.size > 0) {
+    if (worldGraph) {
       for (const b of worldGraph.biomeTags) {
         // Transverse tags (`has_*`, `evolution/*`, `space/*`) carry a
         // null dimensionId — they're parked in the Advanced panel and
-        // not shown in the main list when a dimension is picked.
+        // never bubble up here.
         if (!b.dimensionId) continue;
-        if (!dimSet.has(b.dimensionId)) continue;
+        // Empty dimSet = "all dimensions selected by default", so we
+        // show every dimensional tag. With at least one pick, narrow
+        // to those.
+        if (dimSet.size > 0 && !dimSet.has(b.dimensionId)) continue;
         if (!matchNamespace(b.id)) continue;
         if (!reachable_ok(b.id)) continue;
         if (seen.has(b.id)) continue;
@@ -822,11 +825,10 @@ export function CampfirePot({ mode = "snack" }: { mode?: PotMode } = {}) {
             skyLightLevel: skyLightLevelValue,
             lightLevel: lightLevel ? Number.parseInt(lightLevel, 10) : undefined,
             moonPhase: moonPhase ? Number.parseInt(moonPhase, 10) : undefined,
+            // Empty selection = all dimensions; the API treats an
+            // omitted `dimensions` filter as "no constraint", which
+            // matches the new UX rule (every dimension by default).
             dimensions: dimensions.length > 0 ? dimensions : undefined,
-            // The UX rule is: until the player picks a dimension, no
-            // Pokémon shows up (the "where are you?" question is
-            // load-bearing). This flag tells the API to honour that.
-            requireDimension: dimensions.length === 0,
           },
         };
         const res = await fetch("/api/snack", {
@@ -1312,36 +1314,38 @@ export function CampfirePot({ mode = "snack" }: { mode?: PotMode } = {}) {
             </div>
           </div>
 
-          {/* 3. Biome — only meaningful once a dimension is locked in. */}
-          {dimensions.length > 0 && (
-            <div className="mt-3">
-              <div className="text-[10px] uppercase tracking-wider text-muted px-1 mb-1">
-                {t("filtersBiome")}
-              </div>
-              <div className="flex flex-wrap items-center gap-2">
-                <MultiSelect
-                  label={t("biomes")}
-                  options={biomeOptions}
-                  value={biomes}
-                  onChange={setBiomes}
-                  placeholder={t("biomesAny")}
-                />
-              </div>
+          {/* 3. Biome — always visible. With no dimension picked the
+              biome list spans every dimension; once the player narrows
+              down, the cascade trims it via biomeOptions. */}
+          <div className="mt-3">
+            <div className="text-[10px] uppercase tracking-wider text-muted px-1 mb-1">
+              {t("filtersBiome")}
             </div>
-          )}
+            <div className="flex flex-wrap items-center gap-2">
+              <MultiSelect
+                label={t("biomes")}
+                options={biomeOptions}
+                value={biomes}
+                onChange={setBiomes}
+                placeholder={t("biomesAny")}
+              />
+            </div>
+          </div>
 
           {/* 3b. Nearby structure — derived from the world graph for
               the picked biomes (or, if no biome is picked, every
               structure tied to the picked dimensions). */}
-          {dimensions.length > 0 && worldGraph && (() => {
+          {worldGraph && (() => {
             const dimSet = new Set(dimensions);
             const biomeSet = new Set(biomes);
-            // Resolve which biome tags' structures we surface: explicit
-            // biome picks if any, otherwise every tag of the picked
-            // dimensions.
+            // Resolve which biome tags' structures we surface. With no
+            // dimension picked we accept every dimensional tag (the
+            // user said "all dimensions"). With biomes pinned, only
+            // those biomes' structures.
             const eligibleBiomes = new Set<string>();
             for (const b of worldGraph.biomeTags) {
-              if (!b.dimensionId || !dimSet.has(b.dimensionId)) continue;
+              if (!b.dimensionId) continue;
+              if (dimSet.size > 0 && !dimSet.has(b.dimensionId)) continue;
               if (biomeSet.size > 0 && !biomeSet.has(b.id)) continue;
               eligibleBiomes.add(b.id);
             }
@@ -1391,52 +1395,49 @@ export function CampfirePot({ mode = "snack" }: { mode?: PotMode } = {}) {
             );
           })()}
 
-          {/* 4. Position + Y range */}
-          {dimensions.length > 0 && (
-            <div className="mt-3">
-              <div className="text-[10px] uppercase tracking-wider text-muted px-1 mb-1">
-                {t("filtersPosition")}
-              </div>
-              <div className="flex flex-wrap items-center gap-2">
-                <MultiSelect
-                  label={t("context")}
-                  options={CONTEXT_OPTIONS.filter(
-                    (o) => !reachable || reachable.contexts.has(o.value),
-                  )}
-                  value={contexts}
-                  onChange={setContexts}
-                  placeholder={t("contextAny")}
-                  searchable={false}
-                />
-                <label className="text-xs inline-flex items-center gap-1 text-muted">
-                  <span className="text-[10px] uppercase tracking-wide">{t("minY")}</span>
-                  <input
-                    value={minY}
-                    onChange={(e) => setMinY(e.target.value)}
-                    inputMode="numeric"
-                    placeholder="-64"
-                    className="w-16 rounded-md border border-border bg-card px-2 py-1 text-sm"
-                  />
-                </label>
-                <label className="text-xs inline-flex items-center gap-1 text-muted">
-                  <span className="text-[10px] uppercase tracking-wide">{t("maxY")}</span>
-                  <input
-                    value={maxY}
-                    onChange={(e) => setMaxY(e.target.value)}
-                    inputMode="numeric"
-                    placeholder="320"
-                    className="w-16 rounded-md border border-border bg-card px-2 py-1 text-sm"
-                  />
-                </label>
-              </div>
+          {/* 4. Position + Y range — always available. */}
+          <div className="mt-3">
+            <div className="text-[10px] uppercase tracking-wider text-muted px-1 mb-1">
+              {t("filtersPosition")}
             </div>
-          )}
+            <div className="flex flex-wrap items-center gap-2">
+              <MultiSelect
+                label={t("context")}
+                options={CONTEXT_OPTIONS.filter(
+                  (o) => !reachable || reachable.contexts.has(o.value),
+                )}
+                value={contexts}
+                onChange={setContexts}
+                placeholder={t("contextAny")}
+                searchable={false}
+              />
+              <label className="text-xs inline-flex items-center gap-1 text-muted">
+                <span className="text-[10px] uppercase tracking-wide">{t("minY")}</span>
+                <input
+                  value={minY}
+                  onChange={(e) => setMinY(e.target.value)}
+                  inputMode="numeric"
+                  placeholder="-64"
+                  className="w-16 rounded-md border border-border bg-card px-2 py-1 text-sm"
+                />
+              </label>
+              <label className="text-xs inline-flex items-center gap-1 text-muted">
+                <span className="text-[10px] uppercase tracking-wide">{t("maxY")}</span>
+                <input
+                  value={maxY}
+                  onChange={(e) => setMaxY(e.target.value)}
+                  inputMode="numeric"
+                  placeholder="320"
+                  className="w-16 rounded-md border border-border bg-card px-2 py-1 text-sm"
+                />
+              </label>
+            </div>
+          </div>
 
-          {/* 5. When (time / weather / moon) — gated behind dimension
-              AND skipped entirely for dimensions without those traits
-              (Nether: no day cycle, no weather, no moon). */}
-          {dimensions.length > 0 &&
-            (dimTraits.hasDayCycle || dimTraits.hasWeather || dimTraits.hasMoon) && (
+          {/* 5. When (time / weather / moon) — only the traits the
+              picked dimensions actually carry (Nether removes day
+              cycle, weather, moon ; End removes them too). */}
+          {(dimTraits.hasDayCycle || dimTraits.hasWeather || dimTraits.hasMoon) && (
             <div className="mt-3">
               <div className="text-[10px] uppercase tracking-wider text-muted px-1 mb-1">
                 {t("filtersWhen")}
@@ -1496,12 +1497,12 @@ export function CampfirePot({ mode = "snack" }: { mode?: PotMode } = {}) {
             </div>
           )}
 
-          {/* 6. Sky / light — gated behind dimension. */}
-          {dimensions.length > 0 && (
-            <div className="mt-3">
-              <div className="text-[10px] uppercase tracking-wider text-muted px-1 mb-1">
-                {t("filtersConditions")}
-              </div>
+          {/* 6. Sky / light — always available; sky picker hides if
+              the picked dimensions don't have a visible sky. */}
+          <div className="mt-3">
+            <div className="text-[10px] uppercase tracking-wider text-muted px-1 mb-1">
+              {t("filtersConditions")}
+            </div>
               <div className="flex flex-wrap items-center gap-2">
                 {dimTraits.hasSky && (
                   <label className="text-xs inline-flex items-center gap-1 text-muted">
@@ -1533,8 +1534,7 @@ export function CampfirePot({ mode = "snack" }: { mode?: PotMode } = {}) {
                   />
                 </label>
               </div>
-            </div>
-          )}
+          </div>
 
           {/* 7. Sources (datapacks / addons) — last because it's an
               advanced override, not part of the main flow. */}
@@ -1677,10 +1677,6 @@ export function CampfirePot({ mode = "snack" }: { mode?: PotMode } = {}) {
                   </li>
                 ))}
               </ul>
-            ) : dimensions.length === 0 ? (
-              <div className="mt-3 rounded-lg border border-dashed border-border bg-subtle/40 p-4 text-sm text-muted">
-                {t("pickDimensionFirst")}
-              </div>
             ) : (
               <p className="mt-3 text-sm text-muted">{t("noAttracted")}</p>
             )
