@@ -97,7 +97,35 @@ export type JuiceResult = {
   summary: Array<{ stat: RidingStat; delta: number; fromBerries: number; fromApricorn: number }>;
 };
 
+// Memoization cache for cookAprijuice. The suggester explores ~5k recipes and
+// many share identical (apricorn, berry-set) keys (commutative berry order),
+// so caching by sorted-slug key cuts redundant work by ~10×.
+const cookCache = new Map<string, JuiceResult>();
+
+function cookKey(recipe: JuiceRecipe): string {
+  const slugs = recipe.berries
+    .map((b) => b.slug)
+    .slice()
+    .sort()
+    .join(",");
+  return `${recipe.apricorn}|${slugs}`;
+}
+
 export function cookAprijuice(recipe: JuiceRecipe): JuiceResult {
+  const key = cookKey(recipe);
+  const hit = cookCache.get(key);
+  if (hit) return hit;
+  const result = cookAprijuiceImpl(recipe);
+  cookCache.set(key, result);
+  // Cap to keep memory bounded across long-lived processes.
+  if (cookCache.size > 50000) {
+    const firstKey = cookCache.keys().next().value;
+    if (firstKey !== undefined) cookCache.delete(firstKey);
+  }
+  return result;
+}
+
+function cookAprijuiceImpl(recipe: JuiceRecipe): JuiceResult {
   const flavourTotals: Record<Flavour, number> = {
     SPICY: 0,
     DRY: 0,

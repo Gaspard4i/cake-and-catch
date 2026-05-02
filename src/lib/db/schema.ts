@@ -45,12 +45,26 @@ export const spawns = pgTable(
     externalId: text("external_id").notNull(),
     bucket: bucketEnum("bucket").notNull(),
     weight: real("weight").notNull(),
+    /**
+     * Cobblemon `percentage` field. When set, takes precedence over `weight`
+     * during spawn selection (Phase 1). Sum across a bucket+positionType
+     * must stay <= 100; otherwise Cobblemon aborts the whole tick.
+     */
+    percentage: real("percentage"),
     levelMin: integer("level_min").notNull(),
     levelMax: integer("level_max").notNull(),
     context: text("context"),
     biomes: jsonb("biomes").$type<string[]>().notNull(),
     condition: jsonb("condition"),
     anticondition: jsonb("anticondition"),
+    /**
+     * `weightMultiplier` (or array `weightMultipliers`) from upstream JSON.
+     * Each entry multiplies the spawn's effective weight when its
+     * sub-condition is met (e.g. ×2 in the rain).
+     */
+    weightMultipliers: jsonb("weight_multipliers"),
+    /** `compositeCondition` from upstream — nested AND/OR groups. */
+    compositeCondition: jsonb("composite_condition"),
     presets: jsonb("presets").$type<string[]>().notNull(),
     sourceKind: sourceKindEnum("source_kind").notNull().default("mod"),
     sourceName: text("source_name").notNull().default("cobblemon"),
@@ -61,6 +75,24 @@ export const spawns = pgTable(
     index("spawns_species_idx").on(t.speciesId),
     index("spawns_source_idx").on(t.sourceKind, t.sourceName),
   ],
+);
+
+/**
+ * Cobblemon `spawn_detail_presets/*.json`. Stored verbatim so that ingestion
+ * can resolve `spawn.presets[]` → conditions/anticonditions and merge them
+ * into the spawn entry. Without this table, ~80% of spawns appear to have
+ * empty conditions in the UI (they actually inherit from a preset).
+ */
+export const spawnPresets = pgTable(
+  "spawn_presets",
+  {
+    name: text("name").primaryKey(),
+    condition: jsonb("condition"),
+    anticondition: jsonb("anticondition"),
+    context: text("context"),
+    raw: jsonb("raw").notNull(),
+    sourceUrl: text("source_url"),
+  },
 );
 
 export const dataSources = pgTable(
@@ -227,3 +259,5 @@ export type BaitEffect = typeof baitEffects.$inferSelect;
 export type Recipe = typeof recipes.$inferSelect;
 export type SpeciesWiki = typeof speciesWiki.$inferSelect;
 export type Berry = typeof berries.$inferSelect;
+export type SpawnPreset = typeof spawnPresets.$inferSelect;
+export type NewSpawnPreset = typeof spawnPresets.$inferInsert;

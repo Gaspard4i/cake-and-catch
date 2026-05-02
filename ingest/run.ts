@@ -18,7 +18,13 @@ import {
   type AddonFetched,
 } from "../src/lib/sources/addons";
 import { speciesSchema } from "../src/lib/parsers/species";
-import { spawnFileSchema, parseLevelRange } from "../src/lib/parsers/spawn";
+import {
+  spawnFileSchema,
+  parseLevelRange,
+  presetFileSchema,
+  applyPresets,
+  type PresetFile,
+} from "../src/lib/parsers/spawn";
 import {
   seasoningSchema,
   baitEffectSchema,
@@ -101,43 +107,114 @@ async function ingestSpecies(clone: RepoClone) {
   return slugToId;
 }
 
+async function ingestSpawnPresets(clone: RepoClone): Promise<Map<string, PresetFile>> {
+  // Cobblemon presets live next to spawn_pool_world. They MUST be ingested
+  // before spawns so spawn entries can resolve their `presets[]` references.
+  const dir = dataPath(clone, "spawn_detail_presets");
+  let files: string[] = [];
+  try {
+    files = await listJsonFiles(dir);
+  } catch {
+    console.warn("[presets] spawn_detail_presets/ not found, skipping");
+    return new Map();
+  }
+  const map = new Map<string, PresetFile>();
+  let ok = 0;
+  let failed = 0;
+  for (const file of files) {
+    try {
+      const raw = await readJson(file);
+      const parsed = presetFileSchema.parse(raw);
+      const name = basename(file, ".json");
+      const relPath = relativeDataPath(clone, file);
+      map.set(name, parsed);
+      await db
+        .insert(schema.spawnPresets)
+        .values({
+          name,
+          condition: parsed.condition ?? null,
+          anticondition: parsed.anticondition ?? null,
+          context: parsed.context ?? parsed.spawnablePositionType ?? null,
+          raw: parsed,
+          sourceUrl: gitlabBlobUrl(clone.commitSha, relPath),
+        })
+        .onConflictDoUpdate({
+          target: schema.spawnPresets.name,
+          set: {
+            condition: parsed.condition ?? null,
+            anticondition: parsed.anticondition ?? null,
+            context: parsed.context ?? parsed.spawnablePositionType ?? null,
+            raw: parsed,
+            sourceUrl: gitlabBlobUrl(clone.commitSha, relPath),
+          },
+        });
+      ok++;
+    } catch (err) {
+      failed++;
+      console.warn(`[presets] skip ${file}:`, err instanceof Error ? err.message : err);
+    }
+  }
+  console.log(`[presets] ok=${ok} failed=${failed}`);
+  return map;
+}
+
+interface SpawnIngestionStats {
+  ok: number;
+  skipped: number;
+  failed: number;
+  missingSpecies: Set<string>;
+}
+
 async function ingestSpawnsFromDir(opts: {
   dir: string;
   slugToId: Map<string, number>;
+  presetMap: Map<string, PresetFile>;
   sourceKind: "mod" | "addon";
   sourceName: string;
   sourceUrl: string;
   externalIdPrefix?: string;
 }) {
   const files = await listJsonFiles(opts.dir);
-  let ok = 0;
-  let skipped = 0;
-  let failed = 0;
+  const stats: SpawnIngestionStats = {
+    ok: 0,
+    skipped: 0,
+    failed: 0,
+    missingSpecies: new Set(),
+  };
 
   for (const file of files) {
     try {
       const rawJson = (await readJson(file)) as { enabled?: boolean };
       if (rawJson.enabled === false) {
-        skipped++;
+        stats.skipped++;
         continue;
       }
       const parsed = spawnFileSchema.parse(rawJson);
-      for (const entry of parsed.spawns) {
-        if (entry.type !== "pokemon") {
-          skipped++;
+      for (const rawEntry of parsed.spawns) {
+        if (rawEntry.type !== "pokemon") {
+          stats.skipped++;
           continue;
         }
-        const slug = slugify(entry.pokemon.split(" ")[0]);
+        const slug = slugify(rawEntry.pokemon.split(" ")[0]);
         const speciesId = opts.slugToId.get(slug);
         if (!speciesId) {
-          skipped++;
+          stats.skipped++;
+          stats.missingSpecies.add(slug);
           continue;
         }
+        // Merge preset conditions BEFORE inserting so the stored row carries
+        // the full effective spawn rule.
+        const entry = applyPresets(rawEntry, opts.presetMap);
         const { min, max } = parseLevelRange(entry.level);
         const biomes = entry.condition?.biomes ?? [];
         const externalId = opts.externalIdPrefix
           ? `${opts.externalIdPrefix}:${entry.id}`
           : entry.id;
+        const weightMultipliers = entry.weightMultipliers
+          ? entry.weightMultipliers
+          : entry.weightMultiplier
+            ? [entry.weightMultiplier]
+            : null;
 
         await db
           .insert(schema.spawns)
@@ -146,12 +223,15 @@ async function ingestSpawnsFromDir(opts: {
             externalId,
             bucket: entry.bucket,
             weight: entry.weight,
+            percentage: entry.percentage ?? null,
             levelMin: min,
             levelMax: max,
             context: entry.context ?? entry.spawnablePositionType ?? null,
             biomes,
             condition: entry.condition ?? null,
             anticondition: entry.anticondition ?? null,
+            weightMultipliers,
+            compositeCondition: entry.compositeCondition ?? null,
             presets: entry.presets,
             sourceKind: opts.sourceKind,
             sourceName: opts.sourceName,
@@ -163,31 +243,45 @@ async function ingestSpawnsFromDir(opts: {
               speciesId,
               bucket: entry.bucket,
               weight: entry.weight,
+              percentage: entry.percentage ?? null,
               levelMin: min,
               levelMax: max,
               context: entry.context ?? entry.spawnablePositionType ?? null,
               biomes,
               condition: entry.condition ?? null,
               anticondition: entry.anticondition ?? null,
+              weightMultipliers,
+              compositeCondition: entry.compositeCondition ?? null,
               presets: entry.presets,
               sourceKind: opts.sourceKind,
               sourceUrl: opts.sourceUrl,
             },
           });
-        ok++;
+        stats.ok++;
       }
     } catch (err) {
-      failed++;
+      stats.failed++;
       console.warn(
         `[spawns:${opts.sourceName}] skip ${file}:`,
         err instanceof Error ? err.message : err,
       );
     }
   }
-  console.log(`[spawns:${opts.sourceName}] ok=${ok} skipped=${skipped} failed=${failed}`);
+  console.log(
+    `[spawns:${opts.sourceName}] ok=${stats.ok} skipped=${stats.skipped} failed=${stats.failed}`,
+  );
+  if (stats.missingSpecies.size > 0) {
+    const missing = [...stats.missingSpecies].sort();
+    console.warn(
+      `[spawns:${opts.sourceName}] dropped ${missing.length} spawns referencing unknown species: ${missing.slice(0, 20).join(", ")}${missing.length > 20 ? ", …" : ""}`,
+    );
+  }
 }
 
-async function ingestAddons(slugToId: Map<string, number>) {
+async function ingestAddons(
+  slugToId: Map<string, number>,
+  presetMap: Map<string, PresetFile>,
+) {
   const fetched: AddonFetched[] = [];
   for (const addon of ADDONS) {
     try {
@@ -206,6 +300,7 @@ async function ingestAddons(slugToId: Map<string, number>) {
     await ingestSpawnsFromDir({
       dir: addon.spawnPoolDir,
       slugToId,
+      presetMap,
       sourceKind: "addon",
       sourceName: addon.name,
       sourceUrl: addon.pageUrl,
@@ -440,18 +535,21 @@ async function main() {
 
   await db.execute(sql`truncate table ${schema.dataSources}`);
   await db.execute(sql`truncate table ${schema.spawns} restart identity cascade`);
+  await db.execute(sql`truncate table ${schema.spawnPresets}`);
 
   const slugToId = await ingestSpecies(clone);
+  const presetMap = await ingestSpawnPresets(clone);
 
   await ingestSpawnsFromDir({
     dir: dataPath(clone, "spawn_pool_world"),
     slugToId,
+    presetMap,
     sourceKind: "mod",
     sourceName: "cobblemon",
     sourceUrl: "https://gitlab.com/cable-mc/cobblemon",
   });
 
-  await ingestAddons(slugToId);
+  await ingestAddons(slugToId, presetMap);
   await ingestSeasonings(clone);
   await ingestBaitEffects(clone);
   await ingestRecipes(clone);

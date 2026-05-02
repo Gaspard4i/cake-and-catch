@@ -113,6 +113,24 @@ export type SpawnFilter = {
    *  (grounded, submerged, surface, seafloor, sky_air). Used by the bait
    *  maker to surface only water spawns. Empty/undefined = no filter. */
   contexts?: string[];
+  /** AT LEAST ONE structure must match. */
+  structures?: string[];
+  /** AT LEAST ONE dimension must match. */
+  dimensions?: string[];
+  /** Block-light at the player position; matched against minLight/maxLight. */
+  lightLevel?: number;
+  /** Sky-light at the player position; matched against minSkyLight/maxSkyLight. */
+  skyLightLevel?: number;
+  /** Moon phase 0–7 for moonPhase condition. */
+  moonPhase?: number;
+  /** Whether the surface above the position is open to the sky. */
+  canSeeSky?: boolean;
+  /** Block id under the spawn position (e.g. `minecraft:grass_block`). */
+  baseBlock?: string;
+  /** Block ids near the spawn position (within search radius). */
+  nearbyBlocks?: string[];
+  /** Fluid id at the spawn position (`minecraft:water`, `minecraft:lava`). */
+  fluid?: string;
 };
 
 export type AttractedSpecies = {
@@ -223,8 +241,79 @@ function stripHash(s: string): string {
   return s.replace(/^#/, "");
 }
 
+type ConditionShape = Record<string, unknown>;
+
+/**
+ * Returns true when ALL set fields of `cond` match the player's context.
+ * Used both for `condition` (must match → keep) and `anticondition`
+ * (Cobblemon AND-strict semantics: must match → reject — see GitLab #1737).
+ *
+ * For each field that is undefined in `cond`, the field is ignored — same
+ * short-circuit as the upstream `SpawningCondition.isSatisfiedBy`.
+ */
+function conditionMatches(cond: ConditionShape, filter: SpawnFilter): boolean {
+  // Biomes — at least one biome in the cond list must match the filter's biomes.
+  const biomeList = cond.biomes as string[] | undefined;
+  if (biomeList && biomeList.length > 0) {
+    if (!filter.biomes || filter.biomes.length === 0) return false;
+    const fset = new Set(filter.biomes.map(stripHash));
+    if (!biomeList.some((b) => fset.has(stripHash(b)))) return false;
+  }
+  const structList = cond.structures as string[] | undefined;
+  if (structList && structList.length > 0) {
+    if (!filter.structures || filter.structures.length === 0) return false;
+    const fset = new Set(filter.structures.map(stripHash));
+    if (!structList.some((s) => fset.has(stripHash(s)))) return false;
+  }
+  const dimList = cond.dimensions as string[] | undefined;
+  if (dimList && dimList.length > 0) {
+    if (!filter.dimensions || filter.dimensions.length === 0) return false;
+    const fset = new Set(filter.dimensions);
+    if (!dimList.some((d) => fset.has(d))) return false;
+  }
+  if (typeof cond.minLight === "number" && typeof filter.lightLevel === "number") {
+    if (filter.lightLevel < (cond.minLight as number)) return false;
+  }
+  if (typeof cond.maxLight === "number" && typeof filter.lightLevel === "number") {
+    if (filter.lightLevel > (cond.maxLight as number)) return false;
+  }
+  if (typeof cond.minSkyLight === "number" && typeof filter.skyLightLevel === "number") {
+    if (filter.skyLightLevel < (cond.minSkyLight as number)) return false;
+  }
+  if (typeof cond.maxSkyLight === "number" && typeof filter.skyLightLevel === "number") {
+    if (filter.skyLightLevel > (cond.maxSkyLight as number)) return false;
+  }
+  if (typeof cond.canSeeSky === "boolean" && typeof filter.canSeeSky === "boolean") {
+    if (cond.canSeeSky !== filter.canSeeSky) return false;
+  }
+  if (cond.moonPhase !== undefined && typeof filter.moonPhase === "number") {
+    const mp =
+      typeof cond.moonPhase === "number"
+        ? cond.moonPhase
+        : Number.parseInt(String(cond.moonPhase), 10);
+    if (Number.isFinite(mp) && mp !== filter.moonPhase) return false;
+  }
+  const baseBlocks = cond.neededBaseBlocks as string[] | undefined;
+  if (baseBlocks && baseBlocks.length > 0) {
+    if (!filter.baseBlock) return false;
+    const fbase = stripHash(filter.baseBlock);
+    if (!baseBlocks.some((b) => stripHash(b) === fbase)) return false;
+  }
+  const nearby = cond.neededNearbyBlocks as string[] | undefined;
+  if (nearby && nearby.length > 0) {
+    if (!filter.nearbyBlocks || filter.nearbyBlocks.length === 0) return false;
+    const fset = new Set(filter.nearbyBlocks.map(stripHash));
+    if (!nearby.some((b) => fset.has(stripHash(b)))) return false;
+  }
+  if (typeof cond.fluid === "string") {
+    if (!filter.fluid) return false;
+    if (stripHash(cond.fluid as string) !== stripHash(filter.fluid)) return false;
+  }
+  return true;
+}
+
 export function filterSpawns<
-  T extends Pick<Spawn, "biomes" | "condition"> & {
+  T extends Pick<Spawn, "biomes" | "condition" | "anticondition"> & {
     levelMin: number;
     levelMax: number;
     sourceName?: string;
@@ -258,7 +347,7 @@ export function filterSpawns<
       const match = s.biomes.some((b) => biomeSet.has(stripHash(b)));
       if (!match) return false;
     }
-    const cond = (s.condition ?? {}) as Record<string, unknown>;
+    const cond = (s.condition ?? {}) as ConditionShape;
     if (typeof filter.minY === "number") {
       if (typeof cond.maxY === "number" && cond.maxY < filter.minY) return false;
     }
@@ -275,6 +364,17 @@ export function filterSpawns<
       if (filter.weather === "clear" && (cond.isRaining === true || cond.isThundering === true))
         return false;
       if (filter.weather === "thunder" && cond.isThundering === false) return false;
+    }
+    // Extended condition fields (light, structures, dimensions, …) are only
+    // applied when the caller provides matching context. Spawns without a
+    // condition entry stay unaffected.
+    if (Object.keys(cond).length > 0 && !conditionMatches(cond, filter)) return false;
+    // Anticondition — Cobblemon AND-strict: ALL set fields must match before
+    // the spawn is rejected. See GitLab #1737. We mirror that semantics so
+    // the lookup matches in-game behavior, including its quirks.
+    const anti = (s.anticondition ?? null) as ConditionShape | null;
+    if (anti && Object.keys(anti).length > 0 && conditionMatches(anti, filter)) {
+      return false;
     }
     return true;
   });

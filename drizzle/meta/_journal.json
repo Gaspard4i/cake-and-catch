@@ -71,6 +71,13 @@
       "when": 1777022380741,
       "tag": "0009_easy_lady_mastermind",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1777713057209,
+      "tag": "0010_chunky_umar",
+      "breakpoints": true
     }
   ]
 }

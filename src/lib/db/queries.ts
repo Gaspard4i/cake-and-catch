@@ -220,6 +220,7 @@ export type SpawnWithSpecies = {
   levelMax: number;
   biomes: string[];
   condition: unknown;
+  anticondition: unknown;
   context: string | null;
   sourceKind: "mod" | "wiki" | "derived" | "addon";
   sourceName: string;
@@ -253,6 +254,7 @@ export const listSpawnsWithSpecies = cached(
             levelMax: schema.spawns.levelMax,
             biomes: schema.spawns.biomes,
             condition: schema.spawns.condition,
+            anticondition: schema.spawns.anticondition,
             context: schema.spawns.context,
             sourceKind: schema.spawns.sourceKind,
             sourceName: schema.spawns.sourceName,
