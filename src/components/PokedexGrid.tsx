@@ -1,14 +1,15 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useRef, useState } from "react";
-import { Star } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { ChevronDown, ChevronUp, Star } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { Spinner, TopProgress, PokedexCardSkeleton } from "./Loader";
 import { PokemonSprite } from "./PokemonSprite";
 import { TypePair } from "./TypeBadge";
 import { MultiSelect, type MultiSelectOption } from "./MultiSelect";
 import { VariantBadge } from "./VariantBadge";
+import { useFilterState } from "@/lib/url-state";
 
 type Species = {
   id: number;
@@ -33,7 +34,7 @@ const TYPE_OPTIONS: MultiSelectOption[] = [
 
 const GEN_OPTIONS: MultiSelectOption[] = Array.from({ length: 9 }, (_, i) => ({
   value: `gen${i + 1}`,
-  label: `Generation ${i + 1}`,
+  label: `Gen ${i + 1}`,
 }));
 
 const LABEL_OPTIONS: MultiSelectOption[] = [
@@ -43,8 +44,6 @@ const LABEL_OPTIONS: MultiSelectOption[] = [
   { value: "paradox", label: "Paradox", group: "Story" },
   { value: "ultra_beast", label: "Ultra Beast", group: "Story" },
   { value: "baby", label: "Baby", group: "Evolution" },
-  { value: "regional", label: "Regional variant", group: "Evolution" },
-  { value: "variant", label: "Any alt form (mega/gmax/…)", group: "Evolution" },
 ];
 
 type SortKey =
@@ -57,51 +56,32 @@ type SortKey =
   | "speed"
   | "total";
 
-function totalStats(s: Record<string, number>): number {
-  return Object.values(s).reduce((a, b) => a + b, 0);
-}
-
-function StatBar({
-  label,
-  value,
-  max = 255,
-}: {
-  label: string;
-  value: number;
-  max?: number;
-}) {
-  const pct = Math.min(100, (value / max) * 100);
-  return (
-    <div className="flex items-center gap-2 text-[10px]">
-      <span className="w-7 uppercase text-muted shrink-0">{label}</span>
-      <div className="flex-1 h-1 rounded-full bg-subtle overflow-hidden">
-        <div className="h-full bg-accent" style={{ width: `${pct}%` }} />
-      </div>
-      <span className="w-7 text-right font-mono shrink-0">{value}</span>
-    </div>
-  );
-}
+const FILTER_DESCRIPTOR = {
+  scalars: ["q", "gen", "sort", "form", "ability"],
+  multi: ["type", "label"],
+  bools: ["shiny"],
+} as const;
 
 export function PokedexGrid() {
   const t = useTranslations("pokedexUi");
   const tc = useTranslations("common");
+  const [filters, setFilters] = useFilterState(FILTER_DESCRIPTOR);
+
+  const q = filters.q ?? "";
+  const types = filters.type;
+  const gens = filters.gen ? [filters.gen] : [];
+  const labels = filters.label;
+  const sort = (filters.sort as SortKey) || "dex";
+  const shiny = filters.shiny;
+  const form = filters.form === "all" ? "all" : filters.form === "base" ? "base" : "regional";
+  const ability = filters.ability ?? "";
+
   const [results, setResults] = useState<Species[]>([]);
   const [cursor, setCursor] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [done, setDone] = useState(false);
-  const [q, setQ] = useState("");
-  const [types, setTypes] = useState<string[]>([]);
-  const [gens, setGens] = useState<string[]>([]);
-  const [labels, setLabels] = useState<string[]>([]);
-  const [sort, setSort] = useState<SortKey>("dex");
-  const [shiny, setShiny] = useState(false);
+  const [advanced, setAdvanced] = useState(false);
   const sentinel = useRef<HTMLDivElement>(null);
-  /**
-   * Monotonically-increasing id for each fetch. Any response whose id is
-   * stale (filters changed mid-flight) is dropped to avoid mixing rows from
-   * different filter sets, which is what produced the "two children with the
-   * same key" flood in dev.
-   */
   const reqIdRef = useRef(0);
   const inFlightRef = useRef(false);
 
@@ -110,19 +90,15 @@ export function PokedexGrid() {
       const u = new URLSearchParams();
       if (c) u.set("cursor", c);
       if (q) u.set("q", q);
-      // Intersection: API receives up to 2 types; a row must match ALL of
-      // them (primary/secondary unordered). A Pokémon has at most 2 types so
-      // we cap the selection at 2.
       for (const t of types.slice(0, 2)) u.append("type", t);
       if (gens.length > 0) u.set("gen", gens[0]);
-      // Forward every label the user picked. The API treats `variant`
-      // as the opt-in switch for mimic forms (mega/gmax/cosplay/…)
-      // and the rest (starter, legendary, …) as narrowing filters.
       for (const l of labels) u.append("label", l);
+      u.set("form", form);
+      if (ability.trim()) u.set("ability", ability.trim());
       u.set("sort", sort);
       return `/api/pokedex?${u.toString()}`;
     },
-    [q, types, gens, labels, sort],
+    [q, types, gens, labels, sort, form, ability],
   );
 
   const reset = useCallback(() => {
@@ -133,9 +109,10 @@ export function PokedexGrid() {
     setDone(false);
   }, []);
 
+  // Re-fetch whenever any filter changes.
   useEffect(() => {
     reset();
-  }, [q, types, gens, labels, sort, reset]);
+  }, [q, types, gens, labels, sort, form, ability, reset]);
 
   const fetchPage = useCallback(async () => {
     if (inFlightRef.current || done) return;
@@ -146,36 +123,19 @@ export function PokedexGrid() {
       const res = await fetch(buildUrl(cursor));
       if (!res.ok) throw new Error("pokedex fetch failed");
       const data = (await res.json()) as { results: Species[]; nextCursor: string | null };
-      // Stale response: filters changed while we were fetching. Drop it.
       if (myId !== reqIdRef.current) return;
+      // Server already narrowed; we still belt-and-braces filter
+      // type intersection client-side so the cap of 2 types is
+      // honoured even when the server payload includes extras.
       const filtered = data.results.filter((s) => {
         if (types.length > 0) {
-          // Intersection: every selected type must be one of the two types.
           const own = [s.primaryType, s.secondaryType].filter(
-            (t): t is string => !!t,
+            (x): x is string => !!x,
           );
           if (!types.every((t) => own.includes(t))) return false;
         }
-        if (
-          gens.length > 0 &&
-          !(s.labels ?? []).some((l) => gens.includes(l))
-        )
-          return false;
-        // Labels semantics:
-        //   - `variant` is an opt-in switch for mimic forms; the API
-        //     already widened the result, no client filter needed.
-        //   - Every other label narrows to rows that carry it.
-        const narrowing = labels.filter((l) => l !== "variant");
-        if (
-          narrowing.length > 0 &&
-          !narrowing.every((l) => (s.labels ?? []).includes(l))
-        )
-          return false;
         return true;
       });
-      // Merge with existing, deduplicating by id. Guards against the same
-      // cursor being fetched twice in rapid succession (observer re-fire,
-      // React strict-mode double-invoke in dev).
       setResults((prev) => {
         const seen = new Set(prev.map((s) => s.id));
         const next = prev.slice();
@@ -195,7 +155,7 @@ export function PokedexGrid() {
       if (myId === reqIdRef.current) setLoading(false);
       inFlightRef.current = false;
     }
-  }, [buildUrl, cursor, done, types, gens, labels]);
+  }, [buildUrl, cursor, done, types]);
 
   useEffect(() => {
     if (results.length === 0 && !done) fetchPage();
@@ -214,27 +174,40 @@ export function PokedexGrid() {
     return () => io.disconnect();
   }, [fetchPage]);
 
-  // Sort is applied server-side via the `sort` query param and keyset cursor.
-  // We keep results in the order the API returned them — this guarantees the
-  // sort spans the whole dataset, not just the currently loaded page.
   const sorted = results;
 
+  const hasActiveFilters = useMemo(
+    () =>
+      q !== "" ||
+      types.length > 0 ||
+      gens.length > 0 ||
+      labels.length > 0 ||
+      form !== "regional" ||
+      ability !== "",
+    [q, types, gens, labels, form, ability],
+  );
+
   const clearAll = () => {
-    setQ("");
-    setTypes([]);
-    setGens([]);
-    setLabels([]);
+    setFilters({
+      q: null,
+      type: null,
+      gen: null,
+      label: null,
+      form: null,
+      ability: null,
+      sort: null,
+    });
   };
 
   return (
     <>
       <TopProgress active={loading} />
-      <div className="sticky top-[57px] z-30 -mx-6 px-6 py-3 bg-background/80 backdrop-blur border-b border-border">
+      <div className="sticky top-[57px] z-30 -mx-6 px-6 py-3 bg-background/80 backdrop-blur border-b border-border space-y-2">
         <div className="flex flex-wrap items-center gap-2">
           <input
             type="search"
             value={q}
-            onChange={(e) => setQ(e.target.value)}
+            onChange={(e) => setFilters({ q: e.target.value || null })}
             placeholder={t("searchPlaceholder")}
             className="flex-1 min-w-48 rounded-lg border border-border bg-card px-4 py-2 outline-none focus:border-accent"
           />
@@ -242,7 +215,7 @@ export function PokedexGrid() {
             label={t("types")}
             options={TYPE_OPTIONS}
             value={types}
-            onChange={setTypes}
+            onChange={(v) => setFilters({ type: v })}
             placeholder={t("typesAny")}
             maxSelection={2}
           />
@@ -250,23 +223,15 @@ export function PokedexGrid() {
             label={t("gens")}
             options={GEN_OPTIONS}
             value={gens}
-            onChange={setGens}
+            onChange={(v) => setFilters({ gen: v[0] ?? null })}
             placeholder={t("gensAny")}
-            searchable={false}
-          />
-          <MultiSelect
-            label={t("tag")}
-            options={LABEL_OPTIONS}
-            value={labels}
-            onChange={setLabels}
-            placeholder={t("tagAny")}
             searchable={false}
           />
           <label className="text-xs inline-flex items-center gap-1 text-muted">
             <span className="text-[10px] uppercase tracking-wide">{tc("sort")}</span>
             <select
               value={sort}
-              onChange={(e) => setSort(e.target.value as SortKey)}
+              onChange={(e) => setFilters({ sort: e.target.value })}
               className="rounded-md border border-border bg-card px-2 py-1 text-xs"
             >
               <option value="dex">{t("sortDex")}</option>
@@ -280,7 +245,7 @@ export function PokedexGrid() {
             </select>
           </label>
           <button
-            onClick={() => setShiny((v) => !v)}
+            onClick={() => setFilters({ shiny: !shiny })}
             aria-pressed={shiny}
             className={`text-xs inline-flex items-center gap-1 px-2 py-1 rounded-md border transition-colors ${
               shiny
@@ -295,7 +260,15 @@ export function PokedexGrid() {
             />
             <span className="text-[10px] uppercase tracking-wide">{t("shiny")}</span>
           </button>
-          {(q || types.length > 0 || gens.length > 0 || labels.length > 0) && (
+          <button
+            onClick={() => setAdvanced((v) => !v)}
+            aria-expanded={advanced}
+            className="text-xs inline-flex items-center gap-1 px-2 py-1 rounded-md border border-border text-muted hover:text-foreground"
+          >
+            {advanced ? <ChevronUp className="size-3.5" /> : <ChevronDown className="size-3.5" />}
+            <span className="text-[10px] uppercase tracking-wide">{t("advanced")}</span>
+          </button>
+          {hasActiveFilters && (
             <button
               onClick={clearAll}
               className="text-xs px-2 py-1 rounded-md border border-border text-muted hover:text-foreground"
@@ -305,78 +278,91 @@ export function PokedexGrid() {
           )}
           {loading && <Spinner label="loading" />}
         </div>
+        {advanced && (
+          <div className="flex flex-wrap items-center gap-2 pb-1">
+            <label className="text-xs inline-flex items-center gap-1 text-muted">
+              <span className="text-[10px] uppercase tracking-wide">{t("forms")}</span>
+              <select
+                value={form}
+                onChange={(e) => setFilters({ form: e.target.value === "regional" ? null : e.target.value })}
+                className="rounded-md border border-border bg-card px-2 py-1 text-xs"
+              >
+                <option value="regional">{t("formRegional")}</option>
+                <option value="base">{t("formBaseOnly")}</option>
+                <option value="all">{t("formAll")}</option>
+              </select>
+            </label>
+            <MultiSelect
+              label={t("tag")}
+              options={LABEL_OPTIONS}
+              value={labels}
+              onChange={(v) => setFilters({ label: v })}
+              placeholder={t("tagAny")}
+              searchable={false}
+            />
+            <label className="text-xs inline-flex items-center gap-1 text-muted">
+              <span className="text-[10px] uppercase tracking-wide">{t("ability")}</span>
+              <input
+                type="search"
+                value={ability}
+                onChange={(e) => setFilters({ ability: e.target.value || null })}
+                placeholder={t("abilityPlaceholder")}
+                className="rounded-md border border-border bg-card px-2 py-1 text-xs w-32"
+              />
+            </label>
+          </div>
+        )}
       </div>
 
-      <ul className="mt-6 grid grid-cols-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2 sm:gap-4">
+      {/*
+        Fixed-size cards (96×140 baseline, scale up at md+ via uniform
+        column count). Sprite area is the same width as the card so a
+        long species name truncates rather than reflowing the layout.
+      */}
+      <ul className="mt-6 grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-2 sm:gap-3">
         {loading && results.length === 0
-          ? Array.from({ length: 8 }).map((_, i) => (
+          ? Array.from({ length: 12 }).map((_, i) => (
               <li key={`sk-${i}`}>
                 <PokedexCardSkeleton />
               </li>
             ))
           : null}
-        {sorted.map((s) => {
-          const total = totalStats(s.baseStats);
-          const gen = (s.labels ?? []).find((l) => l.startsWith("gen"));
-          return (
-            <li key={s.id}>
-              <Link
-                href={`/pokemon/${s.slug}`}
-                className="group relative block rounded-lg sm:rounded-xl border border-border bg-card p-1.5 sm:p-4 hover:bg-subtle hover:border-accent/50 transition-all overflow-hidden"
-              >
-                <div className="hidden sm:flex items-start justify-between gap-2">
-                  <span className="font-mono text-xs text-muted">
-                    #{String(s.dexNo).padStart(4, "0")}
-                  </span>
-                  {gen && (
-                    <span className="text-[9px] uppercase tracking-wider text-muted font-mono">
-                      {gen}
-                    </span>
-                  )}
-                </div>
-                <div className="flex justify-center">
-                  <PokemonSprite
-                    dexNo={s.dexNo}
-                    name={s.name}
-                    variantLabel={(s as { variantLabel?: string | null }).variantLabel}
-                    size={120}
-                    shiny={shiny}
-                    className="transition-transform group-hover:scale-110 size-16 sm:size-[120px] object-contain"
-                  />
-                </div>
-                <div className="mt-0.5 sm:mt-1 text-center font-semibold truncate text-[11px] sm:text-base">
-                  {s.name}
-                </div>
-                {s.variantLabel && (
-                  <div className="mt-0.5 flex justify-center">
-                    <VariantBadge variantLabel={s.variantLabel} />
-                  </div>
-                )}
-                <div className="mt-0.5 text-center font-mono text-[9px] text-muted sm:hidden">
-                  #{String(s.dexNo).padStart(4, "0")}
-                </div>
-                <div className="hidden sm:flex mt-1 justify-center min-w-0 max-w-full overflow-hidden">
-                  <TypePair primary={s.primaryType} secondary={s.secondaryType} size={16} />
-                </div>
-                <div className="hidden sm:block mt-3 space-y-0.5">
-                  <StatBar label="hp" value={s.baseStats.hp ?? 0} />
-                  <StatBar label="atk" value={s.baseStats.attack ?? 0} />
-                  <StatBar label="def" value={s.baseStats.defence ?? 0} />
-                  <StatBar label="spa" value={s.baseStats.special_attack ?? 0} />
-                  <StatBar label="spd" value={s.baseStats.special_defence ?? 0} />
-                  <StatBar label="spe" value={s.baseStats.speed ?? 0} />
-                </div>
-                <div className="hidden sm:flex mt-2 items-center justify-between text-[10px] text-muted">
-                  <span>{t("total")} · <span className="font-mono text-foreground">{total}</span></span>
-                  <span>{t("catch")} · <span className="font-mono text-foreground">{s.catchRate}</span></span>
-                </div>
-              </Link>
-            </li>
-          );
-        })}
+        {sorted.map((s) => (
+          <li key={s.id}>
+            <Link
+              href={`/pokemon/${s.slug}`}
+              className="group relative block rounded-lg border border-border bg-card hover:bg-subtle hover:border-accent/50 transition-all p-2 h-full"
+            >
+              <VariantBadge variantLabel={s.variantLabel} />
+              <div className="flex justify-center">
+                <PokemonSprite
+                  dexNo={s.dexNo}
+                  name={s.name}
+                  baseSlug={s.slug.replace(/-(?:alolan|galarian|hisuian|paldean|paldean-.*|mega.*|gmax|tera.*).*$/, "")}
+                  variantLabel={s.variantLabel}
+                  size={72}
+                  shiny={shiny}
+                  className="transition-transform group-hover:scale-110"
+                />
+              </div>
+              <div className="mt-1 text-[10px] font-mono text-muted text-center">
+                #{String(s.dexNo).padStart(4, "0")}
+              </div>
+              <div className="text-center font-medium truncate text-xs sm:text-sm leading-tight">
+                {s.name}
+              </div>
+              <div className="mt-1 flex justify-center min-w-0 max-w-full overflow-hidden">
+                <TypePair primary={s.primaryType} secondary={s.secondaryType} size={14} />
+              </div>
+            </Link>
+          </li>
+        ))}
       </ul>
 
-      <div ref={sentinel} className="h-20 flex items-center justify-center text-xs text-muted">
+      <div
+        ref={sentinel}
+        className="h-20 flex items-center justify-center text-xs text-muted"
+      >
         {loading
           ? <Spinner label={tc("loading")} />
           : done

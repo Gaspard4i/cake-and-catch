@@ -9,7 +9,8 @@
     "modSource": "Cobblemon (MPL 2.0)",
     "and": "and",
     "wikiSource": "Cobblemon wiki (CC BY 4.0)",
-    "builtBy": "Built by"
+    "builtBy": "Built by",
+    "attribution": "Pokémon, Pokémon names and characters © Nintendo / Game Freak / The Pokémon Company. Sprites courtesy of Pokémon Showdown and PokéAPI. This is an unofficial fan project — not affiliated with or endorsed by Nintendo or The Pokémon Company."
   },
   "home": {
     "pokedexPreview": "Cobbledex preview",
@@ -95,6 +96,7 @@
       "level_boost": "level",
       "baseline": "basic"
     },
+    "evolution": "Evolution",
     "spawnsCount": "Spawns ({count})",
     "noSpawn": "No natural spawn documented for this species.",
     "captureRate": "Capture rate {value}",
@@ -328,6 +330,13 @@
     "shiny": "Shiny",
     "shinyTitle": "Toggle shiny sprites",
     "abilities": "Abilities:",
+    "ability": "Ability",
+    "abilityPlaceholder": "e.g. levitate",
+    "advanced": "Advanced",
+    "forms": "Forms",
+    "formRegional": "Base + regional",
+    "formBaseOnly": "Base species only",
+    "formAll": "All forms (mega, gmax, …)",
     "total": "Total",
     "catch": "Catch",
     "speciesCount": "{count} species",

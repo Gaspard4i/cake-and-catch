@@ -26,12 +26,15 @@ import {
   listBaitEffects,
   listBerries,
   listCobblemonSpawnsForSpecies,
+  listFormsOfBase,
 } from "@/lib/db/queries";
 import { SourceBadge } from "@/components/SourceBadge";
 import { TypePair } from "@/components/TypeBadge";
-import { PokemonSprite } from "@/components/PokemonSprite";
 import { VariantBadge } from "@/components/VariantBadge";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import { SpeciesHero } from "@/components/SpeciesHero";
+import { FormTabs } from "@/components/FormTabs";
+import { EvolutionChain } from "@/components/EvolutionChain";
 import { ItemIcon } from "@/components/ItemIcon";
 import {
   rankBaitsForSpecies,
@@ -162,7 +165,7 @@ async function SpeciesDetail({ params }: { params: Promise<{ slug: string }> }) 
   const species = await getSpeciesBySlug(slug);
   if (!species) notFound();
 
-  const [spawns, sources, baits, berries, seasonings, wiki, neighbors, t] =
+  const [spawns, sources, baits, berries, seasonings, wiki, neighbors, forms, t] =
     await Promise.all([
       listCobblemonSpawnsForSpecies(species.id),
       getSourcesFor("species", species.id),
@@ -171,6 +174,7 @@ async function SpeciesDetail({ params }: { params: Promise<{ slug: string }> }) 
       listAllSeasonings(),
       getWikiSummary(species.id),
       getSpeciesNeighbors(slug),
+      listFormsOfBase(slug),
       getTranslations("pokemon"),
     ]);
 
@@ -278,11 +282,14 @@ async function SpeciesDetail({ params }: { params: Promise<{ slug: string }> }) 
       </div>
 
       <header className="mt-4 flex items-center gap-4 flex-wrap">
-        <PokemonSprite
+        <SpeciesHero
           dexNo={species.dexNo}
           name={species.name}
+          baseSlug={species.slug.replace(
+            /-(?:alolan|galarian|hisuian|paldean(?:-.*)?|mega(?:-.*)?|gmax|tera.*).*$/,
+            "",
+          )}
           variantLabel={species.variantLabel}
-          size={96}
         />
         <div>
           <div className="flex items-center gap-3 flex-wrap">
@@ -290,7 +297,9 @@ async function SpeciesDetail({ params }: { params: Promise<{ slug: string }> }) 
               #{String(species.dexNo).padStart(4, "0")}
             </span>
             <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight truncate">{species.name}</h1>
-            {species.variantLabel && <VariantBadge variantLabel={species.variantLabel} />}
+            {species.variantLabel && (
+              <VariantBadge variantLabel={species.variantLabel} inline />
+            )}
             <SourceBadge
               kind="mod"
               name="cobblemon"
@@ -306,6 +315,8 @@ async function SpeciesDetail({ params }: { params: Promise<{ slug: string }> }) 
           </div>
         </div>
       </header>
+
+      <FormTabs forms={forms} currentSlug={slug} />
 
       {wiki?.summary && (
         <section className="mt-6 rounded-lg border border-border bg-card p-4">
@@ -431,6 +442,22 @@ async function SpeciesDetail({ params }: { params: Promise<{ slug: string }> }) 
           </ul>
         )}
       </section>
+
+      {Array.isArray(rawSpecies.evolutions) && rawSpecies.evolutions.length > 0 && (
+        <section className="mt-10">
+          <h2 className="text-sm font-medium uppercase tracking-wide text-muted">
+            {t("evolution")}
+          </h2>
+          <EvolutionChain
+            speciesName={species.name}
+            evolutions={rawSpecies.evolutions as Array<{
+              result?: string;
+              variant?: string;
+              requiredContext?: string;
+            }>}
+          />
+        </section>
+      )}
 
       <section className="mt-10">
         <h2 className="text-sm font-medium uppercase tracking-wide text-muted">

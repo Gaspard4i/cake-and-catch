@@ -9,7 +9,8 @@
     "modSource": "Cobblemon (MPL 2.0)",
     "and": "und",
     "wikiSource": "Cobblemon-Wiki (CC BY 4.0)",
-    "builtBy": "Gebaut von"
+    "builtBy": "Gebaut von",
+    "attribution": "Pokémon, Pokémon names and characters © Nintendo / Game Freak / The Pokémon Company. Sprites courtesy of Pokémon Showdown and PokéAPI. This is an unofficial fan project — not affiliated with or endorsed by Nintendo or The Pokémon Company."
   },
   "home": {
     "pokedexPreview": "Cobbledex-Vorschau",
@@ -127,7 +128,8 @@
     "context": "Position",
     "except": "Except",
     "presets": "Presets",
-    "ifAny": "always"
+    "ifAny": "always",
+    "evolution": "Evolution"
   },
   "theme": {
     "label": "Theme wechseln",
@@ -338,7 +340,14 @@
     "sortHp": "KP (abst.)",
     "sortAttack": "Angriff (abst.)",
     "sortSpeed": "Initiative (abst.)",
-    "sortTotal": "Basiswerte-Summe (abst.)"
+    "sortTotal": "Basiswerte-Summe (abst.)",
+    "ability": "Ability",
+    "abilityPlaceholder": "e.g. levitate",
+    "advanced": "Advanced",
+    "forms": "Forms",
+    "formRegional": "Base + regional",
+    "formBaseOnly": "Base species only",
+    "formAll": "All forms (mega, gmax, …)"
   },
   "effects": {
     "ev": "EV",

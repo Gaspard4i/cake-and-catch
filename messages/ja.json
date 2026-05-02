@@ -9,7 +9,8 @@
     "modSource": "Cobblemon (MPL 2.0)",
     "and": "および",
     "wikiSource": "Cobblemon wiki (CC BY 4.0)",
-    "builtBy": "制作:"
+    "builtBy": "制作:",
+    "attribution": "Pokémon, Pokémon names and characters © Nintendo / Game Freak / The Pokémon Company. Sprites courtesy of Pokémon Showdown and PokéAPI. This is an unofficial fan project — not affiliated with or endorsed by Nintendo or The Pokémon Company."
   },
   "home": {
     "pokedexPreview": "ポケモン図鑑プレビュー",
@@ -127,7 +128,8 @@
     "context": "Position",
     "except": "Except",
     "presets": "Presets",
-    "ifAny": "always"
+    "ifAny": "always",
+    "evolution": "Evolution"
   },
   "theme": {
     "label": "テーマを変更",
@@ -338,7 +340,14 @@
     "sortHp": "HP (降順)",
     "sortAttack": "こうげき (降順)",
     "sortSpeed": "すばやさ (降順)",
-    "sortTotal": "種族値合計 (降順)"
+    "sortTotal": "種族値合計 (降順)",
+    "ability": "Ability",
+    "abilityPlaceholder": "e.g. levitate",
+    "advanced": "Advanced",
+    "forms": "Forms",
+    "formRegional": "Base + regional",
+    "formBaseOnly": "Base species only",
+    "formAll": "All forms (mega, gmax, …)"
   },
   "effects": {
     "ev": "EV",

@@ -35,6 +35,9 @@ export function FooterText() {
         Gaspard4i
       </a>
       .
+      <div className="mt-2 text-[10px] leading-relaxed text-muted">
+        {t("attribution")}
+      </div>
     </>
   );
 }

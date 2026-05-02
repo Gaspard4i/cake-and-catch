@@ -1,53 +1,69 @@
 "use client";
 
-import Image from "next/image";
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import { spriteCandidates } from "@/lib/sprites/pokemon-sprite";
 
 /**
- * Single sprite source for every Pokémon — the PokeAPI default front
- * sprite keyed on the National Dex number. Base species and variants
- * (alolan, galarian, mega, gmax, …) all reuse the base dex sprite, so
- * the visual style stays consistent across the app.
+ * Variant-aware Pokémon sprite. Cascades through Pokemon Showdown's
+ * `dex` set (variant-aware) and PokeAPI's dex-number sprite as
+ * fallback. When everything 404s we render a circular dex-number
+ * badge so the layout never collapses to a broken-image icon.
+ *
+ * The sprite is a plain <img>, not next/image, because variant
+ * sprites change frequently and Next's optimizer is overkill for
+ * 60-pixel art assets — keeping it simple avoids the
+ * `remotePatterns` config + the deopt of `unoptimized`.
  */
 export function PokemonSprite({
   dexNo,
   name,
+  baseSlug,
+  variantLabel,
   size = 64,
   shiny = false,
   className = "",
 }: {
   dexNo: number;
   name: string;
-  size?: number;
-  /** Kept for API compatibility — rendering is identical for every form. */
-  variant?: "default" | "artwork";
-  shiny?: boolean;
-  /** Kept for API compatibility — see comment above. */
+  /** Base species slug — used to build the Showdown URL. */
+  baseSlug?: string | null;
   variantLabel?: string | null;
+  size?: number;
+  shiny?: boolean;
   className?: string;
 }) {
-  const [errored, setErrored] = useState(false);
-  const src = `https://cdn.jsdelivr.net/gh/PokeAPI/sprites@master/sprites/pokemon/${shiny ? "shiny/" : ""}${dexNo}.png`;
-  if (errored) {
+  const candidates = useMemo(
+    () => spriteCandidates({ dexNo, name, baseSlug, variantLabel, shiny }),
+    [dexNo, name, baseSlug, variantLabel, shiny],
+  );
+  const [idx, setIdx] = useState(0);
+  const exhausted = idx >= candidates.length;
+
+  if (exhausted) {
     return (
       <span
         title={name}
-        className={`inline-flex items-center justify-center rounded-full bg-subtle border border-border font-mono text-[10px] text-muted ${className}`}
+        aria-label={name}
+        className={`inline-flex items-center justify-center rounded-full bg-subtle border border-border font-mono text-[10px] text-muted shrink-0 ${className}`}
         style={{ width: size, height: size }}
       >
         {String(dexNo).padStart(4, "0")}
       </span>
     );
   }
+
   return (
-    <Image
-      src={src}
+    <img
+      key={candidates[idx]}
+      src={candidates[idx]}
       alt={name}
       width={size}
       height={size}
-      unoptimized
-      onError={() => setErrored(true)}
-      className={`pixel inline-block ${className}`}
+      loading="lazy"
+      decoding="async"
+      onError={() => setIdx((i) => i + 1)}
+      className={`pixel inline-block object-contain shrink-0 ${className}`}
+      style={{ width: size, height: size }}
     />
   );
 }

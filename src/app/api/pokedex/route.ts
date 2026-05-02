@@ -31,13 +31,21 @@ export async function GET(req: NextRequest) {
   const labels = params.getAll("label").map((l) => l.trim()).filter(Boolean);
   const sort = (params.get("sort") ?? "dex") as SortKey;
   const cursor = parseCursor(params.get("cursor"));
+  const ability = params.get("ability")?.trim() ?? "";
+  const bstMin = Number.parseInt(params.get("bst_min") ?? "", 10);
+  const bstMax = Number.parseInt(params.get("bst_max") ?? "", 10);
   /**
    * Default Cobbledex view = base species + regional variants only.
-   * Mimic forms (mega/gmax/cosmetic/drives/plates) appear only when
-   * the player explicitly opts in via `?label=variant`. Regional
-   * variants stay visible thanks to their `regional` label, regardless.
+   * `?form=` accepts:
+   *   - `regional` (default): base + regional variants (alolan, …)
+   *   - `base`: base species only (no variants)
+   *   - `all`: base + every form (regional + mega/gmax/cosmetic)
    */
-  const includeMimicVariants = labels.includes("variant");
+  const formMode = (() => {
+    const raw = params.get("form")?.trim();
+    if (raw === "base" || raw === "all") return raw;
+    return "regional";
+  })();
 
   const totalExpr = sql<number>`(
     COALESCE((${schema.species.baseStats} ->> 'hp')::int, 0) +
@@ -66,20 +74,34 @@ export async function GET(req: NextRequest) {
     if (gen) {
       where.push(sql`${schema.species.labels}::jsonb @> ${JSON.stringify([gen])}::jsonb`);
     }
-    // Honour the labels filter the client sends. `regional` and
-    // `variant` are inclusive switches — they widen what we return.
-    // Other labels narrow the result (starter, legendary, mythical…).
+    // Narrowing labels (starter, legendary, mythical, paradox, …).
     for (const l of labels) {
-      if (l === "regional" || l === "variant") continue;
       where.push(sql`${schema.species.labels}::jsonb @> ${JSON.stringify([l])}::jsonb`);
     }
-    // Default-hide mimic variants (mega/gmax/cosplay/etc.). Regional
-    // variants carry the `regional` label and stay visible.
-    if (!includeMimicVariants) {
+    // Form filter — see the formMode comment on parsing.
+    if (formMode === "base") {
+      where.push(sql`${schema.species.variantOfSpeciesId} IS NULL`);
+    } else if (formMode === "regional") {
       where.push(sql`(
         ${schema.species.variantOfSpeciesId} IS NULL
         OR ${schema.species.labels}::jsonb @> '["regional"]'::jsonb
       )`);
+    }
+    // Ability ILIKE — accept partial matches across the abilities[] array.
+    if (ability) {
+      where.push(
+        sql`EXISTS (
+          SELECT 1 FROM jsonb_array_elements_text(${schema.species.abilities}) AS a
+          WHERE a ILIKE ${`%${ability}%`}
+        )`,
+      );
+    }
+    // BST (base stat total) range.
+    if (Number.isFinite(bstMin)) {
+      where.push(sql`${totalExpr} >= ${bstMin}`);
+    }
+    if (Number.isFinite(bstMax)) {
+      where.push(sql`${totalExpr} <= ${bstMax}`);
     }
 
     if (cursor) {

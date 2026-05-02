@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, ilike, sql } from "drizzle-orm";
+import { and, asc, desc, eq, ilike, or, sql } from "drizzle-orm";
 import { unstable_cache } from "next/cache";
 import { db, safe, schema } from "./client";
 
@@ -100,6 +100,73 @@ export const getSourcesFor = cached(
             ),
           ),
       [] as Array<typeof schema.dataSources.$inferSelect>,
+    ),
+);
+
+/**
+ * Every form (base + alt) of a Pokédex entry, ordered base-first then
+ * by slug. Used by the FormTabs component on the species page.
+ *
+ * `slug` is either the base slug (e.g. `vulpix`) or any variant slug
+ * (`vulpix-alolan`); we resolve back to the base then enumerate every
+ * row that points at it via `variantOfSpeciesId`.
+ */
+export const listFormsOfBase = cached(
+  "forms-of-base",
+  SIX_HOURS,
+  async (
+    slug: string,
+  ): Promise<
+    Array<{
+      slug: string;
+      name: string;
+      dexNo: number;
+      variantLabel: string | null;
+      isBase: boolean;
+    }>
+  > =>
+    safe(
+      async () => {
+        const start = await db
+          .select()
+          .from(schema.species)
+          .where(eq(schema.species.slug, slug))
+          .limit(1);
+        const head = start[0];
+        if (!head) return [];
+        const baseId = head.variantOfSpeciesId ?? head.id;
+        const family = await db
+          .select({
+            id: schema.species.id,
+            slug: schema.species.slug,
+            name: schema.species.name,
+            dexNo: schema.species.dexNo,
+            variantOfSpeciesId: schema.species.variantOfSpeciesId,
+            variantLabel: schema.species.variantLabel,
+          })
+          .from(schema.species)
+          .where(
+            or(
+              eq(schema.species.id, baseId),
+              eq(schema.species.variantOfSpeciesId, baseId),
+            )!,
+          )
+          .orderBy(asc(schema.species.variantOfSpeciesId), asc(schema.species.slug));
+        // Sort base first, then variants alphabetically.
+        return family
+          .map((f) => ({
+            slug: f.slug,
+            name: f.name,
+            dexNo: f.dexNo,
+            variantLabel: f.variantLabel,
+            isBase: f.variantOfSpeciesId === null,
+          }))
+          .sort((a, b) => {
+            if (a.isBase !== b.isBase) return a.isBase ? -1 : 1;
+            return a.slug.localeCompare(b.slug);
+          });
+      },
+      [],
     ),
 );
 
