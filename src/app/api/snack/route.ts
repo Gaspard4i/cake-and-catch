@@ -396,21 +396,37 @@ export async function POST(req: NextRequest) {
     (a, b) => b.finalProbability - a.finalProbability,
   );
 
-  const attracted = uniqueRanked.slice(0, 100).map((r) => ({
-    speciesId: r.speciesId,
-    slug: r.slug,
-    name: r.name,
-    dexNo: r.dexNo,
-    primaryType: r.primaryType,
-    secondaryType: r.secondaryType,
-    bucket: r.bucket,
-    weight: r.weight,
-    adjustedWeight: r.adjustedWeight,
-    probability: r.finalProbability,
-    reasons: r.reasons,
-    levelMin: r.levelMin,
-    levelMax: r.levelMax,
-  }));
+  // Spawn entries already carry the condition payload; we index by
+  // spawnId so we can hand them back to the UI without a second query.
+  const spawnById = new Map<number, (typeof matchingSpawns)[number]>();
+  for (const s of matchingSpawns) spawnById.set(s.spawnId, s);
+
+  const attracted = uniqueRanked.slice(0, 100).map((r) => {
+    const sourceSpawn = spawnById.get(r.spawnId);
+    return {
+      speciesId: r.speciesId,
+      slug: r.slug,
+      name: r.name,
+      dexNo: r.dexNo,
+      primaryType: r.primaryType,
+      secondaryType: r.secondaryType,
+      bucket: r.bucket,
+      weight: r.weight,
+      adjustedWeight: r.adjustedWeight,
+      probability: r.finalProbability,
+      reasons: r.reasons,
+      levelMin: r.levelMin,
+      levelMax: r.levelMax,
+      context: sourceSpawn?.context ?? null,
+      biomes: sourceSpawn?.biomes ?? [],
+      condition: (sourceSpawn?.condition ?? null) as Record<string, unknown> | null,
+      anticondition: (sourceSpawn?.anticondition ?? null) as Record<string, unknown> | null,
+      // listSpawnsWithSpecies doesn't pull `presets`; the column is on
+      // the spawns table though, so we just surface an empty array
+      // here. The fiche page already shows the full preset chain.
+      presets: [] as string[],
+    };
+  });
 
   return ok({
     cake: {

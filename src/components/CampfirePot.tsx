@@ -85,7 +85,109 @@ type AttractedEntry = {
   reasons: string[];
   levelMin: number;
   levelMax: number;
+  /**
+   * Spawn rule fingerprint for the entry that won the dedup pass. Used
+   * by the card to surface "needs structure X" / "moon phase 0" /
+   * "raining only" so a player doesn't waste a snack expecting
+   * Charcadet in the open Overworld when it actually only spawns next
+   * to a ruined portal.
+   */
+  context: string | null;
+  biomes: string[];
+  condition: Record<string, unknown> | null;
+  anticondition: Record<string, unknown> | null;
+  presets: string[];
 };
+
+/**
+ * Compact spawn-rule summary shown on each Attracted card. We only emit
+ * what's likely to surprise the player given their current filters: a
+ * structure requirement, a weather/time/moon constraint, a light-level
+ * range, an anticondition. The full payload still lives on the species
+ * Cobbledex page; this is just the "you can't catch Charcadet by
+ * standing in a plain Overworld field" hint.
+ */
+function summarizeSpawnRules(p: AttractedEntry): {
+  structures: string[];
+  prettyId: (s: string) => string;
+  badges: { kind: "warn" | "info"; text: string }[];
+} {
+  const prettyId = (s: string) =>
+    s.replace(/^#?[a-z0-9_]+:/, "").replace(/^is_/, "").replace(/_/g, " ");
+  const cond = p.condition ?? {};
+  const anti = p.anticondition ?? {};
+  const badges: { kind: "warn" | "info"; text: string }[] = [];
+  const structures = (cond as { structures?: unknown }).structures;
+  const structList = Array.isArray(structures) ? (structures as string[]) : [];
+  // Structure constraints are the #1 thing people miss — flag them
+  // loud (Charcadet only spawns next to ruined portals etc).
+  if (structList.length > 0) {
+    badges.push({
+      kind: "warn",
+      text: `Near ${structList.map(prettyId).slice(0, 2).join(" / ")}${structList.length > 2 ? "…" : ""}`,
+    });
+  }
+  if ((cond as { isRaining?: unknown }).isRaining === true) {
+    badges.push({ kind: "info", text: "Rain only" });
+  }
+  if ((cond as { isThundering?: unknown }).isThundering === true) {
+    badges.push({ kind: "info", text: "Thunder only" });
+  }
+  const tr = (cond as { timeRange?: unknown }).timeRange;
+  if (typeof tr === "string" && tr !== "any") {
+    badges.push({ kind: "info", text: tr.charAt(0).toUpperCase() + tr.slice(1) });
+  }
+  const moon = (cond as { moonPhase?: unknown }).moonPhase;
+  if (moon !== undefined) {
+    const phase =
+      typeof moon === "number" ? moon : Number.parseInt(String(moon), 10);
+    if (Number.isFinite(phase)) {
+      const labels = [
+        "full moon",
+        "waning gibbous",
+        "last quarter",
+        "waning crescent",
+        "new moon",
+        "waxing crescent",
+        "first quarter",
+        "waxing gibbous",
+      ];
+      badges.push({ kind: "info", text: labels[phase] ?? `moon ${phase}` });
+    }
+  }
+  if ((cond as { canSeeSky?: unknown }).canSeeSky === true) {
+    badges.push({ kind: "info", text: "Open sky" });
+  } else if ((cond as { canSeeSky?: unknown }).canSeeSky === false) {
+    badges.push({ kind: "info", text: "Covered" });
+  }
+  const minL = (cond as { minLight?: unknown }).minLight;
+  const maxL = (cond as { maxLight?: unknown }).maxLight;
+  if (typeof minL === "number" || typeof maxL === "number") {
+    badges.push({
+      kind: "info",
+      text: `Light ${typeof minL === "number" ? minL : 0}–${
+        typeof maxL === "number" ? maxL : 15
+      }`,
+    });
+  }
+  // Anticondition surfaces are usually subtle ("not in village"), but
+  // worth a footnote so the player knows the constraint exists.
+  const antiBiomes = (anti as { biomes?: unknown }).biomes;
+  if (Array.isArray(antiBiomes) && antiBiomes.length > 0) {
+    badges.push({
+      kind: "warn",
+      text: `Not in ${(antiBiomes as string[]).map(prettyId).slice(0, 2).join(" / ")}`,
+    });
+  }
+  const antiStructs = (anti as { structures?: unknown }).structures;
+  if (Array.isArray(antiStructs) && antiStructs.length > 0) {
+    badges.push({
+      kind: "warn",
+      text: `Not near ${(antiStructs as string[]).map(prettyId).slice(0, 2).join(" / ")}`,
+    });
+  }
+  return { structures: structList, prettyId, badges };
+}
 
 /** Pretty group label shown in the multi-select dropdown per namespace. */
 const NS_LABEL: Record<string, string> = {
@@ -289,6 +391,10 @@ export function CampfirePot({ mode = "snack" }: { mode?: PotMode } = {}) {
   const [lightLevel, setLightLevel] = useState<string>("");
   const [moonPhase, setMoonPhase] = useState<string>("");
   const [dimensions, setDimensions] = useState<string[]>([]);
+  // Pinned by `condition.structures` on a spawn; only meaningful once a
+  // dimension+biome are chosen (otherwise the picker fills with every
+  // structure across vanilla, which is mostly useless noise).
+  const [structures, setStructures] = useState<string[]>([]);
   const [attracted, setAttracted] = useState<AttractedEntry[]>([]);
   const [attractedVisible, setAttractedVisible] = useState(24);
   const attractedSentinelRef = useRef<HTMLDivElement>(null);
@@ -392,6 +498,7 @@ export function CampfirePot({ mode = "snack" }: { mode?: PotMode } = {}) {
       contexts: contexts.length > 0 ? contexts : undefined,
       biomes: biomes.length > 0 ? biomes : undefined,
       dimensions: dimensions.length > 0 ? dimensions : undefined,
+      structures: structures.length > 0 ? structures : undefined,
       timeRanges: times.length > 0 ? times : undefined,
       weather: weather ? (weather as "clear" | "rain" | "thunder") : undefined,
       moonPhase: moonPhase ? Number.parseInt(moonPhase, 10) : undefined,
@@ -406,6 +513,7 @@ export function CampfirePot({ mode = "snack" }: { mode?: PotMode } = {}) {
     contexts,
     biomes,
     dimensions,
+    structures,
     times,
     weather,
     moonPhase,
@@ -434,6 +542,13 @@ export function CampfirePot({ mode = "snack" }: { mode?: PotMode } = {}) {
     if (!dimTraits.hasSky && skyExposure !== "") setSkyExposure("");
   }, [dimTraits, times.length, weather, moonPhase, skyExposure]);
 
+  // Drop the structure picks when the dimension or biome changes — a
+  // village picked under Overworld must not survive a switch to the
+  // Nether (where it doesn't exist).
+  useEffect(() => {
+    setStructures([]);
+  }, [dimensions, biomes]);
+
   // Compute the still-reachable values per axis once, from the shared
   // axes payload. Each call ignores the axis being computed so the
   // control never greys ITS OWN value out.
@@ -444,6 +559,7 @@ export function CampfirePot({ mode = "snack" }: { mode?: PotMode } = {}) {
       namespaces: availableValues(spawnAxes, axisFilter, "namespaces"),
       dimensions: availableValues(spawnAxes, axisFilter, "dimensions"),
       contexts: availableValues(spawnAxes, axisFilter, "contexts"),
+      structures: availableValues(spawnAxes, axisFilter, "structures"),
       timeRanges: availableValues(spawnAxes, axisFilter, "timeRanges"),
       weather: availableValues(spawnAxes, axisFilter, "weather"),
       moonPhase: availableValues(spawnAxes, axisFilter, "moonPhase"),
@@ -616,6 +732,7 @@ export function CampfirePot({ mode = "snack" }: { mode?: PotMode } = {}) {
             maxY: maxY ? Number.parseInt(maxY, 10) : undefined,
             sources: sources.length > 0 ? sources : undefined,
             contexts: effectiveContexts,
+            structures: structures.length > 0 ? structures : undefined,
             weather: weather || undefined,
             canSeeSky: canSeeSkyValue,
             skyLightLevel: skyLightLevelValue,
@@ -668,6 +785,7 @@ export function CampfirePot({ mode = "snack" }: { mode?: PotMode } = {}) {
     lightLevel,
     moonPhase,
     dimensions,
+    structures,
   ]);
 
 
@@ -990,7 +1108,8 @@ export function CampfirePot({ mode = "snack" }: { mode?: PotMode } = {}) {
               skyExposure !== "" ||
               lightLevel !== "" ||
               moonPhase !== "" ||
-              dimensions.length > 0) && (
+              dimensions.length > 0 ||
+              structures.length > 0) && (
               <button
                 onClick={() => {
                   setBiomes([]);
@@ -1003,6 +1122,7 @@ export function CampfirePot({ mode = "snack" }: { mode?: PotMode } = {}) {
                   setLightLevel("");
                   setMoonPhase("");
                   setDimensions([]);
+                  setStructures([]);
                 }}
                 className="text-[10px] uppercase tracking-wide px-2 py-0.5 rounded-full border border-border bg-card text-muted hover:text-foreground"
               >
@@ -1090,6 +1210,36 @@ export function CampfirePot({ mode = "snack" }: { mode?: PotMode } = {}) {
               </div>
             </div>
           )}
+
+          {/* 3.5 Nearby structure — only when at least one spawn in
+              the current selection actually pins a structure. We hide
+              it otherwise so the player isn't tempted to set "near a
+              village" when no spawn cares about it. */}
+          {dimensions.length > 0 &&
+            reachable &&
+            reachable.structures.size > 0 && (
+              <div className="mt-3">
+                <div className="text-[10px] uppercase tracking-wider text-muted px-1 mb-1">
+                  {t("filtersStructure")}
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <MultiSelect
+                    label={t("structure")}
+                    options={[...reachable.structures]
+                      .sort()
+                      .map((s) => ({
+                        value: s,
+                        label: s
+                          .replace(/^[a-z0-9_]+:/, "")
+                          .replace(/_/g, " "),
+                      }))}
+                    value={structures}
+                    onChange={setStructures}
+                    placeholder={t("structureAny")}
+                  />
+                </div>
+              </div>
+            )}
 
           {/* 4. Position + Y range */}
           {dimensions.length > 0 && (
@@ -1423,6 +1573,37 @@ export function CampfirePot({ mode = "snack" }: { mode?: PotMode } = {}) {
                         {p.reasons.slice(0, 2).join(" · ")}
                       </div>
                     )}
+                    {(() => {
+                      const { badges } = summarizeSpawnRules(p);
+                      if (badges.length === 0) return null;
+                      return (
+                        <div className="mt-1 flex flex-wrap gap-1">
+                          {badges.slice(0, 3).map((b, i) => (
+                            <span
+                              key={i}
+                              className={`text-[10px] px-1.5 py-0.5 rounded-full leading-tight ${
+                                b.kind === "warn"
+                                  ? "bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30"
+                                  : "bg-subtle text-muted border border-border"
+                              }`}
+                            >
+                              {b.text}
+                            </span>
+                          ))}
+                          {badges.length > 3 && (
+                            <span
+                              className="text-[10px] text-muted"
+                              title={badges
+                                .slice(3)
+                                .map((b) => b.text)
+                                .join(" · ")}
+                            >
+                              +{badges.length - 3}
+                            </span>
+                          )}
+                        </div>
+                      );
+                    })()}
                     </div>
                   </Link>
                 </li>

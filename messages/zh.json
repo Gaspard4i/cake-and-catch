@@ -312,7 +312,10 @@
     "filtersMods": "1. Mods",
     "filtersDimension": "2. Dimension",
     "filtersBiome": "3. Biome",
-    "filtersPosition": "4. Position"
+    "filtersPosition": "4. Position",
+    "filtersStructure": "3b. Nearby structure",
+    "structure": "Structure",
+    "structureAny": "Any structure"
   },
   "pokedexUi": {
     "searchPlaceholder": "按名称搜索…",
