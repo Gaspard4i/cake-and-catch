@@ -648,9 +648,22 @@ export function CampfirePot({ mode = "snack" }: { mode?: PotMode } = {}) {
     }
 
     // Fallback path: graph not loaded yet, or no dimension picked.
-    // Show every curated tag the namespace allows so the dropdown
-    // isn't empty during the first paint.
+    // We still respect a picked dimension via the section's curated
+    // `dimension` field — a section with `dimension: null` only
+    // surfaces when the player hasn't pinned a dimension. That's what
+    // keeps the search box from offering Aether biomes while the
+    // Nether is the dimension picked.
     for (const section of BIOME_SECTIONS) {
+      if (
+        section.dimension &&
+        dimSet.size > 0 &&
+        !dimSet.has(section.dimension)
+      ) {
+        continue;
+      }
+      // Cross-dimensional sections (Sky & magical, Space) only show
+      // up when the player hasn't committed to a dimension yet.
+      if (!section.dimension && dimSet.size > 0) continue;
       for (const tag of section.tags) {
         if (!matchNamespace(tag)) continue;
         if (!reachable_ok(tag)) continue;
@@ -659,16 +672,23 @@ export function CampfirePot({ mode = "snack" }: { mode?: PotMode } = {}) {
         out.push({ value: tag, label: biomeLabel(tag), group: section.title });
       }
     }
-    for (const b of biomeCatalog) {
-      if (!allowed.has(b.namespace)) continue;
-      if (reach && !reach.has(b.value.replace(/^#/, ""))) continue;
-      if (seen.has(b.value)) continue;
-      seen.add(b.value);
-      out.push({
-        value: b.value,
-        label: b.label,
-        group: NS_LABEL[b.namespace] ?? `Modded · ${b.namespace}`,
-      });
+    // biomeCatalog (modded biomes from the API) — only fold them in
+    // when no dimension is pinned. With a dimension picked we already
+    // surfaced everything the world graph maps to that dimension; any
+    // modded biome we'd add here would be a guess and could leak (e.g.
+    // an Aether biome under a Nether pick).
+    if (dimSet.size === 0) {
+      for (const b of biomeCatalog) {
+        if (!allowed.has(b.namespace)) continue;
+        if (reach && !reach.has(b.value.replace(/^#/, ""))) continue;
+        if (seen.has(b.value)) continue;
+        seen.add(b.value);
+        out.push({
+          value: b.value,
+          label: b.label,
+          group: NS_LABEL[b.namespace] ?? `Modded · ${b.namespace}`,
+        });
+      }
     }
     return out;
   }, [biomeCatalog, allowedNamespaces, reachable, dimensions, worldGraph]);
