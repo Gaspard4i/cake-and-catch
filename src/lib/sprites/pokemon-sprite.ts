@@ -80,16 +80,37 @@ export function spriteCandidates(opts: {
   const cobble = cobblemonToolsSlug(opts);
   const sd = showdownSlug(opts);
   const shinyPath = opts.shiny ? "dex-shiny" : "dex";
-  return [
-    // 1. Cobblemon-rendered 2D portrait. No shiny variant served at
-    //    that path — when shiny is on we still try Cobblemon first
-    //    (regular fallback) before Showdown's shiny.
-    `https://cobblemon.tools/pokedex/pokemon/${cobble}/sprite.png`,
-    // 2. Pokemon Showdown variant-aware sprite.
-    `https://play.pokemonshowdown.com/sprites/${shinyPath}/${sd}.png`,
-    // 3. PokeAPI dex-number fallback.
+  const out: string[] = [];
+
+  // 1. Cobblemon-rendered portrait of the exact form.
+  out.push(`https://cobblemon.tools/pokedex/pokemon/${cobble}/sprite.png`);
+
+  // 2. If we asked for a variant and Cobblemon doesn't have it yet,
+  //    fall back to the base species' Cobblemon portrait so the
+  //    visual stays in the Cobblemon style instead of jumping to
+  //    Showdown's pixel art.
+  if (opts.variantLabel) {
+    const base = basenameSlug(opts.name, opts.baseSlug ?? undefined);
+    if (base && base !== cobble) {
+      out.push(`https://cobblemon.tools/pokedex/pokemon/${base}/sprite.png`);
+    }
+  }
+
+  // 3. Pokemon Showdown variant-aware pixel sprite.
+  out.push(`https://play.pokemonshowdown.com/sprites/${shinyPath}/${sd}.png`);
+
+  // 4. PokeAPI dex-number fallback (variant-blind).
+  out.push(
     `https://cdn.jsdelivr.net/gh/PokeAPI/sprites@master/sprites/pokemon/${
       opts.shiny ? "shiny/" : ""
     }${opts.dexNo}.png`,
-  ];
+  );
+
+  // 5. PokeAPI official artwork — last network attempt before the
+  //    silhouette badge. Higher resolution but always available.
+  out.push(
+    `https://cdn.jsdelivr.net/gh/PokeAPI/sprites@master/sprites/pokemon/other/official-artwork/${opts.dexNo}.png`,
+  );
+
+  return out;
 }
