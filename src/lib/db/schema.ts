@@ -219,6 +219,83 @@ export const speciesWiki = pgTable(
 );
 
 /**
+ * World graph — what the cascade UI relies on so the biome dropdown
+ * never offers a Nether tag while Overworld is the only dimension
+ * picked. Authored content (curated locally + ingested from upstream
+ * tags), refreshed at ingest time.
+ *
+ *   mods  →  mod_dimensions  →  dimension_biomes
+ *                            ↘  dimension_traits  (hasDayCycle, hasWeather, …)
+ *   dimension_biomes        →  biome_structures
+ *
+ * Every relation is keyed on the upstream id (e.g. `minecraft:overworld`,
+ * `#cobblemon:is_lush`, `minecraft:village`) — that's the vocabulary
+ * spawn JSONs use, so the join with the spawn table needs no translation.
+ */
+export const mods = pgTable(
+  "mods",
+  {
+    /** Upstream namespace, e.g. "cobblemon", "minecraft", "aether". */
+    id: text("id").primaryKey(),
+    label: text("label").notNull(),
+    /** Sort order in the UI dropdown. Lower comes first. */
+    sortOrder: integer("sort_order").notNull().default(100),
+    locked: integer("locked").notNull().default(0),
+  },
+);
+
+export const modDimensions = pgTable(
+  "mod_dimensions",
+  {
+    modId: text("mod_id")
+      .notNull()
+      .references(() => mods.id, { onDelete: "cascade" }),
+    dimensionId: text("dimension_id").notNull(),
+    label: text("label").notNull(),
+    /** Whether the dimension has a day/night cycle, weather, moon, sky. */
+    hasDayCycle: integer("has_day_cycle").notNull().default(1),
+    hasWeather: integer("has_weather").notNull().default(1),
+    hasMoon: integer("has_moon").notNull().default(1),
+    hasSky: integer("has_sky").notNull().default(1),
+    sortOrder: integer("sort_order").notNull().default(100),
+  },
+  (t) => [
+    uniqueIndex("mod_dimensions_idx").on(t.modId, t.dimensionId),
+    index("mod_dimensions_dim_idx").on(t.dimensionId),
+  ],
+);
+
+export const dimensionBiomes = pgTable(
+  "dimension_biomes",
+  {
+    dimensionId: text("dimension_id").notNull(),
+    /** Biome id or `#tag` exactly as it appears in spawn JSONs. */
+    biomeId: text("biome_id").notNull(),
+    label: text("label").notNull(),
+    /** Optional grouping for the dropdown (Forest, Wetlands, …). */
+    section: text("section"),
+    sortOrder: integer("sort_order").notNull().default(100),
+  },
+  (t) => [
+    uniqueIndex("dimension_biomes_idx").on(t.dimensionId, t.biomeId),
+    index("dimension_biomes_biome_idx").on(t.biomeId),
+  ],
+);
+
+export const biomeStructures = pgTable(
+  "biome_structures",
+  {
+    biomeId: text("biome_id").notNull(),
+    structureId: text("structure_id").notNull(),
+    label: text("label").notNull(),
+  },
+  (t) => [
+    uniqueIndex("biome_structures_idx").on(t.biomeId, t.structureId),
+    index("biome_structures_struct_idx").on(t.structureId),
+  ],
+);
+
+/**
  * Aggregated site-wide counters and rating sum. Single-row table
  * (id=1). Kept as a row instead of Redis/KV to avoid adding an
  * infrastructure dependency. Updates are UPSERTs with atomic SQL

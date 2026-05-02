@@ -17,7 +17,9 @@
     "ingest:prod": "tsx --env-file=.env.production ingest/run.ts",
     "ingest:wiki": "tsx --env-file=.env.local ingest/wiki.ts",
     "ingest:berries-wiki": "tsx --env-file=.env.local ingest/berries_wiki.ts",
-    "ingest:textures": "tsx --env-file=.env.local ingest/textures.ts"
+    "ingest:textures": "tsx --env-file=.env.local ingest/textures.ts",
+    "ingest:world": "tsx --env-file=.env.local ingest/world-graph.ts",
+    "ingest:world:prod": "tsx --env-file=.env.production ingest/world-graph.ts"
   },
   "dependencies": {
     "@react-three/drei": "^10.7.7",

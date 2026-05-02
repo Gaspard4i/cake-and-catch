@@ -10,6 +10,7 @@ import {
   type AxisFilter,
   type SpawnAxis,
 } from "@/lib/recommend/spawn-axes";
+import type { WorldGraph } from "@/app/api/world-graph/route";
 import {
   BIOME_SECTIONS,
   biomeLabel,
@@ -430,6 +431,12 @@ export function CampfirePot({ mode = "snack" }: { mode?: PotMode } = {}) {
   // cascade — picking a dimension narrows the biome list, picking a biome
   // narrows the time list, etc. Loaded once, cached on the server side.
   const [spawnAxes, setSpawnAxes] = useState<SpawnAxis[]>([]);
+  // Authored mod → dimension → biome → structure graph. The cascade
+  // dropdowns derive their options from this graph so picking
+  // Overworld can never offer a Nether biome (the previous code derived
+  // the biome list from spawn conditions, which were too sparse to
+  // cover the dimension axis cleanly).
+  const [worldGraph, setWorldGraph] = useState<WorldGraph | null>(null);
 
   useEffect(() => {
     setPantryLoading(true);
@@ -450,6 +457,10 @@ export function CampfirePot({ mode = "snack" }: { mode?: PotMode } = {}) {
       .then((r) => r.json())
       .then((d: { axes: SpawnAxis[] }) => setSpawnAxes(d.axes ?? []))
       .catch(() => setSpawnAxes([]));
+    fetch("/api/world-graph")
+      .then((r) => r.json())
+      .then((d: WorldGraph) => setWorldGraph(d))
+      .catch(() => setWorldGraph(null));
   }, []);
 
   // Hydrate slots from `?load=<savedId>` so the Saved-recipes page can
@@ -529,7 +540,33 @@ export function CampfirePot({ mode = "snack" }: { mode?: PotMode } = {}) {
    * controls don't all grey out at once. The CampfirePot then blocks
    * the controls themselves when the trait is `false`.
    */
-  const dimTraits = useMemo(() => aggregateTraits(dimensions), [dimensions]);
+  const dimTraits = useMemo(() => {
+    if (!worldGraph) return aggregateTraits(dimensions);
+    if (dimensions.length === 0) {
+      return { hasDayCycle: true, hasWeather: true, hasMoon: true, hasSky: true };
+    }
+    // Every picked dimension that's known to the world graph
+    // contributes its traits; unknowns optimistically claim everything
+    // (so a future mod that adds its own dimension keeps the controls
+    // visible).
+    const out = { hasDayCycle: false, hasWeather: false, hasMoon: false, hasSky: false };
+    let unknownAny = false;
+    for (const id of dimensions) {
+      const row = worldGraph.dimensions.find((d) => d.id === id);
+      if (!row) {
+        unknownAny = true;
+        continue;
+      }
+      out.hasDayCycle ||= row.hasDayCycle;
+      out.hasWeather ||= row.hasWeather;
+      out.hasMoon ||= row.hasMoon;
+      out.hasSky ||= row.hasSky;
+    }
+    if (unknownAny) {
+      return { hasDayCycle: true, hasWeather: true, hasMoon: true, hasSky: true };
+    }
+    return out;
+  }, [dimensions, worldGraph]);
 
   // Snap stale state when the player switches to a dimension that
   // doesn't support a given axis (Nether: no time / weather / moon /
@@ -568,37 +605,60 @@ export function CampfirePot({ mode = "snack" }: { mode?: PotMode } = {}) {
     };
   }, [spawnAxes, axisFilter]);
 
+  /**
+   * Biome options driven by the world graph.
+   *
+   *   - When the graph is loaded AND a dimension is picked, we only
+   *     surface biomes mapped to one of those dimensions. That kills
+   *     the leak the user spotted: Overworld + Nether tags showing up
+   *     side by side.
+   *   - When the graph isn't loaded yet (first render before the
+   *     /api/world-graph fetch resolves), we fall back to the curated
+   *     sections so the picker isn't empty.
+   *   - Mods toggle still applies on top: a biome whose namespace
+   *     isn't in `allowedNamespaces` stays hidden.
+   *   - The cross-axis `reachable` set narrows it further when other
+   *     filters are active.
+   */
   const biomeOptions = useMemo<MultiSelectOption[]>(() => {
     const allowed = new Set(allowedNamespaces);
     const reach = reachable?.biomes;
     const dimSet = new Set(dimensions);
-    const allowedSection = (sectionDim: string | null) => {
-      // Section is dimensional and the player has picked at least one
-      // dimension that doesn't match → hide it. Sections without a
-      // dimension (Sky/Magical, Space) stay visible.
-      if (sectionDim && dimSet.size > 0 && !dimSet.has(sectionDim)) return false;
-      return true;
-    };
-    const out: MultiSelectOption[] = [];
     const seen = new Set<string>();
+    const out: MultiSelectOption[] = [];
+    const sectionLabel = (raw: string | null) => raw ?? "Other";
+    const matchNamespace = (id: string) => {
+      const stripped = id.replace(/^#/, "");
+      const ns = stripped.includes(":") ? stripped.split(":", 1)[0] : "";
+      return !ns || allowed.has(ns);
+    };
+    const reachable_ok = (id: string) =>
+      !reach || reach.has(id.replace(/^#/, ""));
 
-    // Section-driven options first — the curated grouping the user wants.
+    if (worldGraph && dimSet.size > 0) {
+      for (const b of worldGraph.biomes) {
+        if (!dimSet.has(b.dimensionId)) continue;
+        if (!matchNamespace(b.id)) continue;
+        if (!reachable_ok(b.id)) continue;
+        if (seen.has(b.id)) continue;
+        seen.add(b.id);
+        out.push({ value: b.id, label: b.label, group: sectionLabel(b.section) });
+      }
+      return out;
+    }
+
+    // Fallback path: graph not loaded yet, or no dimension picked.
+    // Show every curated tag the namespace allows so the dropdown
+    // isn't empty during the first paint.
     for (const section of BIOME_SECTIONS) {
-      if (!allowedSection(section.dimension)) continue;
       for (const tag of section.tags) {
-        const stripped = tag.replace(/^#/, "");
-        const ns = stripped.includes(":") ? stripped.split(":", 1)[0] : "";
-        if (ns && !allowed.has(ns)) continue;
-        if (reach && !reach.has(stripped)) continue;
+        if (!matchNamespace(tag)) continue;
+        if (!reachable_ok(tag)) continue;
         if (seen.has(tag)) continue;
         seen.add(tag);
         out.push({ value: tag, label: biomeLabel(tag), group: section.title });
       }
     }
-
-    // Fallback: anything the catalog reports that we didn't section
-    // (modded biomes from Terralith / BYG / etc.). They land under
-    // their own "Modded" group so the curated sections stay clean.
     for (const b of biomeCatalog) {
       if (!allowed.has(b.namespace)) continue;
       if (reach && !reach.has(b.value.replace(/^#/, ""))) continue;
@@ -611,7 +671,7 @@ export function CampfirePot({ mode = "snack" }: { mode?: PotMode } = {}) {
       });
     }
     return out;
-  }, [biomeCatalog, allowedNamespaces, reachable, dimensions]);
+  }, [biomeCatalog, allowedNamespaces, reachable, dimensions, worldGraph]);
 
   // Prune selected biomes that are no longer in the allowed namespace set.
   useEffect(() => {
@@ -1147,20 +1207,49 @@ export function CampfirePot({ mode = "snack" }: { mode?: PotMode } = {}) {
             <div className="flex flex-wrap items-center gap-2">
               <MultiSelect
                 label={t("mods")}
-                options={NAMESPACE_OPTIONS.filter(
-                  (o) =>
-                    LOCKED_NAMESPACES.includes(
-                      o.value as (typeof LOCKED_NAMESPACES)[number],
-                    ) ||
-                    !reachable ||
-                    reachable.namespaces.has(o.value),
-                ).map((o) =>
-                  LOCKED_NAMESPACES.includes(
-                    o.value as (typeof LOCKED_NAMESPACES)[number],
-                  )
-                    ? { ...o, locked: true }
-                    : o,
-                )}
+                options={(() => {
+                  const seen = new Set<string>();
+                  const out: MultiSelectOption[] = [];
+                  // Authored mods from the world graph.
+                  if (worldGraph) {
+                    for (const m of worldGraph.mods) {
+                      if (
+                        !m.locked &&
+                        reachable &&
+                        !reachable.namespaces.has(m.id)
+                      )
+                        continue;
+                      seen.add(m.id);
+                      out.push({
+                        value: m.id,
+                        label: m.label,
+                        group: m.locked ? "Default" : "Mods",
+                        locked: m.locked,
+                      });
+                    }
+                  }
+                  // Anything else NAMESPACE_OPTIONS knows about.
+                  for (const o of NAMESPACE_OPTIONS) {
+                    if (seen.has(o.value)) continue;
+                    if (
+                      !LOCKED_NAMESPACES.includes(
+                        o.value as (typeof LOCKED_NAMESPACES)[number],
+                      ) &&
+                      reachable &&
+                      !reachable.namespaces.has(o.value)
+                    )
+                      continue;
+                    seen.add(o.value);
+                    out.push(
+                      LOCKED_NAMESPACES.includes(
+                        o.value as (typeof LOCKED_NAMESPACES)[number],
+                      )
+                        ? { ...o, locked: true }
+                        : o,
+                    );
+                  }
+                  return out;
+                })()}
                 value={allowedNamespaces}
                 onChange={(next) => {
                   const merged = new Set(next);
@@ -1172,11 +1261,10 @@ export function CampfirePot({ mode = "snack" }: { mode?: PotMode } = {}) {
             </div>
           </div>
 
-          {/* 2. Dimension — always shows the vanilla three plus any
-              addon-declared dimension. We DON'T cross-filter through
-              `reachable.dimensions` because almost no spawn declares a
-              dimension explicitly (they imply it via the biome), so
-              that set is empty for the vanilla mod. */}
+          {/* 2. Dimension — derived from the world graph. Dimensions
+              owned by a mod the player hasn't enabled are hidden. The
+              vanilla three (Overworld / Nether / End) come from the
+              "minecraft" mod, which is locked, so they always appear. */}
           <div className="mt-3">
             <div className="text-[10px] uppercase tracking-wider text-muted px-1 mb-1">
               {t("filtersDimension")}
@@ -1184,7 +1272,14 @@ export function CampfirePot({ mode = "snack" }: { mode?: PotMode } = {}) {
             <div className="flex flex-wrap items-center gap-2">
               <MultiSelect
                 label={t("dimension")}
-                options={DIMENSION_OPTIONS}
+                options={(() => {
+                  if (!worldGraph) return DIMENSION_OPTIONS;
+                  const allowedMods = new Set(allowedNamespaces);
+                  return worldGraph.dimensions
+                    .filter((d) => allowedMods.has(d.modId))
+                    .sort((a, b) => a.sortOrder - b.sortOrder)
+                    .map((d) => ({ value: d.id, label: d.label }));
+                })()}
                 value={dimensions}
                 onChange={setDimensions}
                 placeholder={t("dimensionAny")}
@@ -1211,13 +1306,45 @@ export function CampfirePot({ mode = "snack" }: { mode?: PotMode } = {}) {
             </div>
           )}
 
-          {/* 3.5 Nearby structure — only when at least one spawn in
-              the current selection actually pins a structure. We hide
-              it otherwise so the player isn't tempted to set "near a
-              village" when no spawn cares about it. */}
-          {dimensions.length > 0 &&
-            reachable &&
-            reachable.structures.size > 0 && (
+          {/* 3b. Nearby structure — derived from the world graph for
+              the picked biomes (or, if no biome is picked, every
+              structure tied to the picked dimensions). */}
+          {dimensions.length > 0 && worldGraph && (() => {
+            const dimSet = new Set(dimensions);
+            const biomeSet = new Set(biomes);
+            // Resolve which biomes' structures we surface: explicit
+            // biome picks if any, otherwise every biome of the picked
+            // dimensions.
+            const eligibleBiomes = new Set<string>();
+            for (const b of worldGraph.biomes) {
+              if (!dimSet.has(b.dimensionId)) continue;
+              if (biomeSet.size > 0 && !biomeSet.has(b.id)) continue;
+              eligibleBiomes.add(b.id);
+            }
+            const seenStruct = new Set<string>();
+            const opts: MultiSelectOption[] = [];
+            for (const s of worldGraph.structures) {
+              if (!eligibleBiomes.has(s.biomeId)) continue;
+              if (seenStruct.has(s.id)) continue;
+              seenStruct.add(s.id);
+              opts.push({ value: s.id, label: s.label });
+            }
+            // Also fold in structures the spawn graph reports through
+            // `reachable` (handles addons that pinned structures we
+            // haven't catalogued).
+            if (reachable) {
+              for (const s of reachable.structures) {
+                if (seenStruct.has(s)) continue;
+                seenStruct.add(s);
+                opts.push({
+                  value: s,
+                  label: s.replace(/^[a-z0-9_]+:/, "").replace(/_/g, " "),
+                });
+              }
+            }
+            opts.sort((a, b) => a.label.localeCompare(b.label));
+            if (opts.length === 0) return null;
+            return (
               <div className="mt-3">
                 <div className="text-[10px] uppercase tracking-wider text-muted px-1 mb-1">
                   {t("filtersStructure")}
@@ -1225,21 +1352,15 @@ export function CampfirePot({ mode = "snack" }: { mode?: PotMode } = {}) {
                 <div className="flex flex-wrap items-center gap-2">
                   <MultiSelect
                     label={t("structure")}
-                    options={[...reachable.structures]
-                      .sort()
-                      .map((s) => ({
-                        value: s,
-                        label: s
-                          .replace(/^[a-z0-9_]+:/, "")
-                          .replace(/_/g, " "),
-                      }))}
+                    options={opts}
                     value={structures}
                     onChange={setStructures}
                     placeholder={t("structureAny")}
                   />
                 </div>
               </div>
-            )}
+            );
+          })()}
 
           {/* 4. Position + Y range */}
           {dimensions.length > 0 && (
@@ -1397,10 +1518,26 @@ export function CampfirePot({ mode = "snack" }: { mode?: PotMode } = {}) {
                 <MultiSelect
                   label="Datapacks"
                   options={sourcesCatalog
-                    .filter((s) => !reachable || reachable.sources.has(s))
-                    .map((s) => ({ value: s, label: s }))}
+                    .filter(
+                      (s) =>
+                        s === "cobblemon" ||
+                        !reachable ||
+                        reachable.sources.has(s),
+                    )
+                    .map((s) => ({
+                      value: s,
+                      label: s,
+                      // The vanilla mod's own pool is the canonical
+                      // source — locking it mirrors how cobblemon +
+                      // minecraft sit in the Mods picker.
+                      ...(s === "cobblemon" ? { locked: true } : {}),
+                    }))}
                   value={sources}
-                  onChange={setSources}
+                  onChange={(next) => {
+                    const merged = new Set(next);
+                    merged.add("cobblemon");
+                    setSources([...merged]);
+                  }}
                   placeholder={t("sourcesAll")}
                 />
               </div>
