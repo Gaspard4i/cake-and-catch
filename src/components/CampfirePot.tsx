@@ -10,6 +10,11 @@ import {
   type AxisFilter,
   type SpawnAxis,
 } from "@/lib/recommend/spawn-axes";
+import {
+  BIOME_SECTIONS,
+  biomeLabel,
+  aggregateTraits,
+} from "@/lib/recommend/biome-sections";
 import { ItemIcon } from "./ItemIcon";
 import { PokemonSprite } from "./PokemonSprite";
 import { TypePair } from "./TypeBadge";
@@ -171,6 +176,12 @@ const BUCKET_OPTIONS: MultiSelectOption[] = [
   { value: "rare", label: "Rare" },
   { value: "ultra-rare", label: "Ultra-rare" },
 ];
+
+/**
+ * Locked-in namespaces — Cobblemon and Minecraft vanilla are always
+ * part of the snack maker's view. They cannot be removed by the user.
+ */
+const LOCKED_NAMESPACES = ["cobblemon", "minecraft"] as const;
 
 const NAMESPACE_OPTIONS: MultiSelectOption[] = [
   { value: "cobblemon", label: "Cobblemon (tags)", group: "Default" },
@@ -403,6 +414,26 @@ export function CampfirePot({ mode = "snack" }: { mode?: PotMode } = {}) {
     allowedNamespaces,
   ]);
 
+  /**
+   * Dimensional traits (day/night, weather, moon, sky) for the
+   * dimensions the player has currently picked. With nothing picked we
+   * return the optimistic "everything is plausible" set so first-load
+   * controls don't all grey out at once. The CampfirePot then blocks
+   * the controls themselves when the trait is `false`.
+   */
+  const dimTraits = useMemo(() => aggregateTraits(dimensions), [dimensions]);
+
+  // Snap stale state when the player switches to a dimension that
+  // doesn't support a given axis (Nether: no time / weather / moon /
+  // sky). Otherwise the API still receives "rain" and silently filters
+  // every spawn out.
+  useEffect(() => {
+    if (!dimTraits.hasDayCycle && times.length > 0) setTimes([]);
+    if (!dimTraits.hasWeather && weather !== "") setWeather("");
+    if (!dimTraits.hasMoon && moonPhase !== "") setMoonPhase("");
+    if (!dimTraits.hasSky && skyExposure !== "") setSkyExposure("");
+  }, [dimTraits, times.length, weather, moonPhase, skyExposure]);
+
   // Compute the still-reachable values per axis once, from the shared
   // axes payload. Each call ignores the axis being computed so the
   // control never greys ITS OWN value out.
@@ -422,17 +453,49 @@ export function CampfirePot({ mode = "snack" }: { mode?: PotMode } = {}) {
   }, [spawnAxes, axisFilter]);
 
   const biomeOptions = useMemo<MultiSelectOption[]>(() => {
-    const set = new Set(allowedNamespaces);
+    const allowed = new Set(allowedNamespaces);
     const reach = reachable?.biomes;
-    return biomeCatalog
-      .filter((b) => set.has(b.namespace))
-      .filter((b) => !reach || reach.has(b.value.replace(/^#/, "")))
-      .map((b) => ({
+    const dimSet = new Set(dimensions);
+    const allowedSection = (sectionDim: string | null) => {
+      // Section is dimensional and the player has picked at least one
+      // dimension that doesn't match → hide it. Sections without a
+      // dimension (Sky/Magical, Space) stay visible.
+      if (sectionDim && dimSet.size > 0 && !dimSet.has(sectionDim)) return false;
+      return true;
+    };
+    const out: MultiSelectOption[] = [];
+    const seen = new Set<string>();
+
+    // Section-driven options first — the curated grouping the user wants.
+    for (const section of BIOME_SECTIONS) {
+      if (!allowedSection(section.dimension)) continue;
+      for (const tag of section.tags) {
+        const stripped = tag.replace(/^#/, "");
+        const ns = stripped.includes(":") ? stripped.split(":", 1)[0] : "";
+        if (ns && !allowed.has(ns)) continue;
+        if (reach && !reach.has(stripped)) continue;
+        if (seen.has(tag)) continue;
+        seen.add(tag);
+        out.push({ value: tag, label: biomeLabel(tag), group: section.title });
+      }
+    }
+
+    // Fallback: anything the catalog reports that we didn't section
+    // (modded biomes from Terralith / BYG / etc.). They land under
+    // their own "Modded" group so the curated sections stay clean.
+    for (const b of biomeCatalog) {
+      if (!allowed.has(b.namespace)) continue;
+      if (reach && !reach.has(b.value.replace(/^#/, ""))) continue;
+      if (seen.has(b.value)) continue;
+      seen.add(b.value);
+      out.push({
         value: b.value,
         label: b.label,
-        group: NS_LABEL[b.namespace] ?? b.namespace,
-      }));
-  }, [biomeCatalog, allowedNamespaces, reachable]);
+        group: NS_LABEL[b.namespace] ?? `Modded · ${b.namespace}`,
+      });
+    }
+    return out;
+  }, [biomeCatalog, allowedNamespaces, reachable, dimensions]);
 
   // Prune selected biomes that are no longer in the allowed namespace set.
   useEffect(() => {
@@ -559,6 +622,10 @@ export function CampfirePot({ mode = "snack" }: { mode?: PotMode } = {}) {
             lightLevel: lightLevel ? Number.parseInt(lightLevel, 10) : undefined,
             moonPhase: moonPhase ? Number.parseInt(moonPhase, 10) : undefined,
             dimensions: dimensions.length > 0 ? dimensions : undefined,
+            // The UX rule is: until the player picks a dimension, no
+            // Pokémon shows up (the "where are you?" question is
+            // load-bearing). This flag tells the API to honour that.
+            requireDimension: dimensions.length === 0,
           },
         };
         const res = await fetch("/api/snack", {
@@ -964,10 +1031,29 @@ export function CampfirePot({ mode = "snack" }: { mode?: PotMode } = {}) {
               <MultiSelect
                 label={t("mods")}
                 options={NAMESPACE_OPTIONS.filter(
-                  (o) => !reachable || reachable.namespaces.has(o.value),
+                  (o) =>
+                    LOCKED_NAMESPACES.includes(
+                      o.value as (typeof LOCKED_NAMESPACES)[number],
+                    ) ||
+                    !reachable ||
+                    reachable.namespaces.has(o.value),
+                ).map((o) =>
+                  LOCKED_NAMESPACES.includes(
+                    o.value as (typeof LOCKED_NAMESPACES)[number],
+                  )
+                    ? { ...o, locked: true }
+                    : o,
                 )}
                 value={allowedNamespaces}
-                onChange={setAllowedNamespaces}
+                onChange={(next) => {
+                  // Cobblemon + Minecraft are always required; the
+                  // MultiSelect honours `locked` so this is mostly a
+                  // safety net for any other entry path (URL state,
+                  // saved-recipe hydration, etc.).
+                  const merged = new Set(next);
+                  for (const ns of LOCKED_NAMESPACES) merged.add(ns);
+                  setAllowedNamespaces([...merged]);
+                }}
                 placeholder={t("modsAny")}
               />
               <MultiSelect
@@ -1011,57 +1097,65 @@ export function CampfirePot({ mode = "snack" }: { mode?: PotMode } = {}) {
           </div>
 
           {/* Section: When (time, weather, moon phase) */}
-          <div className="mt-3">
-            <div className="text-[10px] uppercase tracking-wider text-muted px-1 mb-1">
-              {t("filtersWhen")}
-            </div>
-            <div className="flex flex-wrap items-center gap-2">
-              <MultiSelect
-                label={t("time")}
-                options={TIME_OPTIONS.filter(
-                  (o) => !reachable || reachable.timeRanges.has(o.value),
+          {(dimTraits.hasDayCycle || dimTraits.hasWeather || dimTraits.hasMoon) && (
+            <div className="mt-3">
+              <div className="text-[10px] uppercase tracking-wider text-muted px-1 mb-1">
+                {t("filtersWhen")}
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                {dimTraits.hasDayCycle && (
+                  <MultiSelect
+                    label={t("time")}
+                    options={TIME_OPTIONS.filter(
+                      (o) => !reachable || reachable.timeRanges.has(o.value),
+                    )}
+                    value={times}
+                    onChange={setTimes}
+                    placeholder={t("timeAny")}
+                    searchable={false}
+                  />
                 )}
-                value={times}
-                onChange={setTimes}
-                placeholder={t("timeAny")}
-                searchable={false}
-              />
-              <label className="text-xs inline-flex items-center gap-1 text-muted">
-                <span className="text-[10px] uppercase tracking-wide">{t("weather")}</span>
-                <select
-                  value={weather}
-                  onChange={(e) => setWeather(e.target.value)}
-                  className="rounded-md border border-border bg-card px-2 py-1 text-sm outline-none focus:border-accent"
-                >
-                  <option value="">{t("weatherAny")}</option>
-                  {WEATHER_OPTIONS.filter(
-                    (o) => !reachable || reachable.weather.has(o.value),
-                  ).map((o) => (
-                    <option key={o.value} value={o.value}>
-                      {o.label}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label className="text-xs inline-flex items-center gap-1 text-muted">
-                <span className="text-[10px] uppercase tracking-wide">{t("moonPhase")}</span>
-                <select
-                  value={moonPhase}
-                  onChange={(e) => setMoonPhase(e.target.value)}
-                  className="rounded-md border border-border bg-card px-2 py-1 text-sm outline-none focus:border-accent"
-                >
-                  <option value="">{t("moonPhaseAny")}</option>
-                  {MOON_PHASE_OPTIONS.filter(
-                    (o) => !reachable || reachable.moonPhase.has(o.value),
-                  ).map((o) => (
-                    <option key={o.value} value={o.value}>
-                      {o.label}
-                    </option>
-                  ))}
-                </select>
-              </label>
+                {dimTraits.hasWeather && (
+                  <label className="text-xs inline-flex items-center gap-1 text-muted">
+                    <span className="text-[10px] uppercase tracking-wide">{t("weather")}</span>
+                    <select
+                      value={weather}
+                      onChange={(e) => setWeather(e.target.value)}
+                      className="rounded-md border border-border bg-card px-2 py-1 text-sm outline-none focus:border-accent"
+                    >
+                      <option value="">{t("weatherAny")}</option>
+                      {WEATHER_OPTIONS.filter(
+                        (o) => !reachable || reachable.weather.has(o.value),
+                      ).map((o) => (
+                        <option key={o.value} value={o.value}>
+                          {o.label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                )}
+                {dimTraits.hasMoon && (
+                  <label className="text-xs inline-flex items-center gap-1 text-muted">
+                    <span className="text-[10px] uppercase tracking-wide">{t("moonPhase")}</span>
+                    <select
+                      value={moonPhase}
+                      onChange={(e) => setMoonPhase(e.target.value)}
+                      className="rounded-md border border-border bg-card px-2 py-1 text-sm outline-none focus:border-accent"
+                    >
+                      <option value="">{t("moonPhaseAny")}</option>
+                      {MOON_PHASE_OPTIONS.filter(
+                        (o) => !reachable || reachable.moonPhase.has(o.value),
+                      ).map((o) => (
+                        <option key={o.value} value={o.value}>
+                          {o.label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                )}
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Section: Conditions (light, sky exposure) */}
           <div className="mt-3">
@@ -1069,23 +1163,25 @@ export function CampfirePot({ mode = "snack" }: { mode?: PotMode } = {}) {
               {t("filtersConditions")}
             </div>
             <div className="flex flex-wrap items-center gap-2">
-              <label className="text-xs inline-flex items-center gap-1 text-muted">
-                <span className="text-[10px] uppercase tracking-wide">{t("skyExposure")}</span>
-                <select
-                  value={skyExposure}
-                  onChange={(e) => setSkyExposure(e.target.value)}
-                  className="rounded-md border border-border bg-card px-2 py-1 text-sm outline-none focus:border-accent"
-                >
-                  <option value="">{t("skyExposureAny")}</option>
-                  {SKY_EXPOSURE_OPTIONS.filter(
-                    (o) => !reachable || reachable.skyExposure.has(o.value),
-                  ).map((o) => (
-                    <option key={o.value} value={o.value}>
-                      {o.label}
-                    </option>
-                  ))}
-                </select>
-              </label>
+              {dimTraits.hasSky && (
+                <label className="text-xs inline-flex items-center gap-1 text-muted">
+                  <span className="text-[10px] uppercase tracking-wide">{t("skyExposure")}</span>
+                  <select
+                    value={skyExposure}
+                    onChange={(e) => setSkyExposure(e.target.value)}
+                    className="rounded-md border border-border bg-card px-2 py-1 text-sm outline-none focus:border-accent"
+                  >
+                    <option value="">{t("skyExposureAny")}</option>
+                    {SKY_EXPOSURE_OPTIONS.filter(
+                      (o) => !reachable || reachable.skyExposure.has(o.value),
+                    ).map((o) => (
+                      <option key={o.value} value={o.value}>
+                        {o.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              )}
               <label className="text-xs inline-flex items-center gap-1 text-muted">
                 <span className="text-[10px] uppercase tracking-wide">{t("lightLevel")}</span>
                 <input
@@ -1223,6 +1319,10 @@ export function CampfirePot({ mode = "snack" }: { mode?: PotMode } = {}) {
                   </li>
                 ))}
               </ul>
+            ) : dimensions.length === 0 ? (
+              <div className="mt-3 rounded-lg border border-dashed border-border bg-subtle/40 p-4 text-sm text-muted">
+                {t("pickDimensionFirst")}
+              </div>
             ) : (
               <p className="mt-3 text-sm text-muted">{t("noAttracted")}</p>
             )

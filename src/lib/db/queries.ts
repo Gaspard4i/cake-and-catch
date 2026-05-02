@@ -264,10 +264,18 @@ export type SpawnWithSpecies = {
   eggGroups: string[];
 };
 
-export const listSpawnsWithSpecies = cached(
-  "spawns-with-species",
-  SIX_HOURS,
-  async (limit: number = 5000): Promise<SpawnWithSpecies[]> =>
+/**
+ * NOTE: not wrapped in `cached()`. The full join payload runs ~4 MB once
+ * the addon spawn pools are ingested, which exceeds the Next.js Data
+ * Cache 2 MB-per-entry ceiling; `unstable_cache` then refuses to write
+ * but ALSO returns whatever stale entry it had on hand, which strands
+ * the API on a 669-row snapshot from before the last ingest. We pay the
+ * cost of re-running the query each call — Supabase handles that fine
+ * — and trust the in-process module-level memo lower in the function.
+ */
+export const listSpawnsWithSpecies = (
+  limit: number = 5000,
+): Promise<SpawnWithSpecies[]> =>
     safe(
       () =>
         db
@@ -300,8 +308,7 @@ export const listSpawnsWithSpecies = cached(
           .innerJoin(schema.species, eq(schema.species.id, schema.spawns.speciesId))
           .limit(limit) as unknown as Promise<SpawnWithSpecies[]>,
       [] as SpawnWithSpecies[],
-    ),
-);
+    );
 
 export const listCoreRecipes = cached("core-recipes", SIX_HOURS, async () =>
   safe(

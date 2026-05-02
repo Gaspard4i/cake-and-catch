@@ -9,6 +9,13 @@ export type MultiSelectOption = {
   group?: string;
   /** Optional description shown under the label. */
   description?: string;
+  /**
+   * When true, the option is forced selected and the user cannot toggle
+   * it. The checkbox is shown as checked + disabled. Used for required
+   * defaults the consumer must keep applying (e.g. cobblemon + minecraft
+   * namespaces).
+   */
+  locked?: boolean;
 };
 
 /**
@@ -182,28 +189,46 @@ export function MultiSelect({
                   </div>
                 )}
                 {items.map((o) => {
-                  const active = selectedSet.has(o.value);
+                  const active = selectedSet.has(o.value) || !!o.locked;
                   const capped =
                     !active &&
                     maxSelection !== undefined &&
                     value.length >= maxSelection;
+                  const disabled = capped || !!o.locked;
+                  const hint = o.locked
+                    ? "Required — always selected"
+                    : capped
+                      ? `Max ${maxSelection} selections`
+                      : undefined;
                   return (
                     <label
                       key={o.value}
                       className={`flex items-start gap-2 px-3 py-1.5 text-sm ${
-                        capped ? "opacity-40 cursor-not-allowed" : "cursor-pointer hover:bg-subtle"
+                        disabled
+                          ? "opacity-60 cursor-not-allowed"
+                          : "cursor-pointer hover:bg-subtle"
                       } ${active ? "text-foreground" : "text-muted"}`}
-                      title={capped ? `Max ${maxSelection} selections` : undefined}
+                      title={hint}
                     >
                       <input
                         type="checkbox"
                         className="mt-0.5 accent-accent"
                         checked={active}
-                        disabled={capped}
-                        onChange={() => toggle(o.value)}
+                        disabled={disabled}
+                        onChange={() => {
+                          if (o.locked) return;
+                          toggle(o.value);
+                        }}
                       />
                       <span className="flex-1 min-w-0">
-                        <span className="block truncate">{o.label}</span>
+                        <span className="block truncate">
+                          {o.label}
+                          {o.locked && (
+                            <span className="ml-1 text-[10px] uppercase tracking-wide text-muted">
+                              · locked
+                            </span>
+                          )}
+                        </span>
                         {o.description && (
                           <span className="block text-[10px] text-muted truncate">
                             {o.description}

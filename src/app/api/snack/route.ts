@@ -55,6 +55,7 @@ function normalizeFilter(raw: IncomingFilter | undefined): SpawnFilter {
   if (typeof raw?.baseBlock === "string") out.baseBlock = raw.baseBlock;
   if (raw?.nearbyBlocks && raw.nearbyBlocks.length > 0) out.nearbyBlocks = raw.nearbyBlocks;
   if (typeof raw?.fluid === "string") out.fluid = raw.fluid;
+  if (raw?.requireDimension === true) out.requireDimension = true;
   return out;
 }
 

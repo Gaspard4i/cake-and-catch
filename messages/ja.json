@@ -307,7 +307,8 @@
     "moonPhaseAny": "Any phase",
     "dimension": "Dimension",
     "dimensionAny": "All dimensions",
-    "sourcesAll": "All datapacks"
+    "sourcesAll": "All datapacks",
+    "pickDimensionFirst": "Pick at least one dimension to see the Cobblemon that spawn there. Time, weather, moon phase and sky controls only show up once a dimension is set."
   },
   "pokedexUi": {
     "searchPlaceholder": "名前で検索…",

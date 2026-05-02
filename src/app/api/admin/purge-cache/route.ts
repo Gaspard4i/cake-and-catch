@@ -16,6 +16,8 @@ const TAGS = [
   "sources-for",
   "wiki-summary",
   "recipe-by-slug",
+  "spawn-axes",
+  "cobblemon-spawns-for-species",
 ];
 
 /**
@@ -26,12 +28,21 @@ const TAGS = [
  */
 export async function POST(request: Request) {
   const expected = process.env.CACHE_PURGE_TOKEN;
-  if (!expected) {
-    return Response.json({ error: "CACHE_PURGE_TOKEN not configured" }, { status: 500 });
-  }
-  const token = request.headers.get("x-purge-token");
-  if (token !== expected) {
-    return Response.json({ error: "unauthorized" }, { status: 401 });
+  // Dev / preview gets a free pass — re-ingesting locally and forgetting
+  // to purge would otherwise leave the cache stuck on the previous
+  // dataset for hours. Production keeps the token gate.
+  const isProd = process.env.NODE_ENV === "production";
+  if (isProd) {
+    if (!expected) {
+      return Response.json(
+        { error: "CACHE_PURGE_TOKEN not configured" },
+        { status: 500 },
+      );
+    }
+    const token = request.headers.get("x-purge-token");
+    if (token !== expected) {
+      return Response.json({ error: "unauthorized" }, { status: 401 });
+    }
   }
   for (const tag of TAGS) {
     // Next 16 requires a cache-life profile alongside the tag.

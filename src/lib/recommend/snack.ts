@@ -1,6 +1,7 @@
 import type { Berry, Species, Spawn } from "@/lib/db/schema";
 import type { Flavour } from "@/lib/parsers/seasoning";
 import { dominantFlavour, FLAVOURS } from "@/lib/parsers/seasoning";
+import { spawnMatchesDimensions } from "./dimension-gate";
 
 /**
  * Convention Pokémon classique pour mapper un type vers une saveur préférée.
@@ -113,6 +114,13 @@ export type SpawnFilter = {
    *  (grounded, submerged, surface, seafloor, sky_air). Used by the bait
    *  maker to surface only water spawns. Empty/undefined = no filter. */
   contexts?: string[];
+  /**
+   * When `true`, the snack maker treats "no dimension picked" as a hard
+   * gate: only spawns that declare neither a dimension nor any biome
+   * pass. The UI sets it so the default state shows zero attracted
+   * Cobblemon until the player tells us where they are.
+   */
+  requireDimension?: boolean;
   /** AT LEAST ONE structure must match. */
   structures?: string[];
   /** AT LEAST ONE dimension must match. */
@@ -350,6 +358,22 @@ export function filterSpawns<
     if (contextSet) {
       const ctx = s.context ?? "grounded";
       if (!contextSet.has(ctx)) return false;
+    }
+    // Dimension gate: when the player picks a dimension, the spawn must
+    // either declare that dimension explicitly OR live in a biome that
+    // belongs to it (per the curated biome→dimension map). Spawns whose
+    // biomes are unknown to us are kept (modded content).
+    if (filter.dimensions && filter.dimensions.length > 0) {
+      if (!spawnMatchesDimensions({ biomes: s.biomes, condition: s.condition }, filter.dimensions)) return false;
+    } else if (filter.requireDimension) {
+      // The UI requires the player to pick a dimension first. In this
+      // mode "no dimension" means "show only spawns with neither a
+      // dimensional nor biomic constraint" (i.e. the rare exceptions
+      // that spawn truly anywhere).
+      const cond = (s.condition ?? null) as { dimensions?: unknown } | null;
+      const hasCondDim =
+        Array.isArray(cond?.dimensions) && (cond.dimensions as unknown[]).length > 0;
+      if (s.biomes.length > 0 || hasCondDim) return false;
     }
     if (biomeSet) {
       const match = s.biomes.some((b) => biomeSet.has(stripHash(b)));
