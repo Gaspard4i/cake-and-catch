@@ -53,6 +53,19 @@ const CACHE_DIR = join(tmpdir(), "snack-and-catch-cobblemon");
 
 const ALLOWED_NAMESPACES = new Set(["minecraft", "cobblemon", "c"]);
 
+/**
+ * `species.forms[]` covers regional variants (alolan, galarian, …) AND
+ * a long tail of cosmetic / mechanic forms (mega, gmax, plate, drive,
+ * costume…). Only the prefixes below count as "regional" for the
+ * Cobbledex filter.
+ */
+const REGIONAL_VARIANT_PREFIXES = [
+  "alolan",
+  "galarian",
+  "hisuian",
+  "paldean",
+];
+
 function slugify(name: string): string {
   return name.toLowerCase().replaceAll(/[^a-z0-9]+/g, "-");
 }
@@ -422,7 +435,24 @@ async function ingestSpecies(clone: RepoClone): Promise<SpeciesIndex> {
             baseFriendship: form.baseFriendship ?? parsed.baseFriendship ?? null,
             preferredFlavours:
               form.preferredFlavours ?? parsed.preferredFlavours ?? null,
-            labels: form.labels ?? parsed.labels,
+            // Push synthetic labels so the Cobbledex filters can
+            // pick this row up:
+            //   - `variant`: any non-base form (alolan, mega, gmax, …)
+            //   - `regional`: alolan / galarian / hisuian / paldean
+            //     and their sub-forms (paldean-combat, paldean-aqua,
+            //     paldean-blaze)
+            // The form's own labels (e.g. "alolan_form") stay intact.
+            labels: Array.from(
+              new Set([
+                ...(form.labels ?? parsed.labels),
+                "variant",
+                ...(REGIONAL_VARIANT_PREFIXES.some((p) =>
+                  variantLabel.toLowerCase().startsWith(p),
+                )
+                  ? ["regional"]
+                  : []),
+              ]),
+            ),
             variantOfSpeciesId: baseRow.id,
             variantLabel,
             raw: form,

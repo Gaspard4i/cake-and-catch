@@ -41,6 +41,7 @@ const LABEL_OPTIONS: MultiSelectOption[] = [
   { value: "ultra_beast", label: "Ultra Beast", group: "Story" },
   { value: "baby", label: "Baby", group: "Evolution" },
   { value: "regional", label: "Regional variant", group: "Evolution" },
+  { value: "variant", label: "Any alt form (mega/gmax/…)", group: "Evolution" },
 ];
 
 type SortKey =
