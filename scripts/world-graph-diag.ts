@@ -2,20 +2,36 @@ import { db } from "../src/lib/db/client";
 import { sql } from "drizzle-orm";
 
 async function main() {
-  const results = await Promise.all([
-    db.execute(sql`SELECT count(*)::int AS n FROM mods`),
-    db.execute(sql`SELECT count(*)::int AS n FROM mod_dimensions`),
-    db.execute(sql`SELECT count(*)::int AS n FROM dimension_biomes`),
-    db.execute(sql`SELECT count(*)::int AS n FROM biome_structures`),
-    db.execute(
-      sql`SELECT dimension_id, count(*)::int AS n FROM dimension_biomes GROUP BY dimension_id ORDER BY n DESC`,
-    ),
-    db.execute(
-      sql`SELECT mod_id, count(*)::int AS n FROM mod_dimensions GROUP BY mod_id ORDER BY n DESC`,
-    ),
-  ]);
-  for (const r of results) {
-    console.log((r as unknown as { rows?: unknown }).rows ?? r);
+  const queries = [
+    ["mods", sql`SELECT count(*)::int AS n FROM mods`],
+    ["dimensions", sql`SELECT count(*)::int AS n FROM dimensions`],
+    ["biome_tags", sql`SELECT count(*)::int AS n FROM biome_tags`],
+    ["biome_tag_members", sql`SELECT count(*)::int AS n FROM biome_tag_members`],
+    ["structures", sql`SELECT count(*)::int AS n FROM structures`],
+    ["biome_tag_structures", sql`SELECT count(*)::int AS n FROM biome_tag_structures`],
+    ["species (incl. variants)", sql`SELECT count(*)::int AS n FROM species`],
+    [
+      "species variants only",
+      sql`SELECT count(*)::int AS n FROM species WHERE variant_of_species_id IS NOT NULL`,
+    ],
+    ["spawns", sql`SELECT count(*)::int AS n FROM spawns`],
+    [
+      "spawns by source",
+      sql`SELECT source_name, count(*)::int AS n FROM spawns GROUP BY source_name ORDER BY n DESC`,
+    ],
+    [
+      "tags per dimension",
+      sql`SELECT dimension_id, count(*)::int AS n FROM biome_tags GROUP BY dimension_id ORDER BY n DESC`,
+    ],
+    [
+      "spawns with non-empty condition_dimensions",
+      sql`SELECT count(*)::int AS n FROM spawns WHERE jsonb_array_length(condition_dimensions) > 0`,
+    ],
+  ] as const;
+  for (const entry of queries) {
+    const [label, q] = entry as readonly [string, ReturnType<typeof sql>];
+    const r = (await db.execute(q)) as unknown as Array<Record<string, unknown>>;
+    console.log(label, "→", r);
   }
 }
 

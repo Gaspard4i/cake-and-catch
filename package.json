@@ -13,13 +13,13 @@
     "db:push": "node --env-file=.env.local node_modules/drizzle-kit/bin.cjs push",
     "db:push:prod": "node --env-file=.env.production node_modules/drizzle-kit/bin.cjs push",
     "db:migrate:prod": "node --env-file=.env.production node_modules/drizzle-kit/bin.cjs migrate",
-    "ingest": "tsx --env-file=.env.local ingest/run.ts",
-    "ingest:prod": "tsx --env-file=.env.production ingest/run.ts",
+    "ingest": "tsx --env-file=.env.local ingest/reset.ts",
+    "ingest:prod": "tsx --env-file=.env.production ingest/reset.ts",
+    "ingest:reset": "tsx --env-file=.env.local ingest/reset.ts",
+    "ingest:reset:prod": "tsx --env-file=.env.production ingest/reset.ts",
     "ingest:wiki": "tsx --env-file=.env.local ingest/wiki.ts",
     "ingest:berries-wiki": "tsx --env-file=.env.local ingest/berries_wiki.ts",
-    "ingest:textures": "tsx --env-file=.env.local ingest/textures.ts",
-    "ingest:world": "tsx --env-file=.env.local ingest/world-graph.ts",
-    "ingest:world:prod": "tsx --env-file=.env.production ingest/world-graph.ts"
+    "ingest:textures": "tsx --env-file=.env.local ingest/textures.ts"
   },
   "dependencies": {
     "@react-three/drei": "^10.7.7",

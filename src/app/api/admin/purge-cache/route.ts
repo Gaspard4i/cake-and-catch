@@ -18,6 +18,7 @@ const TAGS = [
   "recipe-by-slug",
   "spawn-axes",
   "cobblemon-spawns-for-species",
+  "world-graph",
 ];
 
 /**

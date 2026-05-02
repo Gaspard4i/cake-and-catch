@@ -5,6 +5,7 @@ import {
   text,
   real,
   jsonb,
+  boolean,
   timestamp,
   uniqueIndex,
   index,
@@ -13,6 +14,116 @@ import {
 
 export const bucketEnum = pgEnum("bucket", ["common", "uncommon", "rare", "ultra-rare"]);
 export const sourceKindEnum = pgEnum("source_kind", ["mod", "wiki", "derived", "addon"]);
+
+/**
+ * Authored content — every relation below is keyed on the upstream id
+ * (`minecraft:overworld`, `#cobblemon:is_lush`, `minecraft:village`) so
+ * the join with the spawn table needs no translation.
+ */
+export const mods = pgTable(
+  "mods",
+  {
+    /** Upstream namespace, e.g. "cobblemon", "minecraft". */
+    id: text("id").primaryKey(),
+    label: text("label").notNull(),
+    /** Lower comes first in the dropdown. */
+    sortOrder: integer("sort_order").notNull().default(100),
+    /** Locked = the user can't unselect it (cobblemon + minecraft). */
+    locked: boolean("locked").notNull().default(false),
+  },
+);
+
+export const dimensions = pgTable(
+  "dimensions",
+  {
+    id: text("id").primaryKey(),
+    modId: text("mod_id")
+      .notNull()
+      .references(() => mods.id, { onDelete: "cascade" }),
+    label: text("label").notNull(),
+    hasDayCycle: boolean("has_day_cycle").notNull().default(true),
+    hasWeather: boolean("has_weather").notNull().default(true),
+    hasMoon: boolean("has_moon").notNull().default(true),
+    hasSky: boolean("has_sky").notNull().default(true),
+    sortOrder: integer("sort_order").notNull().default(100),
+  },
+  (t) => [index("dimensions_mod_idx").on(t.modId)],
+);
+
+/**
+ * One row per Cobblemon biome tag (e.g. `#cobblemon:is_lush`,
+ * `#cobblemon:nether/is_basalt`). `dimension_id` is null for transverse
+ * tags (`has_block/*`, `evolution/*`, `space/*`, `is_sky`, `is_magical`)
+ * — those tags don't pin a dimension.
+ *
+ * `section` groups tags in the UI: "Forests", "Wetlands", "Nether",
+ * "Has block", etc.
+ */
+export const biomeTags = pgTable(
+  "biome_tags",
+  {
+    id: text("id").primaryKey(),
+    label: text("label").notNull(),
+    dimensionId: text("dimension_id").references(() => dimensions.id, {
+      onDelete: "set null",
+    }),
+    section: text("section"),
+    sortOrder: integer("sort_order").notNull().default(100),
+  },
+  (t) => [index("biome_tags_dim_idx").on(t.dimensionId)],
+);
+
+/**
+ * Tag → biome ids: the values listed in
+ * `data/cobblemon/tags/worldgen/biome/*.json`. We use this to resolve a
+ * spawn that lists a direct biome (`minecraft:plains`) into the tags
+ * it belongs to, and from there into a dimension.
+ */
+export const biomeTagMembers = pgTable(
+  "biome_tag_members",
+  {
+    tagId: text("tag_id")
+      .notNull()
+      .references(() => biomeTags.id, { onDelete: "cascade" }),
+    /** Either a direct biome id (`minecraft:plains`) or a `#tag` reference. */
+    biomeId: text("biome_id").notNull(),
+  },
+  (t) => [
+    uniqueIndex("biome_tag_members_idx").on(t.tagId, t.biomeId),
+    index("biome_tag_members_biome_idx").on(t.biomeId),
+  ],
+);
+
+export const structures = pgTable(
+  "structures",
+  {
+    id: text("id").primaryKey(),
+    label: text("label").notNull(),
+    sortOrder: integer("sort_order").notNull().default(100),
+  },
+);
+
+/**
+ * Which structures appear in which biome tag's territory. Populated at
+ * ingest time both from a curated map AND by auto-discovery: every
+ * structure that a spawn pins via `condition.structures[]` is linked
+ * to the tag(s) the spawn lists.
+ */
+export const biomeTagStructures = pgTable(
+  "biome_tag_structures",
+  {
+    biomeTagId: text("biome_tag_id")
+      .notNull()
+      .references(() => biomeTags.id, { onDelete: "cascade" }),
+    structureId: text("structure_id")
+      .notNull()
+      .references(() => structures.id, { onDelete: "cascade" }),
+  },
+  (t) => [
+    uniqueIndex("biome_tag_structures_idx").on(t.biomeTagId, t.structureId),
+    index("biome_tag_structures_struct_idx").on(t.structureId),
+  ],
+);
 
 export const species = pgTable(
   "species",
@@ -29,12 +140,39 @@ export const species = pgTable(
     baseFriendship: integer("base_friendship"),
     preferredFlavours: jsonb("preferred_flavours").$type<string[]>(),
     labels: jsonb("labels").$type<string[]>().notNull(),
+    /**
+     * Regional variants are stored as their own `species` rows. When
+     * non-null, `variantOfSpeciesId` points at the base species (e.g.
+     * vulpix-alolan → vulpix), and `variantLabel` carries the aspect
+     * (`"alolan"`, `"galarian"`, `"hisuian"`, `"paldean"`, …).
+     * Sharing the table keeps the spawn FK simple — every spawn
+     * references one species row, base or variant alike.
+     */
+    /**
+     * Self-FK to the base species row. The constraint is enforced at
+     * the SQL level (see migration 0012) — Drizzle's `references()`
+     * helper can't express a self-reference at type-check time without
+     * tripping the "implicit any" on the surrounding `species` const,
+     * so we model it as a plain integer here and rely on the DB.
+     */
+    variantOfSpeciesId: integer("variant_of_species_id"),
+    variantLabel: text("variant_label"),
     raw: jsonb("raw").notNull(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
   },
-  (t) => [uniqueIndex("species_slug_idx").on(t.slug), index("species_dex_idx").on(t.dexNo)],
+  (t) => [
+    uniqueIndex("species_slug_idx").on(t.slug),
+    index("species_dex_idx").on(t.dexNo),
+    index("species_variant_of_idx").on(t.variantOfSpeciesId),
+  ],
 );
 
+/**
+ * Spawn entries flattened for SQL filtering. Conditions/anticonditions
+ * are kept verbatim in JSONB (for the species page rendering), and the
+ * filter axes are extracted into typed columns + GIN-indexable text
+ * arrays. One SELECT against this table is all the matcher needs.
+ */
 export const spawns = pgTable(
   "spawns",
   {
@@ -45,25 +183,42 @@ export const spawns = pgTable(
     externalId: text("external_id").notNull(),
     bucket: bucketEnum("bucket").notNull(),
     weight: real("weight").notNull(),
-    /**
-     * Cobblemon `percentage` field. When set, takes precedence over `weight`
-     * during spawn selection (Phase 1). Sum across a bucket+positionType
-     * must stay <= 100; otherwise Cobblemon aborts the whole tick.
-     */
+    /** Cobblemon `percentage`. Phase 1 of selection — see `BestSpawner`. */
     percentage: real("percentage"),
     levelMin: integer("level_min").notNull(),
     levelMax: integer("level_max").notNull(),
-    context: text("context"),
+
+    // ── Filter axes — populated at ingest time ─────────────────────
+    positionType: text("position_type"),
+    /** Dimensions matching the spawn (resolved from biome tags too). */
+    conditionDimensions: jsonb("condition_dimensions").$type<string[]>().notNull().default([]),
+    /** Tags listed by the spawn directly + tags a direct biome belongs to. */
+    conditionBiomeTags: jsonb("condition_biome_tags").$type<string[]>().notNull().default([]),
+    /** Structures pinned by the spawn (`condition.structures`). */
+    conditionStructures: jsonb("condition_structures").$type<string[]>().notNull().default([]),
+    fluid: text("fluid"),
+    fluidIsSource: boolean("fluid_is_source"),
+    minDepth: integer("min_depth"),
+    maxDepth: integer("max_depth"),
+    requiresRain: boolean("requires_rain"),
+    requiresThunder: boolean("requires_thunder"),
+    requiresCanSeeSky: boolean("requires_can_see_sky"),
+    minSkyLight: integer("min_sky_light"),
+    maxSkyLight: integer("max_sky_light"),
+    minLight: integer("min_light"),
+    maxLight: integer("max_light"),
+    minMoonPhase: integer("min_moon_phase"),
+    maxMoonPhase: integer("max_moon_phase"),
+    timeRange: text("time_range"),
+    minY: integer("min_y"),
+    maxY: integer("max_y"),
+
+    // ── Verbatim payloads kept for the species page ────────────────
+    /** Raw `condition.biomes[]` strings, before tag resolution. */
     biomes: jsonb("biomes").$type<string[]>().notNull(),
     condition: jsonb("condition"),
     anticondition: jsonb("anticondition"),
-    /**
-     * `weightMultiplier` (or array `weightMultipliers`) from upstream JSON.
-     * Each entry multiplies the spawn's effective weight when its
-     * sub-condition is met (e.g. ×2 in the rain).
-     */
     weightMultipliers: jsonb("weight_multipliers"),
-    /** `compositeCondition` from upstream — nested AND/OR groups. */
     compositeCondition: jsonb("composite_condition"),
     presets: jsonb("presets").$type<string[]>().notNull(),
     sourceKind: sourceKindEnum("source_kind").notNull().default("mod"),
@@ -77,12 +232,6 @@ export const spawns = pgTable(
   ],
 );
 
-/**
- * Cobblemon `spawn_detail_presets/*.json`. Stored verbatim so that ingestion
- * can resolve `spawn.presets[]` → conditions/anticonditions and merge them
- * into the spawn entry. Without this table, ~80% of spawns appear to have
- * empty conditions in the UI (they actually inherit from a preset).
- */
 export const spawnPresets = pgTable(
   "spawn_presets",
   {
@@ -125,9 +274,9 @@ export const recipes = pgTable(
     kind: recipeKindEnum("kind").notNull(),
     resultId: text("result_id").notNull(),
     resultCount: integer("result_count").notNull().default(1),
-    shape: text("shape").notNull(), // 'shaped' | 'shapeless'
-    grid: jsonb("grid"), // GridCell[][] for shaped
-    ingredients: jsonb("ingredients"), // Array for shapeless
+    shape: text("shape").notNull(),
+    grid: jsonb("grid"),
+    ingredients: jsonb("ingredients"),
     seasoningTag: text("seasoning_tag"),
     seasoningProcessors: jsonb("seasoning_processors").$type<string[]>().notNull(),
     raw: jsonb("raw").notNull(),
@@ -170,18 +319,7 @@ export const berries = pgTable(
     colour: text("colour"),
     weight: real("weight"),
     description: text("description"),
-    /**
-     * Effect tags this berry belongs to, from upstream
-     * `tags/item/berries/*.json`. Possible values:
-     *   hp_recovery, status_recovery, pp_recovery, nature_recovery,
-     *   friendship, damage_reduction, stat_buff, damaging, non_battle, filling.
-     */
     effectTags: jsonb("effect_tags").$type<string[]>().notNull().default([]),
-    /**
-     * Placements used when this berry sits on top of a Poké Snack. Upstream
-     * field `pokeSnackPositionings[]`: up to 3 entries with `position` and
-     * `rotation` in Bedrock-model space (16 units per block).
-     */
     snackPositionings: jsonb("snack_positionings")
       .$type<
         Array<{
@@ -191,12 +329,7 @@ export const berries = pgTable(
       >()
       .notNull()
       .default([]),
-    /**
-     * Path of the Bedrock 3D model (relative to /textures/cobblemon/bedrock/).
-     * Nullable when the .geo.json is missing.
-     */
     fruitModel: text("fruit_model"),
-    /** Path of the fruit texture served under /textures/cobblemon/berries/. */
     fruitTexture: text("fruit_texture"),
     raw: jsonb("raw").notNull(),
   },
@@ -219,87 +352,8 @@ export const speciesWiki = pgTable(
 );
 
 /**
- * World graph — what the cascade UI relies on so the biome dropdown
- * never offers a Nether tag while Overworld is the only dimension
- * picked. Authored content (curated locally + ingested from upstream
- * tags), refreshed at ingest time.
- *
- *   mods  →  mod_dimensions  →  dimension_biomes
- *                            ↘  dimension_traits  (hasDayCycle, hasWeather, …)
- *   dimension_biomes        →  biome_structures
- *
- * Every relation is keyed on the upstream id (e.g. `minecraft:overworld`,
- * `#cobblemon:is_lush`, `minecraft:village`) — that's the vocabulary
- * spawn JSONs use, so the join with the spawn table needs no translation.
- */
-export const mods = pgTable(
-  "mods",
-  {
-    /** Upstream namespace, e.g. "cobblemon", "minecraft", "aether". */
-    id: text("id").primaryKey(),
-    label: text("label").notNull(),
-    /** Sort order in the UI dropdown. Lower comes first. */
-    sortOrder: integer("sort_order").notNull().default(100),
-    locked: integer("locked").notNull().default(0),
-  },
-);
-
-export const modDimensions = pgTable(
-  "mod_dimensions",
-  {
-    modId: text("mod_id")
-      .notNull()
-      .references(() => mods.id, { onDelete: "cascade" }),
-    dimensionId: text("dimension_id").notNull(),
-    label: text("label").notNull(),
-    /** Whether the dimension has a day/night cycle, weather, moon, sky. */
-    hasDayCycle: integer("has_day_cycle").notNull().default(1),
-    hasWeather: integer("has_weather").notNull().default(1),
-    hasMoon: integer("has_moon").notNull().default(1),
-    hasSky: integer("has_sky").notNull().default(1),
-    sortOrder: integer("sort_order").notNull().default(100),
-  },
-  (t) => [
-    uniqueIndex("mod_dimensions_idx").on(t.modId, t.dimensionId),
-    index("mod_dimensions_dim_idx").on(t.dimensionId),
-  ],
-);
-
-export const dimensionBiomes = pgTable(
-  "dimension_biomes",
-  {
-    dimensionId: text("dimension_id").notNull(),
-    /** Biome id or `#tag` exactly as it appears in spawn JSONs. */
-    biomeId: text("biome_id").notNull(),
-    label: text("label").notNull(),
-    /** Optional grouping for the dropdown (Forest, Wetlands, …). */
-    section: text("section"),
-    sortOrder: integer("sort_order").notNull().default(100),
-  },
-  (t) => [
-    uniqueIndex("dimension_biomes_idx").on(t.dimensionId, t.biomeId),
-    index("dimension_biomes_biome_idx").on(t.biomeId),
-  ],
-);
-
-export const biomeStructures = pgTable(
-  "biome_structures",
-  {
-    biomeId: text("biome_id").notNull(),
-    structureId: text("structure_id").notNull(),
-    label: text("label").notNull(),
-  },
-  (t) => [
-    uniqueIndex("biome_structures_idx").on(t.biomeId, t.structureId),
-    index("biome_structures_struct_idx").on(t.structureId),
-  ],
-);
-
-/**
- * Aggregated site-wide counters and rating sum. Single-row table
- * (id=1). Kept as a row instead of Redis/KV to avoid adding an
- * infrastructure dependency. Updates are UPSERTs with atomic SQL
- * increments (`col = col + 1`) so concurrent visits don't clobber.
+ * Aggregated site-wide counters — single-row table (id=1). Kept as a
+ * row instead of Redis to avoid an infrastructure dependency.
  */
 export const siteStats = pgTable("site_stats", {
   id: integer("id").primaryKey().default(1),
@@ -309,11 +363,6 @@ export const siteStats = pgTable("site_stats", {
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
 });
 
-/**
- * Individual rating submissions. We keep them so we can moderate,
- * deduplicate abuse (same IP hash), and change aggregation rules later
- * without losing data. `ipHash` is sha256(ip + secret) — never the raw IP.
- */
 export const siteRatings = pgTable(
   "site_ratings",
   {
@@ -338,3 +387,9 @@ export type SpeciesWiki = typeof speciesWiki.$inferSelect;
 export type Berry = typeof berries.$inferSelect;
 export type SpawnPreset = typeof spawnPresets.$inferSelect;
 export type NewSpawnPreset = typeof spawnPresets.$inferInsert;
+export type Mod = typeof mods.$inferSelect;
+export type Dimension = typeof dimensions.$inferSelect;
+export type BiomeTag = typeof biomeTags.$inferSelect;
+export type BiomeTagMember = typeof biomeTagMembers.$inferSelect;
+export type Structure = typeof structures.$inferSelect;
+export type BiomeTagStructure = typeof biomeTagStructures.$inferSelect;

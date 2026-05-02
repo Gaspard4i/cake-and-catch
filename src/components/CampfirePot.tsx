@@ -636,7 +636,11 @@ export function CampfirePot({ mode = "snack" }: { mode?: PotMode } = {}) {
       !reach || reach.has(id.replace(/^#/, ""));
 
     if (worldGraph && dimSet.size > 0) {
-      for (const b of worldGraph.biomes) {
+      for (const b of worldGraph.biomeTags) {
+        // Transverse tags (`has_*`, `evolution/*`, `space/*`) carry a
+        // null dimensionId — they're parked in the Advanced panel and
+        // not shown in the main list when a dimension is picked.
+        if (!b.dimensionId) continue;
         if (!dimSet.has(b.dimensionId)) continue;
         if (!matchNamespace(b.id)) continue;
         if (!reachable_ok(b.id)) continue;
@@ -1332,22 +1336,27 @@ export function CampfirePot({ mode = "snack" }: { mode?: PotMode } = {}) {
           {dimensions.length > 0 && worldGraph && (() => {
             const dimSet = new Set(dimensions);
             const biomeSet = new Set(biomes);
-            // Resolve which biomes' structures we surface: explicit
-            // biome picks if any, otherwise every biome of the picked
+            // Resolve which biome tags' structures we surface: explicit
+            // biome picks if any, otherwise every tag of the picked
             // dimensions.
             const eligibleBiomes = new Set<string>();
-            for (const b of worldGraph.biomes) {
-              if (!dimSet.has(b.dimensionId)) continue;
+            for (const b of worldGraph.biomeTags) {
+              if (!b.dimensionId || !dimSet.has(b.dimensionId)) continue;
               if (biomeSet.size > 0 && !biomeSet.has(b.id)) continue;
               eligibleBiomes.add(b.id);
             }
+            const structureMeta = new Map(
+              worldGraph.structures.map((s) => [s.id, s.label]),
+            );
             const seenStruct = new Set<string>();
             const opts: MultiSelectOption[] = [];
-            for (const s of worldGraph.structures) {
-              if (!eligibleBiomes.has(s.biomeId)) continue;
-              if (seenStruct.has(s.id)) continue;
-              seenStruct.add(s.id);
-              opts.push({ value: s.id, label: s.label });
+            for (const link of worldGraph.biomeTagStructures) {
+              if (!eligibleBiomes.has(link.biomeTagId)) continue;
+              if (seenStruct.has(link.structureId)) continue;
+              const label = structureMeta.get(link.structureId);
+              if (!label) continue;
+              seenStruct.add(link.structureId);
+              opts.push({ value: link.structureId, label });
             }
             // Also fold in structures the spawn graph reports through
             // `reachable` (handles addons that pinned structures we

@@ -247,7 +247,12 @@ export type SpawnWithSpecies = {
   biomes: string[];
   condition: unknown;
   anticondition: unknown;
+  /** Was `context` before the 0012 reset; column is `position_type` now. */
   context: string | null;
+  /** Pre-extracted scalar axes used by /api/snack and the matcher. */
+  conditionDimensions: string[];
+  conditionBiomeTags: string[];
+  conditionStructures: string[];
   sourceKind: "mod" | "wiki" | "derived" | "addon";
   sourceName: string;
   slug: string;
@@ -256,6 +261,9 @@ export type SpawnWithSpecies = {
   primaryType: string;
   secondaryType: string | null;
   preferredFlavours: string[] | null;
+  /** Regional variant link — null for base species. */
+  variantOfSpeciesId: number | null;
+  variantLabel: string | null;
   /**
    * Egg groups extracted server-side from `species.raw->'eggGroups'`. Avoids
    * pulling the whole `raw` JSONB blob on every call (the biggest single
@@ -289,7 +297,10 @@ export const listSpawnsWithSpecies = (
             biomes: schema.spawns.biomes,
             condition: schema.spawns.condition,
             anticondition: schema.spawns.anticondition,
-            context: schema.spawns.context,
+            context: schema.spawns.positionType,
+            conditionDimensions: schema.spawns.conditionDimensions,
+            conditionBiomeTags: schema.spawns.conditionBiomeTags,
+            conditionStructures: schema.spawns.conditionStructures,
             sourceKind: schema.spawns.sourceKind,
             sourceName: schema.spawns.sourceName,
             slug: schema.species.slug,
@@ -298,6 +309,8 @@ export const listSpawnsWithSpecies = (
             primaryType: schema.species.primaryType,
             secondaryType: schema.species.secondaryType,
             preferredFlavours: schema.species.preferredFlavours,
+            variantOfSpeciesId: schema.species.variantOfSpeciesId,
+            variantLabel: schema.species.variantLabel,
             eggGroups: sql<
               string[]
             >`coalesce(${schema.species.raw} -> 'eggGroups', '[]'::jsonb)`.as(

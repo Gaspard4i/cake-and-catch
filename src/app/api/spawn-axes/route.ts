@@ -46,7 +46,7 @@ const fetchAxes = unstable_cache(
       .select({
         sourceName: schema.spawns.sourceName,
         bucket: schema.spawns.bucket,
-        context: schema.spawns.context,
+        context: schema.spawns.positionType,
         biomes: schema.spawns.biomes,
         condition: schema.spawns.condition,
       })

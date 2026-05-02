@@ -5,11 +5,11 @@ import { asc } from "drizzle-orm";
 /**
  * Single source of truth for the snack-maker filter cascade. The
  * client downloads it once and intersects locally — picking a mod
- * narrows the dimension list, a dimension narrows the biome list, a
- * biome narrows the structure list, and so on.
+ * narrows the dimension list, picking a dimension narrows the biome
+ * list, picking a biome narrows the structure list.
  *
- * Authored content seeded by `pnpm ingest:world`. Refresh after every
- * spawn ingest so newly seen biomes get auto-bucketed.
+ * Authored content seeded by `pnpm ingest:reset`. Refresh after every
+ * spawn ingest so newly seen biomes / structures get auto-bucketed.
  */
 export type WorldGraph = {
   mods: Array<{ id: string; label: string; locked: boolean; sortOrder: number }>;
@@ -23,61 +23,70 @@ export type WorldGraph = {
     hasSky: boolean;
     sortOrder: number;
   }>;
-  biomes: Array<{
-    dimensionId: string;
+  biomeTags: Array<{
     id: string;
     label: string;
+    dimensionId: string | null;
     section: string | null;
     sortOrder: number;
   }>;
-  structures: Array<{ biomeId: string; id: string; label: string }>;
+  biomeTagMembers: Array<{ tagId: string; biomeId: string }>;
+  structures: Array<{ id: string; label: string; sortOrder: number }>;
+  biomeTagStructures: Array<{ biomeTagId: string; structureId: string }>;
 };
 
 const fetchGraph = unstable_cache(
   async (): Promise<WorldGraph> => {
-    const [mods, dims, biomes, structures] = await Promise.all([
+    const [mods, dims, tags, members, structs, links] = await Promise.all([
+      db.select().from(schema.mods).orderBy(asc(schema.mods.sortOrder), asc(schema.mods.id)),
       db
         .select()
-        .from(schema.mods)
-        .orderBy(asc(schema.mods.sortOrder), asc(schema.mods.id)),
+        .from(schema.dimensions)
+        .orderBy(asc(schema.dimensions.sortOrder), asc(schema.dimensions.id)),
       db
         .select()
-        .from(schema.modDimensions)
-        .orderBy(asc(schema.modDimensions.sortOrder), asc(schema.modDimensions.dimensionId)),
+        .from(schema.biomeTags)
+        .orderBy(asc(schema.biomeTags.sortOrder), asc(schema.biomeTags.id)),
+      db.select().from(schema.biomeTagMembers),
       db
         .select()
-        .from(schema.dimensionBiomes)
-        .orderBy(asc(schema.dimensionBiomes.sortOrder), asc(schema.dimensionBiomes.biomeId)),
-      db.select().from(schema.biomeStructures),
+        .from(schema.structures)
+        .orderBy(asc(schema.structures.sortOrder), asc(schema.structures.id)),
+      db.select().from(schema.biomeTagStructures),
     ]);
     return {
       mods: mods.map((m) => ({
         id: m.id,
         label: m.label,
-        locked: m.locked === 1,
+        locked: m.locked,
         sortOrder: m.sortOrder,
       })),
       dimensions: dims.map((d) => ({
         modId: d.modId,
-        id: d.dimensionId,
+        id: d.id,
         label: d.label,
-        hasDayCycle: d.hasDayCycle === 1,
-        hasWeather: d.hasWeather === 1,
-        hasMoon: d.hasMoon === 1,
-        hasSky: d.hasSky === 1,
+        hasDayCycle: d.hasDayCycle,
+        hasWeather: d.hasWeather,
+        hasMoon: d.hasMoon,
+        hasSky: d.hasSky,
         sortOrder: d.sortOrder,
       })),
-      biomes: biomes.map((b) => ({
-        dimensionId: b.dimensionId,
-        id: b.biomeId,
-        label: b.label,
-        section: b.section,
-        sortOrder: b.sortOrder,
+      biomeTags: tags.map((t) => ({
+        id: t.id,
+        label: t.label,
+        dimensionId: t.dimensionId,
+        section: t.section,
+        sortOrder: t.sortOrder,
       })),
-      structures: structures.map((s) => ({
-        biomeId: s.biomeId,
-        id: s.structureId,
+      biomeTagMembers: members.map((m) => ({ tagId: m.tagId, biomeId: m.biomeId })),
+      structures: structs.map((s) => ({
+        id: s.id,
         label: s.label,
+        sortOrder: s.sortOrder,
+      })),
+      biomeTagStructures: links.map((l) => ({
+        biomeTagId: l.biomeTagId,
+        structureId: l.structureId,
       })),
     };
   },

@@ -304,7 +304,7 @@ async function SpeciesDetail({ params }: { params: Promise<{ slug: string }> }) 
         {species.abilities && species.abilities.length > 0 && (
           <div className="mt-4 flex flex-wrap gap-2 text-xs">
             <span className="text-muted uppercase">Abilities:</span>
-            {species.abilities.map((a, i) => (
+            {(species.abilities as string[]).map((a: string, i: number) => (
               <span
                 key={i}
                 className={`px-2 py-0.5 rounded-full border capitalize ${
@@ -415,10 +415,10 @@ async function SpeciesDetail({ params }: { params: Promise<{ slug: string }> }) 
                     href={s.sourceUrl ?? undefined}
                   />
                 </div>
-                {s.context && (
+                {s.positionType && (
                   <div className="mt-2 text-xs text-muted">
                     <span className="uppercase tracking-wide">{t("context")}: </span>
-                    <span className="capitalize">{prettyId(s.context)}</span>
+                    <span className="capitalize">{prettyId(s.positionType)}</span>
                   </div>
                 )}
                 {s.biomes.length > 0 && (
