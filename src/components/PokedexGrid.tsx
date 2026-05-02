@@ -8,6 +8,7 @@ import { Spinner, TopProgress, PokedexCardSkeleton } from "./Loader";
 import { PokemonSprite } from "./PokemonSprite";
 import { TypePair } from "./TypeBadge";
 import { MultiSelect, type MultiSelectOption } from "./MultiSelect";
+import { VariantBadge } from "./VariantBadge";
 
 type Species = {
   id: number;
@@ -20,6 +21,8 @@ type Species = {
   catchRate: number;
   abilities: string[];
   labels: string[];
+  variantOfSpeciesId?: number | null;
+  variantLabel?: string | null;
 };
 
 const TYPE_OPTIONS: MultiSelectOption[] = [
@@ -112,10 +115,14 @@ export function PokedexGrid() {
       // we cap the selection at 2.
       for (const t of types.slice(0, 2)) u.append("type", t);
       if (gens.length > 0) u.set("gen", gens[0]);
+      // Forward every label the user picked. The API treats `variant`
+      // as the opt-in switch for mimic forms (mega/gmax/cosplay/…)
+      // and the rest (starter, legendary, …) as narrowing filters.
+      for (const l of labels) u.append("label", l);
       u.set("sort", sort);
       return `/api/pokedex?${u.toString()}`;
     },
-    [q, types, gens, sort],
+    [q, types, gens, labels, sort],
   );
 
   const reset = useCallback(() => {
@@ -154,9 +161,14 @@ export function PokedexGrid() {
           !(s.labels ?? []).some((l) => gens.includes(l))
         )
           return false;
+        // Labels semantics:
+        //   - `variant` is an opt-in switch for mimic forms; the API
+        //     already widened the result, no client filter needed.
+        //   - Every other label narrows to rows that carry it.
+        const narrowing = labels.filter((l) => l !== "variant");
         if (
-          labels.length > 0 &&
-          !(s.labels ?? []).some((l) => labels.includes(l))
+          narrowing.length > 0 &&
+          !narrowing.every((l) => (s.labels ?? []).includes(l))
         )
           return false;
         return true;
@@ -335,6 +347,11 @@ export function PokedexGrid() {
                 <div className="mt-0.5 sm:mt-1 text-center font-semibold truncate text-[11px] sm:text-base">
                   {s.name}
                 </div>
+                {s.variantLabel && (
+                  <div className="mt-0.5 flex justify-center">
+                    <VariantBadge variantLabel={s.variantLabel} />
+                  </div>
+                )}
                 <div className="mt-0.5 text-center font-mono text-[9px] text-muted sm:hidden">
                   #{String(s.dexNo).padStart(4, "0")}
                 </div>

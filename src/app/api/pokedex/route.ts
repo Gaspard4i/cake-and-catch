@@ -28,8 +28,16 @@ export async function GET(req: NextRequest) {
   const q = params.get("q")?.trim() ?? "";
   const allTypes = params.getAll("type").map((t) => t.trim()).filter(Boolean).slice(0, 2);
   const gen = params.get("gen")?.trim();
+  const labels = params.getAll("label").map((l) => l.trim()).filter(Boolean);
   const sort = (params.get("sort") ?? "dex") as SortKey;
   const cursor = parseCursor(params.get("cursor"));
+  /**
+   * Default Cobbledex view = base species + regional variants only.
+   * Mimic forms (mega/gmax/cosmetic/drives/plates) appear only when
+   * the player explicitly opts in via `?label=variant`. Regional
+   * variants stay visible thanks to their `regional` label, regardless.
+   */
+  const includeMimicVariants = labels.includes("variant");
 
   const totalExpr = sql<number>`(
     COALESCE((${schema.species.baseStats} ->> 'hp')::int, 0) +
@@ -57,6 +65,21 @@ export async function GET(req: NextRequest) {
     }
     if (gen) {
       where.push(sql`${schema.species.labels}::jsonb @> ${JSON.stringify([gen])}::jsonb`);
+    }
+    // Honour the labels filter the client sends. `regional` and
+    // `variant` are inclusive switches — they widen what we return.
+    // Other labels narrow the result (starter, legendary, mythical…).
+    for (const l of labels) {
+      if (l === "regional" || l === "variant") continue;
+      where.push(sql`${schema.species.labels}::jsonb @> ${JSON.stringify([l])}::jsonb`);
+    }
+    // Default-hide mimic variants (mega/gmax/cosplay/etc.). Regional
+    // variants carry the `regional` label and stay visible.
+    if (!includeMimicVariants) {
+      where.push(sql`(
+        ${schema.species.variantOfSpeciesId} IS NULL
+        OR ${schema.species.labels}::jsonb @> '["regional"]'::jsonb
+      )`);
     }
 
     if (cursor) {

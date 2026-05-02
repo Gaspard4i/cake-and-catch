@@ -103,6 +103,51 @@ export const getSourcesFor = cached(
     ),
 );
 
+/**
+ * Walk the species table sorted by (dexNo, slug) to find the row that
+ * comes just before / just after the given slug. Mimic variants
+ * (mega, gmax, cosmetic forms) are skipped — only base species and
+ * regional variants (alolan/galarian/hisuian/paldean) participate, so
+ * the previous/next arrows feel like a real Pokédex.
+ */
+export const getSpeciesNeighbors = cached(
+  "species-neighbors",
+  SIX_HOURS,
+  async (
+    slug: string,
+  ): Promise<{
+    prev: { slug: string; name: string; dexNo: number } | null;
+    next: { slug: string; name: string; dexNo: number } | null;
+  }> =>
+    safe(
+      async () => {
+        const inFlow = sql<boolean>`(
+          ${schema.species.variantOfSpeciesId} IS NULL
+          OR ${schema.species.variantLabel} ILIKE 'alolan%'
+          OR ${schema.species.variantLabel} ILIKE 'galarian%'
+          OR ${schema.species.variantLabel} ILIKE 'hisuian%'
+          OR ${schema.species.variantLabel} ILIKE 'paldean%'
+        )`;
+        const ordered = await db
+          .select({
+            slug: schema.species.slug,
+            name: schema.species.name,
+            dexNo: schema.species.dexNo,
+          })
+          .from(schema.species)
+          .where(inFlow)
+          .orderBy(asc(schema.species.dexNo), asc(schema.species.slug));
+        const i = ordered.findIndex((r) => r.slug === slug);
+        if (i < 0) return { prev: null, next: null };
+        return {
+          prev: i > 0 ? ordered[i - 1] : null,
+          next: i < ordered.length - 1 ? ordered[i + 1] : null,
+        };
+      },
+      { prev: null, next: null },
+    ),
+);
+
 export const getWikiSummary = cached(
   "wiki-summary",
   ONE_HOUR,

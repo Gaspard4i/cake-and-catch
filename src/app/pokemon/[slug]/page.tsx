@@ -21,6 +21,7 @@ export async function generateMetadata({
 import {
   getSourcesFor,
   getSpeciesBySlug,
+  getSpeciesNeighbors,
   getWikiSummary,
   listBaitEffects,
   listBerries,
@@ -29,6 +30,8 @@ import {
 import { SourceBadge } from "@/components/SourceBadge";
 import { TypePair } from "@/components/TypeBadge";
 import { PokemonSprite } from "@/components/PokemonSprite";
+import { VariantBadge } from "@/components/VariantBadge";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { ItemIcon } from "@/components/ItemIcon";
 import {
   rankBaitsForSpecies,
@@ -159,15 +162,17 @@ async function SpeciesDetail({ params }: { params: Promise<{ slug: string }> }) 
   const species = await getSpeciesBySlug(slug);
   if (!species) notFound();
 
-  const [spawns, sources, baits, berries, seasonings, wiki, t] = await Promise.all([
-    listCobblemonSpawnsForSpecies(species.id),
-    getSourcesFor("species", species.id),
-    listBaitEffects(),
-    listBerries(),
-    listAllSeasonings(),
-    getWikiSummary(species.id),
-    getTranslations("pokemon"),
-  ]);
+  const [spawns, sources, baits, berries, seasonings, wiki, neighbors, t] =
+    await Promise.all([
+      listCobblemonSpawnsForSpecies(species.id),
+      getSourcesFor("species", species.id),
+      listBaitEffects(),
+      listBerries(),
+      listAllSeasonings(),
+      getWikiSummary(species.id),
+      getSpeciesNeighbors(slug),
+      getTranslations("pokemon"),
+    ]);
 
   const primarySource = sources[0];
 
@@ -233,12 +238,44 @@ async function SpeciesDetail({ params }: { params: Promise<{ slug: string }> }) 
 
   return (
     <>
-      <BackLink
-        fallback="/pokedex"
-        className="text-sm text-muted hover:text-foreground transition-colors"
-      >
-        {t("back")}
-      </BackLink>
+      <div className="flex items-center justify-between gap-2">
+        <BackLink
+          fallback="/pokedex"
+          className="text-sm text-muted hover:text-foreground transition-colors"
+        >
+          {t("back")}
+        </BackLink>
+        <div className="flex items-center gap-1">
+          {neighbors.prev ? (
+            <Link
+              href={`/pokemon/${neighbors.prev.slug}`}
+              className="inline-flex items-center gap-1 text-xs text-muted hover:text-foreground border border-border rounded-md px-2 py-1"
+              title={`${neighbors.prev.name} #${String(neighbors.prev.dexNo).padStart(4, "0")}`}
+            >
+              <ChevronLeft className="size-3.5" />
+              <span className="hidden sm:inline">{neighbors.prev.name}</span>
+            </Link>
+          ) : (
+            <span className="inline-flex items-center text-xs text-muted/50 border border-border rounded-md px-2 py-1">
+              <ChevronLeft className="size-3.5" />
+            </span>
+          )}
+          {neighbors.next ? (
+            <Link
+              href={`/pokemon/${neighbors.next.slug}`}
+              className="inline-flex items-center gap-1 text-xs text-muted hover:text-foreground border border-border rounded-md px-2 py-1"
+              title={`${neighbors.next.name} #${String(neighbors.next.dexNo).padStart(4, "0")}`}
+            >
+              <span className="hidden sm:inline">{neighbors.next.name}</span>
+              <ChevronRight className="size-3.5" />
+            </Link>
+          ) : (
+            <span className="inline-flex items-center text-xs text-muted/50 border border-border rounded-md px-2 py-1">
+              <ChevronRight className="size-3.5" />
+            </span>
+          )}
+        </div>
+      </div>
 
       <header className="mt-4 flex items-center gap-4 flex-wrap">
         <PokemonSprite
@@ -253,6 +290,7 @@ async function SpeciesDetail({ params }: { params: Promise<{ slug: string }> }) 
               #{String(species.dexNo).padStart(4, "0")}
             </span>
             <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight truncate">{species.name}</h1>
+            {species.variantLabel && <VariantBadge variantLabel={species.variantLabel} />}
             <SourceBadge
               kind="mod"
               name="cobblemon"
